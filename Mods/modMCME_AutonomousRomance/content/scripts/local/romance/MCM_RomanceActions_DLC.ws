@@ -75,12 +75,13 @@ class MCM_AR_Anarietta_PostCombatPride extends MCM_RomanceInteraction
 	{
 		if (!super.CanExecute(npc, player, ctx)) return false;
 		if (ctx.playerHealthRatio > 0.60) return false;
+		if (MCM_AR_GetCore().GetSecondsSinceCombat() > 300.0) return false;
 		return true;
 	}
 
 	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
 	{
-		ApproachPlayer(npc, player, 1.8);
+		if (!ApproachPlayer(npc, player, 1.8)) return false;
 		PlayMimic(npc, 'concern');
 		// ID 1199342: "There's something I'd like to know… How can you be so damned calm?"
 		PlayOneLiner(npc, 1199342, "There's something I'd like to know… How can you be so damned calm?");
@@ -114,7 +115,7 @@ class MCM_AR_Anarietta_NightRoyal extends MCM_RomanceInteraction
 	{
 		var consent : bool;
 
-		ApproachPlayer(npc, player, 1.5);
+		if (!ApproachPlayer(npc, player, 1.5)) return false;
 		PlayMimic(npc, 'flirt');
 		// ID 1192250: "Come, witcher."
 		PlayOneLiner(npc, 1192250, "Come, witcher.");
@@ -183,7 +184,7 @@ class MCM_AR_Vivienne_CampfireMystery extends MCM_RomanceInteraction
 
 	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
 	{
-		ApproachPlayer(npc, player, 2.0);
+		if (!ApproachPlayer(npc, player, 2.0)) return false;
 		// ID 1197401: "Come."
 		PlayOneLiner(npc, 1197401, "Come.");
 		super.Execute(npc, player, ctx);
@@ -237,12 +238,13 @@ class MCM_AR_Cerys_PostCombatSkellige extends MCM_RomanceInteraction
 	{
 		if (!super.CanExecute(npc, player, ctx)) return false;
 		if (ctx.playerHealthRatio > 0.60) return false;
+		if (MCM_AR_GetCore().GetSecondsSinceCombat() > 300.0) return false;
 		return true;
 	}
 
 	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
 	{
-		ApproachPlayer(npc, player, 1.8);
+		if (!ApproachPlayer(npc, player, 1.8)) return false;
 		PlayMimic(npc, 'concern');
 		// ID 1000394: "C'mon, Geralt. I'm the same lass I was. Save for the title, not a thing's changed."
 		PlayOneLiner(npc, 1000394, "C'mon, Geralt. I'm the same lass I was. Save for the title, not a thing's changed.");
@@ -276,7 +278,7 @@ class MCM_AR_Cerys_NightInvitation extends MCM_RomanceInteraction
 	{
 		var consent : bool;
 
-		ApproachPlayer(npc, player, 1.5);
+		if (!ApproachPlayer(npc, player, 1.5)) return false;
 		PlayMimic(npc, 'flirt');
 		// ID 429005: "Geralt! Come! Think I've got an idea!"
 		PlayOneLiner(npc, 429005, "Geralt! Come! Think I've got an idea!");

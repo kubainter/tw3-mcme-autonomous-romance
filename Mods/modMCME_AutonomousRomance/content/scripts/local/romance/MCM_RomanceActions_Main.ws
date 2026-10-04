@@ -88,14 +88,15 @@ class MCM_AR_Yen_PostCombatCare extends MCM_RomanceInteraction
 	public function CanExecute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
 	{
 		if (!super.CanExecute(npc, player, ctx)) return false;
-		// Gracz musi być ranny (< 55% HP)
+		// Gracz musi być ranny (< 55% HP) i niedawno walczyć
 		if (ctx.playerHealthRatio > 0.55) return false;
+		if (MCM_AR_GetCore().GetSecondsSinceCombat() > 300.0) return false; // up to 5 min after combat
 		return true;
 	}
 
 	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
 	{
-		ApproachPlayer(npc, player, 1.8);
+		if (!ApproachPlayer(npc, player, 1.8)) return false;
 		PlayMimic(npc, 'concern');
 		// ID 336587: "Next time stand behind me, all right? I'd rather defend you than have to patch you up afterwards."
 		PlayOneLiner(npc, 336587, "Next time stand behind me, all right? I'd rather defend you than have to patch you up afterwards.");
@@ -130,7 +131,7 @@ class MCM_AR_Yen_NightInvitation extends MCM_RomanceInteraction
 	{
 		var consent : bool;
 
-		ApproachPlayer(npc, player, 1.5);
+		if (!ApproachPlayer(npc, player, 1.5)) return false;
 		PlayMimic(npc, 'flirt');
 		// ID 1123812: "Moments like this."
 		PlayOneLiner(npc, 1123812, "Moments like this.");
@@ -175,7 +176,7 @@ class MCM_AR_Yen_CampfireEvening extends MCM_RomanceInteraction
 
 	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
 	{
-		ApproachPlayer(npc, player, 2.0);
+		if (!ApproachPlayer(npc, player, 2.0)) return false;
 		PlayAnimSimple(npc, 'woman_sit_stump_idle');
 		Sleep(1.0);
 		// ID 1002979: "Splendid. We finally got the chance to talk."
@@ -244,8 +245,9 @@ class MCM_AR_Yen_JealousySnark extends MCM_RomanceInteraction
 	public function CanExecute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
 	{
 		if (!super.CanExecute(npc, player, ctx)) return false;
-		// Aktywne TYLKO gdy jest zazdrość i tryb zazdrości włączony
+		// Aktywne TYLKO gdy jest zazdrość i tryb zazdrości włączony, i Triss jest obecna
 		if (!ctx.hasRivals || !MCM_AR_GetConfig().IsJealousyModeOn()) return false;
+		if (!ctx.companionsInParty.Contains('triss')) return false;
 		return true;
 	}
 
@@ -333,12 +335,13 @@ class MCM_AR_Triss_PostCombatHug extends MCM_RomanceInteraction
 	{
 		if (!super.CanExecute(npc, player, ctx)) return false;
 		if (ctx.playerHealthRatio > 0.60) return false;
+		if (MCM_AR_GetCore().GetSecondsSinceCombat() > 300.0) return false;
 		return true;
 	}
 
 	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
 	{
-		ApproachPlayer(npc, player, 1.5);
+		if (!ApproachPlayer(npc, player, 1.5)) return false;
 		PlayMimic(npc, 'concern');
 		// ID 1127010: "Tsk… Oh Geralt… What've you gotten yourself into now?"
 		PlayOneLiner(npc, 1127010, "Tsk… Oh Geralt… What've you gotten yourself into now?");
@@ -374,7 +377,7 @@ class MCM_AR_Triss_NightWhisper extends MCM_RomanceInteraction
 	{
 		var consent : bool;
 
-		ApproachPlayer(npc, player, 1.5);
+		if (!ApproachPlayer(npc, player, 1.5)) return false;
 		PlayMimic(npc, 'flirt');
 		// ID 1074691: "Gladly. I was about to ask the same."
 		PlayOneLiner(npc, 1074691, "Gladly. I was about to ask the same.");
@@ -414,7 +417,7 @@ class MCM_AR_Triss_CampfireWarmth extends MCM_RomanceInteraction
 
 	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
 	{
-		ApproachPlayer(npc, player, 2.0);
+		if (!ApproachPlayer(npc, player, 2.0)) return false;
 		PlayAnimSimple(npc, 'woman_sit_stump_idle');
 		Sleep(1.0);
 		// ID 480807: "Six months ago Triss Merigold parted with someone very dear to her and had to start anew."
@@ -448,7 +451,7 @@ class MCM_AR_Triss_GardenKiss extends MCM_RomanceInteraction
 	{
 		var consent : bool;
 
-		ApproachPlayer(npc, player, 1.2);
+		if (!ApproachPlayer(npc, player, 1.2)) return false;
 		// ID 1074691: "Gladly. I was about to ask the same."
 		PlayOneLiner(npc, 1074691, "Gladly. I was about to ask the same.");
 		Sleep(2.5);
@@ -482,6 +485,7 @@ class MCM_AR_Triss_JealousySnark extends MCM_RomanceInteraction
 	{
 		if (!super.CanExecute(npc, player, ctx)) return false;
 		if (!ctx.hasRivals || !MCM_AR_GetConfig().IsJealousyModeOn()) return false;
+		if (!ctx.companionsInParty.Contains('yennefer')) return false;
 		return true;
 	}
 
@@ -540,12 +544,13 @@ class MCM_AR_Keira_PostCombatHeal extends MCM_RomanceInteraction
 	{
 		if (!super.CanExecute(npc, player, ctx)) return false;
 		if (ctx.playerHealthRatio > 0.50) return false;
+		if (MCM_AR_GetCore().GetSecondsSinceCombat() > 300.0) return false;
 		return true;
 	}
 
 	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
 	{
-		ApproachPlayer(npc, player, 1.8);
+		if (!ApproachPlayer(npc, player, 1.8)) return false;
 		PlayMimic(npc, 'concern');
 		// ID 553849: "Whew, thank you."
 		PlayOneLiner(npc, 553849, "Whew, thank you.");
@@ -581,7 +586,7 @@ class MCM_AR_Keira_NightProposal extends MCM_RomanceInteraction
 	{
 		var consent : bool;
 
-		ApproachPlayer(npc, player, 1.5);
+		if (!ApproachPlayer(npc, player, 1.5)) return false;
 		PlayMimic(npc, 'flirt');
 		// ID 589402: "I daresay this one, once sprung, would thrill you… Ah well, change your mind - come and see me."
 		PlayOneLiner(npc, 589402, "I daresay this one, once sprung, would thrill you… Ah well, change your mind - come and see me.");
@@ -674,12 +679,13 @@ class MCM_AR_Shani_PostCombatMedic extends MCM_RomanceInteraction
 	{
 		if (!super.CanExecute(npc, player, ctx)) return false;
 		if (ctx.playerHealthRatio > 0.55) return false;
+		if (MCM_AR_GetCore().GetSecondsSinceCombat() > 300.0) return false;
 		return true;
 	}
 
 	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
 	{
-		ApproachPlayer(npc, player, 1.5);
+		if (!ApproachPlayer(npc, player, 1.5)) return false;
 		PlayMimic(npc, 'concern');
 		// ID 1101758: "Do you need help?"
 		PlayOneLiner(npc, 1101758, "Do you need help?");
@@ -714,7 +720,7 @@ class MCM_AR_Shani_NightRelax extends MCM_RomanceInteraction
 	{
 		var consent : bool;
 
-		ApproachPlayer(npc, player, 1.5);
+		if (!ApproachPlayer(npc, player, 1.5)) return false;
 		PlayMimic(npc, 'flirt');
 		// ID 1108130: "It would do you good to be more relaxed sometimes."
 		PlayOneLiner(npc, 1108130, "It would do you good to be more relaxed sometimes.");

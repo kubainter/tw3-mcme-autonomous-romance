@@ -36,6 +36,11 @@ function OnSpawned(spawnData : SEntitySpawnData)
 
 	// Rejestracja listenera klawisza zgody gracza [E] (natywna akcja Talk)
 	theInput.RegisterListener(this, 'OnMCM_AR_ConsentKey', 'Talk');
+
+	if (mcm_ar_core)
+	{
+		mcm_ar_core.ResetAllCooldowns();
+	}
 }
 
 @addMethod(CR4Player)
@@ -52,9 +57,9 @@ function MCM_AR_InitCore()
 @addMethod(CR4Player)
 timer function MCM_AR_AutonomousTick(dt : float, id : int)
 {
-	if (mcm_ar_core)
+	if (mcm_ar_core && mcm_ar_core.GetCurrentStateName() == 'Idle')
 	{
-		mcm_ar_core.OnTick();
+		mcm_ar_core.GotoState('ProcessingTick');
 	}
 }
 
@@ -62,7 +67,7 @@ timer function MCM_AR_AutonomousTick(dt : float, id : int)
 // Klasa główna – silnik decyzyjny
 // ---------------------------------------------------------------------------
 
-class MCM_AutonomousRomanceCore
+statemachine class MCM_AutonomousRomanceCore
 {
 	// Singleton rejestru akcji
 	public var registry : MCM_RomanceActionRegistry;
@@ -72,8 +77,8 @@ class MCM_AutonomousRomanceCore
 	private var lastInitiativeNpc  : array<name>;
 
 	// Wewnętrzny licznik: ile sekund upłynęło od ostatniej walki
-	private var secondsSinceCombat : float;
-	default secondsSinceCombat = 9999.0;
+	private var timeOfLastCombatEnd : float;
+	default timeOfLastCombatEnd = -9999.0;
 
 	private var isInit : bool;
 	default isInit = false;
@@ -86,46 +91,45 @@ class MCM_AutonomousRomanceCore
 		registry = new MCM_RomanceActionRegistry in this;
 		registry.Init();
 
+		GotoState('Idle');
+
 		LogChannel('MCM_AR', "[AR] AutonomousRomanceCore zainicjalizowany.");
 	}
 
-	// -----------------------------------------------------------------------
-	// Główny tick (wywoływany co 4s przez timer CR4Player)
-	// -----------------------------------------------------------------------
-	public function OnTick()
+	public function UpdateCombatStatus()
 	{
-		var companions : array<CNewNPC>;
-		var npc        : CNewNPC;
-		var ctx        : MCM_RomanceContext;
-		var i          : int;
-
-		if (!isInit) return;
-
-		// Zabezpieczenie: nie rób nic poza eksploracją
-		if (!MCM_AR_IsSafeToInitiate()) return;
-
-		// Pobierz listę aktywnych towarzyszy MCME
-		theGame.GetNPCsByTag('GeraltsBFF', companions);
-		if (companions.Size() == 0) return;
-
-		// Buduj kontekst globalny raz na tick
-		ctx = BuildContext(companions);
-
-		for (i = 0; i < companions.Size(); i += 1)
+		if (thePlayer.IsInCombat())
 		{
-			npc = companions[i];
-			if (!npc || !npc.scmcc) continue;
-			if (!npc.HasTag('mod_scm_IsFollowing')) continue;
+			timeOfLastCombatEnd = -9999.0;
+		}
+		else if (timeOfLastCombatEnd == -9999.0)
+		{
+			// Combat just finished
+			timeOfLastCombatEnd = theGame.GetEngineTimeAsSeconds();
+		}
+	}
 
-			// Sprawdź cooldown per NPC
-			if (!IsCooldownElapsed(npc.scmcc.data.nam, ctx)) continue;
+	public function GetSecondsSinceCombat() : float
+	{
+		if (thePlayer.IsInCombat()) return 0.0;
+		if (timeOfLastCombatEnd < 0.0) return 9999.0;
+		return theGame.GetEngineTimeAsSeconds() - timeOfLastCombatEnd;
+	}
 
-			// Deleguj do rejestru – wybierze i wykona najlepszą akcję
-			if (registry.TryExecute(npc, thePlayer, ctx))
-			{
-				SetLastInitiativeTime(npc.scmcc.data.nam);
-				break; // Tylko jedna inicjatywa na tick
-			}
+	public function ResetAllCooldowns()
+	{
+		var i : int;
+		var now : float;
+		now = theGame.GetEngineTimeAsSeconds();
+
+		for (i = 0; i < lastInitiativeNpc.Size(); i += 1)
+		{
+			lastInitiativeTime[i] = now;
+		}
+
+		if (registry)
+		{
+			registry.ResetAllCooldowns();
 		}
 	}
 
@@ -165,7 +169,7 @@ class MCM_AutonomousRomanceCore
 
 		// Pora dnia (0-23)
 		gt = theGame.GetGameTime();
-		hourOfDay = GameTimeHours(gt);
+		hourOfDay = GameTimeHours(gt) % 24;
 		ctx.hourOfDay = hourOfDay;
 
 		// Typy pory dnia
@@ -181,6 +185,8 @@ class MCM_AutonomousRomanceCore
 		// Czy gracz jest w Corvo Bianco? (Toussaint, obszar 11)
 		ctx.isInCorvo = (ctx.areaName == (EAreaName)11);
 
+		ctx.companionsInParty.Clear();
+
 		// Czy Geralt jest przy ognisku? (prosty promień)
 		ctx.isNearCampfire = MCM_AR_IsNearCampfire();
 
@@ -195,6 +201,7 @@ class MCM_AutonomousRomanceCore
 			if (!npc || !npc.scmcc) continue;
 			if (MCM_AR_IsRomanceNPC(npc.scmcc.data.nam))
 			{
+				ctx.companionsInParty.PushBack(npc.scmcc.data.nam);
 				rivalCount += 1;
 			}
 		}
@@ -286,5 +293,97 @@ class MCM_AutonomousRomanceCore
 				return true;
 		}
 		return false;
+	}
+
+	public function ShuffleCompanions(out arr : array<CNewNPC>)
+	{
+		var i, j : int;
+		var temp : CNewNPC;
+
+		for (i = arr.Size() - 1; i > 0; i -= 1)
+		{
+			j = RandRange(i + 1, 0);
+			if (i != j)
+			{
+				temp = arr[i];
+				arr[i] = arr[j];
+				arr[j] = temp;
+			}
+		}
+	}
+}
+
+state Idle in MCM_AutonomousRomanceCore
+{
+}
+
+state ProcessingTick in MCM_AutonomousRomanceCore
+{
+	event OnEnterState( prevStateName : name )
+	{
+		ProcessTickEntry();
+	}
+
+	entry function ProcessTickEntry()
+	{
+		ProcessTick();
+	}
+
+	// -----------------------------------------------------------------------
+	// Główny tick (wywoływany co 4s przez timer CR4Player za pomocą stanu)
+	// -----------------------------------------------------------------------
+	latent function ProcessTick()
+	{
+		var companions : array<CNewNPC>;
+		var npc        : CNewNPC;
+		var ctx        : MCM_RomanceContext;
+		var i          : int;
+
+		if (!isInit)
+		{
+			parent.GotoState('Idle');
+			return;
+		}
+
+		parent.UpdateCombatStatus();
+
+		// Zabezpieczenie: nie rób nic poza eksploracją
+		if (!parent.MCM_AR_IsSafeToInitiate())
+		{
+			parent.GotoState('Idle');
+			return;
+		}
+
+		// Pobierz listę aktywnych towarzyszy MCME
+		theGame.GetNPCsByTag('GeraltsBFF', companions);
+		if (companions.Size() == 0)
+		{
+			parent.GotoState('Idle');
+			return;
+		}
+
+		// Buduj kontekst globalny raz na tick
+		ctx = parent.BuildContext(companions);
+
+		parent.ShuffleCompanions(companions);
+
+		for (i = 0; i < companions.Size(); i += 1)
+		{
+			npc = companions[i];
+			if (!npc || !npc.scmcc) continue;
+			if (!npc.HasTag('mod_scm_IsFollowing')) continue;
+
+			// Sprawdź cooldown per NPC
+			if (!parent.IsCooldownElapsed(npc.scmcc.data.nam, ctx)) continue;
+
+			// Deleguj do rejestru – wybierze i wykona najlepszą akcję
+			if (parent.registry.TryExecute(npc, thePlayer, ctx))
+			{
+				parent.SetLastInitiativeTime(npc.scmcc.data.nam);
+				break; // Tylko jedna inicjatywa na tick
+			}
+		}
+
+		parent.GotoState('Idle');
 	}
 }

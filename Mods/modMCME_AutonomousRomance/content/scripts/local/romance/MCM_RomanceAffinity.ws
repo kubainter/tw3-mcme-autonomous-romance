@@ -212,15 +212,8 @@ class MCM_RomanceAffinityResolver
 	// Dodaj punkty zażyłości (wywoływane po wykonaniu akcji)
 	public function AddAffinityPoints(npcName : name, amount : int)
 	{
-		var mult   : float;
-		var scaled : int;
-
-		mult   = MCM_AR_GetConfig().GetAffinityMultiplier();
-		scaled = RoundMath((float)(amount) * mult);
-		if (scaled < 1) scaled = 1;
-
-		FactsAdd(StringToName("mcme_ar_" + NameToString(npcName) + "_affinity"), scaled);
-		LogChannel('MCM_AR', "[AR] Affinity +" + scaled + " dla " + npcName + " (łącznie: " + GetEarnedAffinity(npcName) + ")");
+		FactsAdd(StringToName("mcme_ar_" + NameToString(npcName) + "_affinity"), amount);
+		LogChannel('MCM_AR', "[AR] Affinity +" + amount + " dla " + npcName + " (łącznie: " + GetEarnedAffinity(npcName) + ")");
 	}
 
 	// -----------------------------------------------------------------------

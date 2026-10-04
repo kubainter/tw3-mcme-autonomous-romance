@@ -31,6 +31,7 @@ class MCM_RomanceContext
 	public var isInTavern      : bool;
 	public var rivalCount      : int;
 	public var hasRivals       : bool;
+	public var companionsInParty : array<name>;
 }
 
 // ---------------------------------------------------------------------------
@@ -49,6 +50,11 @@ class MCM_RomanceInteraction
 	// Czas ostatniego wykonania (czas silnika, tylko RAM – nie zaśmieca save)
 	private var lastExecTime   : float;
 	default lastExecTime = -9999.0;
+
+	public function ResetCooldown()
+	{
+		lastExecTime = theGame.GetEngineTimeAsSeconds();
+	}
 
 	// Sprawdź, czy interakcja może zostać uruchomiona
 	public function CanExecute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
@@ -107,13 +113,22 @@ class MCM_RomanceInteraction
 	}
 
 	// Skrót: przesuń NPC do gracza (ActionMoveToNode)
-	protected latent function ApproachPlayer(npc : CNewNPC, player : CR4Player, targetDist : float)
+	protected latent function ApproachPlayer(npc : CNewNPC, player : CR4Player, targetDist : float) : bool
 	{
 		if (VecDistance(player.GetWorldPosition(), npc.GetWorldPosition()) <= targetDist)
-			return;
+			return true;
 
 		npc.ActionMoveToNode(player, MT_Walk, 1.0, targetDist);
-		Sleep(1.5);
+
+		// Note: ActionMoveToNode is latent, meaning it blocks here until target is reached or pathing fails.
+		// So we just check distance after it unblocks.
+
+		if (VecDistance(player.GetWorldPosition(), npc.GetWorldPosition()) <= targetDist + 1.0)
+		{
+			return true;
+		}
+
+		return false;
 	}
 
 	// Bezpieczne odtworzenie mimiki twarzy przez scmcc
@@ -253,7 +268,7 @@ class MCM_RomanceActionRegistry
 		for (i = 0; i < eligible.Size(); i += 1)
 		{
 			roll -= eligible[i].weight;
-			if (roll <= 0)
+			if (roll < 0)
 			{
 				result = eligible[i].Execute(npc, player, ctx);
 				if (result)
@@ -266,6 +281,18 @@ class MCM_RomanceActionRegistry
 		}
 
 		return false;
+	}
+
+	public function ResetAllCooldowns()
+	{
+		var i : int;
+		for (i = 0; i < actions.Size(); i += 1)
+		{
+			if (actions[i])
+			{
+				actions[i].ResetCooldown();
+			}
+		}
 	}
 }
 
