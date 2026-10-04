@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    MCME Autonomous Romance - Menu konfiguracyjne MCM
+    Kategoria: Ustawienia > Mody > MCME Autonomous Romance
+    
+    Odczyt w skryptach przez: theGame.GetInGameConfigWrapper().GetVarValue('MCM_AR', 'NAZWA_VAR')
+-->
+<UserConfig>
+    <Group id="MCM_AR" displayName="MCME - Autonomous Romance">
+
+        <PresetsArray>
+            <!-- Preset 0: Umiarkowany (domyślny) -->
+            <Preset id="0" displayName="Umiarkowany (domyślny - 12 min cooldown)">
+                <Entry varId="MCM_AR_Enabled"         value="1"/>
+                <Entry varId="MCM_AR_CooldownSlider"  value="720"/>
+                <Entry varId="MCM_AR_AffinityMult"    value="10"/>
+                <Entry varId="MCM_AR_JealousyMode"    value="1"/>
+                <Entry varId="MCM_AR_ForceRomance"    value="0"/>
+                <Entry varId="MCM_AR_RequireConsent"  value="1"/>
+            </Preset>
+
+            <!-- Preset 1: Aktywny (częste interakcje, 5 min) -->
+            <Preset id="1" displayName="Aktywny (częste interakcje - 5 min)">
+                <Entry varId="MCM_AR_Enabled"         value="1"/>
+                <Entry varId="MCM_AR_CooldownSlider"  value="300"/>
+                <Entry varId="MCM_AR_AffinityMult"    value="20"/>
+                <Entry varId="MCM_AR_JealousyMode"    value="1"/>
+                <Entry varId="MCM_AR_ForceRomance"    value="0"/>
+                <Entry varId="MCM_AR_RequireConsent"  value="1"/>
+            </Preset>
+
+            <!-- Preset 2: Rzadki (20 minut, minimalistyczny) -->
+            <Preset id="2" displayName="Rzadki (spokojny - 20 min)">
+                <Entry varId="MCM_AR_Enabled"         value="1"/>
+                <Entry varId="MCM_AR_CooldownSlider"  value="1200"/>
+                <Entry varId="MCM_AR_AffinityMult"    value="5"/>
+                <Entry varId="MCM_AR_JealousyMode"    value="1"/>
+                <Entry varId="MCM_AR_ForceRomance"    value="0"/>
+                <Entry varId="MCM_AR_RequireConsent"  value="1"/>
+            </Preset>
+
+            <!-- Preset 3: Sandbox (wszystko odblokowane, brak cooldownu) -->
+            <Preset id="3" displayName="Sandbox (wszystko odblokowane)">
+                <Entry varId="MCM_AR_Enabled"         value="1"/>
+                <Entry varId="MCM_AR_CooldownSlider"  value="180"/>
+                <Entry varId="MCM_AR_AffinityMult"    value="50"/>
+                <Entry varId="MCM_AR_JealousyMode"    value="0"/>
+                <Entry varId="MCM_AR_ForceRomance"    value="1"/>
+                <Entry varId="MCM_AR_RequireConsent"  value="0"/>
+            </Preset>
+
+            <!-- Preset 4: Wyłączony -->
+            <Preset id="4" displayName="Wyłącz autonomiczne inicjatywy">
+                <Entry varId="MCM_AR_Enabled"         value="0"/>
+            </Preset>
+        </PresetsArray>
+
+        <VisibleVars>
+            <!--
+                == OGÓLNE ==
+            -->
+            <Var id="MCM_AR_Enabled"
+                 displayName="[Autonomiczny Romans] Włącz mod"
+                 displayType="TOGGLE"
+                 defaultValue="1"/>
+
+            <!--
+                == CZĘSTOTLIWOŚĆ ==
+                Suwak: 180s (3 min) do 1200s (20 min), krok 60s
+                Domyślna: 720s (12 min)
+            -->
+            <Var id="MCM_AR_CooldownSlider"
+                 displayName="Przerwa między inicjatywami (sekundy)"
+                 displayType="SLIDER;180;1200;18"
+                 defaultValue="720"/>
+
+            <!--
+                == ZAŻYŁOŚĆ ==
+                Suwak mnożnika: 5 = 0.5x, 10 = 1.0x, 20 = 2.0x, 50 = 5.0x
+                (w skryptach: wartość / 10.0)
+            -->
+            <Var id="MCM_AR_AffinityMult"
+                 displayName="Mnożnik zażyłości (5=0.5x | 10=1.0x | 20=2.0x | 50=5.0x)"
+                 displayType="SLIDER;5;50;9"
+                 defaultValue="10"/>
+
+            <!--
+                == TRYB ZAZDROŚCI ==
+                0 = Poliamoria (brak blokad)
+                1 = Zazdrość (Yen i Triss dogryzają sobie, intymność tylko w odosobnieniu)
+            -->
+            <Var id="MCM_AR_JealousyMode"
+                 displayName="Tryb zazdrości (1=Tak/Zazdrość | 0=Nie/Poliamoria)"
+                 displayType="TOGGLE"
+                 defaultValue="1"/>
+
+            <!--
+                == TRYB SANDBOX ==
+                Wymuś odblokowanie romansów niezależnie od wyborów fabularnych
+            -->
+            <Var id="MCM_AR_ForceRomance"
+                 displayName="Sandbox: odblokuj wszystkie romanse (pomiń wymogi zażyłości)"
+                 displayType="TOGGLE"
+                 defaultValue="0"/>
+
+            <!--
+                == WYMÓG ZGODY ==
+                Gdy włączone: Tier 3 i 4 wymagają naciśnięcia [E] przez gracza
+                Gdy wyłączone: NPC inicjuje scenę bezpośrednio po podejściu
+            -->
+            <Var id="MCM_AR_RequireConsent"
+                 displayName="Wymóg zgody gracza [E] przed sceną (Tier 3 i 4)"
+                 displayType="TOGGLE"
+                 defaultValue="1"/>
+        </VisibleVars>
+    </Group>
+</UserConfig>
