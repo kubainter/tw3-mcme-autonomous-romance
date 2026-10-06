@@ -33,23 +33,64 @@ When multiple mods edit the same files, a Script Compilation Error occurs.
 
 ## 2. Language Basics
 
-### Data Types and Variables
-WitcherScript supports basic types and object references.
-- **Variables**: Declared with `var`, e.g., `var something: float;`.
-- **Global objects**: Accessible globally, such as `thePlayer` (the instance of the player) or `theGame` (the main game manager).
+### Comments
+Comments help document and explain your code:
+- Single-line: `// This is a single line comment`
+- Multi-line: `/* This text is multiple lines long */`
 
-### Functions
-Functions are declared using the `function` keyword and can optionally return values. There are multiple function flags that define their specific use-cases:
+### Data Types
+WitcherScript utilizes several basic data types to store information:
+- `int`: Standard 32-bit integer (value range from -2,147,483,648 to 2,147,483,647).
+- `String`: Standard text string. Enclosed in double quotes (e.g., `"This is a string"`).
+- `name`: Name type variable, essentially an optimized string used for item names, tags, etc. Enclosed in single quotes (e.g., `'this is an item name'`).
+- `float`: Standard floating-point number (e.g., `1.0f`).
 
-- **Exec function**: E.g., `exec function addKey(key_name : name)`. Can be called directly from the debug console.
-- **Latent function**: E.g., `latent storyscene function ShaveGeralt()`. Similar to coroutines, they allow time passage (like `Sleep(1.0f)`) without blocking the game.
-- **Timer function**: Used for real-time loops attached to entities, usually driven by `dt` (delta time).
-- **Storyscene & Quest functions**: Specialized logic tailored for cinematic scenes or quest nodes.
+### Global Objects
+The game engine exposes several global objects that provide quick access to core systems:
+- `theGame` = CR4Game
+- `theServer` = CServerInterface
+- `thePlayer` = CR4Player
+- `theCamera` = CCamera
+- `theUI` = CGuiWitcher
+- `theSound` = CScriptSoundSystem
+- `theDebug` = CDebugAttributesManager
+- `theTimer` = CTimerScriptKeyword
+- `theInput` = CInputManager
+
+*Example*: `thePlayer.DisplayHudMessage('Hello')` instead of `GetWitcherPlayer().DisplayHudMessage('Hello')`.
+
+### Variables
+- **Local Variables**: Defined inside functions to process data. Must be defined at the top of the function.
+  ```witcherscript
+  exec function acquire(skillName : name) {
+      var i : int;
+      var skills : String;
+      // Do something...
+  }
+  ```
+- **Class Variables**: Defined inside classes to store state across methods.
+  ```witcherscript
+  class Test {
+      var SomeText : String;
+  }
+  ```
+
+### Functions & Parameters
+Functions are declared using the `function` keyword, accept parameters, and can optionally return values. Parameters can be passed to functions (e.g., `exec function changeweather(weatherName : name)`).
+
+#### Function Types
+There are multiple function flags that define specific use-cases within the game engine:
+
+- **Exec function**: Exposed to the game’s debug console. E.g., `exec function stoprain() { RequestWeatherChangeTo('WT_Clear', 1.0, false); }`.
+- **Latent function**: Similar to coroutines, they allow time passage (like `Sleep(1.0f)`) without blocking the game. E.g., `latent storyscene function ShaveGeralt()`.
+- **Timer function**: Real-time logic attached to entities, driven by `dt` (delta time). E.g., `timer function Loop(dt : float, id : int) { LoopFunction(dt); }`. Use `AddTimer` or `AddGameTimeTimer` to instantiate them.
+- **Storyscene function**: Specialized logic tailored for cinematic scenes.
+- **Quest function**: Special functions used directly in Quest nodes.
 - **Reward function**: Called when granting specific rewards in the editor (e.g., leveling up the player).
 - **Cleanup function**: Cannot return anything or take arguments; runs to clean up resources after an action finishes.
-- **Entry function**: State entry logic, rarely used in the base game.
+- **Entry function**: State entry logic for state machines.
 
-#### Modifiers (Flags)
+#### Function Modifiers (Flags)
 Functions can be specified as `private`, `protected`, `public`, `native` (C++ implemented), `final` (cannot be overridden), `event`, etc.
 
 ---
