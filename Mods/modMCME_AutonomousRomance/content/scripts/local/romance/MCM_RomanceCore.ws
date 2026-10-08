@@ -483,12 +483,13 @@ statemachine class MCM_AutonomousRomanceCore
 		return true;
 	}
 
+	private var cachedContext : MCM_RomanceContext;
+
 	// -----------------------------------------------------------------------
 	// Budowanie kontekstu otoczenia
 	// -----------------------------------------------------------------------
 	public function BuildContext(companions : array<CNewNPC>) : MCM_RomanceContext
 	{
-		var ctx          : MCM_RomanceContext;
 		var gt           : GameTime;
 		var hourOfDay    : int;
 		var npc          : CNewNPC;
@@ -496,43 +497,46 @@ statemachine class MCM_AutonomousRomanceCore
 		var rivalCount   : int;
 		var naughtyPt    : mod_scm_NaughtyPoint;
 
-		ctx = new MCM_RomanceContext in this;
+		if (!cachedContext)
+		{
+			cachedContext = new MCM_RomanceContext in this;
+		}
 
 		// Pora dnia (0-23)
 		gt = theGame.GetGameTime();
 		hourOfDay = GameTimeHours(gt) % 24;
-		ctx.hourOfDay = hourOfDay;
+		cachedContext.hourOfDay = hourOfDay;
 
 		// Typy pory dnia
-		ctx.isNight = (hourOfDay >= 22 || hourOfDay < 4);
-		ctx.isDawn  = (hourOfDay >= 6  && hourOfDay < 9);
+		cachedContext.isNight = (hourOfDay >= 22 || hourOfDay < 4);
+		cachedContext.isDawn  = (hourOfDay >= 6  && hourOfDay < 9);
 
 		// Zdrowie Geralta (0.0 - 1.0)
-		ctx.playerHealthRatio = thePlayer.GetStat(BCS_Vitality) / thePlayer.GetStatMax(BCS_Vitality);
+		cachedContext.playerHealthRatio = thePlayer.GetStat(BCS_Vitality) / thePlayer.GetStatMax(BCS_Vitality);
 
 		// Obszar gry
-		ctx.areaName = MCM_GetAreaName();
+		cachedContext.areaName = MCM_GetAreaName();
 
 		// Czy gracz jest w Corvo Bianco? (Toussaint, obszar 11)
-		ctx.isInCorvo = (ctx.areaName == (EAreaName)11);
+		cachedContext.isInCorvo = (cachedContext.areaName == (EAreaName)11);
 
-		ctx.companionsInParty.Clear();
+		cachedContext.companionsInParty.Clear();
 
 		// Czy Geralt jest przy ognisku? (prosty promień)
-		ctx.isNearCampfire = MCM_AR_IsNearCampfire();
+		cachedContext.isNearCampfire = MCM_AR_IsNearCampfire();
 
 		// Czy gracz jest w tawernie/karczmie?
-		ctx.isInTavern = MCM_AR_IsInTavern();
+		cachedContext.isInTavern = MCM_AR_IsInTavern();
 
 		// "Sweet spot" MCME – punkt intymny w zasiegu 30m. Zaproszenie pada
 		// zanim staniemy na punkcie; sama scena intymna wymaga <=20m.
-		ctx.isNearNaughtySpot = false;
+		cachedContext.isNearNaughtySpot = false;
 		if (mod_scm_GetSCM() && mod_scm_GetSCM().NaughtyManager && mod_scm_GetSCM().NaughtyManager.naughtyPoints)
 		{
 			naughtyPt = mod_scm_GetSCM().NaughtyManager.naughtyPoints.GetClosestPoint(30.0);
 			if (naughtyPt)
 			{
-				ctx.isNearNaughtySpot = true;
+				cachedContext.isNearNaughtySpot = true;
 			}
 		}
 
@@ -544,14 +548,14 @@ statemachine class MCM_AutonomousRomanceCore
 			if (!npc || !npc.scmcc) continue;
 			if (MCM_AR_IsRomanceNPC(npc.scmcc.data.nam))
 			{
-				ctx.companionsInParty.PushBack(npc.scmcc.data.nam);
+				cachedContext.companionsInParty.PushBack(npc.scmcc.data.nam);
 				rivalCount += 1;
 			}
 		}
-		ctx.rivalCount = rivalCount;
-		ctx.hasRivals  = (rivalCount > 1);
+		cachedContext.rivalCount = rivalCount;
+		cachedContext.hasRivals  = (rivalCount > 1);
 
-		return ctx;
+		return cachedContext;
 	}
 
 	// -----------------------------------------------------------------------
@@ -1404,12 +1408,14 @@ exec function ar_debug(optional mode : int)
 
 	if (on)
 	{
-		FactsSet('mcme_ar_debug', 1);
+		FactsRemove('mcme_ar_debug');
+		FactsAdd('mcme_ar_debug', 1);
 		thePlayer.DisplayHudMessage("[AR] Debug ON - digest ticku co 4s na HUD. Wylaczenie: ar_debug(0). Analiza: ar_eval()");
 	}
 	else
 	{
-		FactsSet('mcme_ar_debug', 0);
+		FactsRemove('mcme_ar_debug');
+		FactsAdd('mcme_ar_debug', 0);
 		thePlayer.DisplayHudMessage("[AR] Debug OFF");
 	}
 }
