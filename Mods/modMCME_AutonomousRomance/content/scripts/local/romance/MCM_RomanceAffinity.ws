@@ -267,8 +267,18 @@ class MCM_RomanceAffinityResolver
 	// Dodaj punkty zażyłości (wywoływane po wykonaniu akcji)
 	public function AddAffinityPoints(npcName : name, amount : int)
 	{
-		FactsAdd("mcme_ar_" + NameToString(npcName) + "_affinity", amount);
-		LogChannel('MCM_AR', "[AR] Affinity +" + amount + " dla " + npcName + " (łącznie: " + GetEarnedAffinity(npcName) + ")");
+		var factName : string;
+		var current  : int;
+
+		factName = "mcme_ar_" + NameToString(npcName) + "_affinity";
+		current = FactsQuerySum(factName);
+
+		// Zapobiega save-bloat: FactsAdd tworzy permanentnie nowy wpis w bazie faktów
+		// dla każdego dodania, co bardzo szybko zwiększa rozmiar save'a.
+		// FactsRemove z FactsAdd podmienia stary wpis.
+		FactsRemove(factName);
+		FactsAdd(factName, current + amount);
+		LogChannel('MCM_AR', "[AR] Affinity +" + amount + " dla " + npcName + " (łącznie: " + (current + amount) + ")");
 	}
 
 	// -----------------------------------------------------------------------

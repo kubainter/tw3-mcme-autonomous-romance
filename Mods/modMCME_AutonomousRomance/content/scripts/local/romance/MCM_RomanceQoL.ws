@@ -52,7 +52,8 @@ function MCM_AR_ApplyOutfit(npc : CNewNPC, idx : int)
 		factVal = 1;
 	}
 
-	FactsSet("mcme_ar_outfit_" + NameToString(npc.scmcc.data.nam), factVal);
+	FactsRemove("mcme_ar_outfit_" + NameToString(npc.scmcc.data.nam));
+	FactsAdd("mcme_ar_outfit_" + NameToString(npc.scmcc.data.nam), factVal);
 }
 
 // ---------------------------------------------------------------------------

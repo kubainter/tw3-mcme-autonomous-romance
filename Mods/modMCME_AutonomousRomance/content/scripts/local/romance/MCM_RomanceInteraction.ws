@@ -513,8 +513,10 @@ class MCM_RomanceInteraction
 		prevDown = (theInput.GetActionValue('SwordSheathe') > 0.1);
 		fullPrompt = promptText + "  (przytrzymaj [C] ~1s lub tapnij 2x)";
 
-		FactsSet('mcme_ar_consent_given', 0);
-		FactsSet('mcme_ar_awaiting_consent', 1);
+		FactsRemove('mcme_ar_consent_given');
+		FactsAdd('mcme_ar_consent_given', 0);
+		FactsRemove('mcme_ar_awaiting_consent');
+		FactsAdd('mcme_ar_awaiting_consent', 1);
 
 		thePlayer.DisplayHudMessage(fullPrompt);
 		MCM_AR_Log("[AR] Consent prompt pokazany, czekam max " + (int)timeoutSec + "s na hold/2x tap [C]");
@@ -647,9 +649,15 @@ class MCM_RomanceInteraction
 		if (npc && npc.scmcc && scm && scm.NaughtyManager)
 		{
 			if (npc.scmcc.IsFollowing())
-				FactsSet('mod_scm_fact_following', 1, -1);
+			{
+				FactsRemove('mod_scm_fact_following');
+				FactsAdd('mod_scm_fact_following', 1, -1);
+			}
 			else
-				FactsSet('mod_scm_fact_following', 0, -1);
+			{
+				FactsRemove('mod_scm_fact_following');
+				FactsAdd('mod_scm_fact_following', 0, -1);
+			}
 			scm.NaughtyManager.PreDialogue(npc);
 		}
 		else if (!scm || !scm.NaughtyManager)
@@ -845,9 +853,15 @@ class MCM_RomanceInteraction
 		npc.EnableCharacterCollisions(false);
 
 		if (npc.scmcc.IsFollowing())
-			FactsSet('mod_scm_fact_following', 1, -1);
+		{
+			FactsRemove('mod_scm_fact_following');
+			FactsAdd('mod_scm_fact_following', 1, -1);
+		}
 		else
-			FactsSet('mod_scm_fact_following', 0, -1);
+		{
+			FactsRemove('mod_scm_fact_following');
+			FactsAdd('mod_scm_fact_following', 0, -1);
+		}
 
 		// Jak MCME przed dialogiem: oznacz "była w dialogu" i zreinicjuj mimiki
 		npc.scmcc.wasInDialogue = true;
