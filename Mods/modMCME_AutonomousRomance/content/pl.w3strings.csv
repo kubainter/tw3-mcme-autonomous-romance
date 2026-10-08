@@ -1,0 +1,27 @@
+;meta[language=pl]
+; id      |key(hex)|key(str)| text
+2118800001|        |panel_AutonomousRomance|Autonomiczny romans
+2118800002|        |panel_MCM_AR|Autonomiczny romans
+2118800003|        |panel_MCME_AutonomousRomance|Autonomiczny romans
+2118800004|        |preset_Mods.AutonomousRomance|Profile ustawień
+2118800005|        |preset_AutonomousRomance|Profile ustawień
+2118800006|        |preset_MCM_AR|Profile ustawień
+2118800007|        |preset_value_mcm_ar_preset_default|Domyślny (Umiarkowany - 12 min)
+2118800008|        |preset_value_mcm_ar_preset_active|Aktywny (Częsty - 5 min)
+2118800009|        |preset_value_mcm_ar_preset_relaxed|Spokojny (Rzadki - 20 min)
+2118800010|        |preset_value_mcm_ar_preset_sandbox|Sandbox (Wszystkie poziomy odblokowane)
+2118800011|        |preset_value_mcm_ar_preset_disabled|Wyłączony
+2118800012|        |option_mcm_ar_opt_enabled|Włącz Autonomiczny Romans
+2118800013|        |option_MCM_AR_Enabled|Włącz Autonomiczny Romans
+2118800014|        |option_mcm_ar_opt_cooldown|Czas odnowienia inicjatyw (sekundy)
+2118800015|        |option_MCM_AR_CooldownSlider|Czas odnowienia inicjatyw (sekundy)
+2118800016|        |option_mcm_ar_opt_affinity|Mnożnik relacji (5=0.5x | 10=1.0x | 20=2.0x | 50=5.0x)
+2118800017|        |option_MCM_AR_AffinityMult|Mnożnik relacji (5=0.5x | 10=1.0x | 20=2.0x | 50=5.0x)
+2118800018|        |option_mcm_ar_opt_jealousy|Tryb zazdrości (Wł.=zazdrość / Wył.=poliamoria)
+2118800019|        |option_MCM_AR_JealousyMode|Tryb zazdrości (Wł.=zazdrość / Wył.=poliamoria)
+2118800020|        |option_mcm_ar_opt_force|Sandbox: Ignoruj wymagania relacji (Odblokuj wszystko)
+2118800021|        |option_MCM_AR_ForceRomance|Sandbox: Ignoruj wymagania relacji (Odblokuj wszystko)
+2118800022|        |option_mcm_ar_opt_consent|Wymagaj potwierdzenia gracza [E] przy scenach intymnych
+2118800023|        |option_MCM_AR_RequireConsent|Wymagaj potwierdzenia gracza [E] przy scenach intymnych
+2118800024|        |option_mcm_ar_opt_debug|Debug: Wyświetlaj powiadomienia HUD na ekranie
+2118800025|        |option_MCM_AR_DebugHud|Debug: Wyświetlaj powiadomienia HUD na ekranie
