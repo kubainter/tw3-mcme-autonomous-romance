@@ -21,25 +21,25 @@ class MCM_AR_ConfigWrapper
 	// -----------------------------------------------------------------------
 	// Odczyt z CInGameConfigWrapper (MCM menu)
 	// -----------------------------------------------------------------------
-	private function GetFloat(group : name, var_ : name, def : float) : float
+	private function GetFloat(group : name, var_ : name, defaultVal : float) : float
 	{
 		var wrapper : CInGameConfigWrapper;
 		var val     : string;
 		wrapper = theGame.GetInGameConfigWrapper();
-		if (!wrapper) return def;
+		if (!wrapper) return defaultVal;
 		val = wrapper.GetVarValue(group, var_);
-		if (StrLen(val) == 0) return def;
+		if (StrLen(val) == 0) return defaultVal;
 		return StringToFloat(val);
 	}
 
-	private function GetBool(group : name, var_ : name, def : bool) : bool
+	private function GetBool(group : name, var_ : name, defaultVal : bool) : bool
 	{
 		var wrapper : CInGameConfigWrapper;
 		var val     : string;
 		wrapper = theGame.GetInGameConfigWrapper();
-		if (!wrapper) return def;
+		if (!wrapper) return defaultVal;
 		val = wrapper.GetVarValue(group, var_);
-		if (StrLen(val) == 0) return def;
+		if (StrLen(val) == 0) return defaultVal;
 		return (val == "1" || val == "true");
 	}
 
@@ -83,20 +83,76 @@ class MCM_AR_ConfigWrapper
 	{
 		return GetBool('MCM_AR', 'MCM_AR_RequireConsent', defaultRequireConsent);
 	}
+
+	// Wyświetlanie komunikatów diagnostycznych w HUD
+	public function IsDebugHudOn() : bool
+	{
+		return GetBool('MCM_AR', 'MCM_AR_DebugHud', true);
+	}
 }
 
 // ---------------------------------------------------------------------------
 // Globalny singleton konfiguracji
 // ---------------------------------------------------------------------------
 
-function MCM_AR_GetConfig() : MCM_AR_ConfigWrapper
-{
-	return thePlayer.mcm_ar_config;
-}
-
-// Deklaracja pola na CR4Player – inicjalizacja w MCM_RomanceCore.ws @wrapMethod OnSpawned
+// Deklaracja pola na CR4Player
 @addField(CR4Player)
 public var mcm_ar_config : MCM_AR_ConfigWrapper;
+
+@addMethod(CR4Player)
+function MCM_AR_GetConfig() : MCM_AR_ConfigWrapper
+{
+	if (!mcm_ar_config)
+	{
+		mcm_ar_config = new MCM_AR_ConfigWrapper in this;
+	}
+	return mcm_ar_config;
+}
+
+function MCM_AR_GetConfig() : MCM_AR_ConfigWrapper
+{
+	return thePlayer.MCM_AR_GetConfig();
+}
+
+function MCM_AR_Log(msg : string, optional forceHUD : bool)
+{
+	var core : MCM_AutonomousRomanceCore;
+
+	LogChannel('MCM_AR', msg);
+
+	// Ring buffer diagnostyki w core (odczyt bezposredni, BEZ rekursywnego wywolywania GetCore!)
+	// Gdy core jeszcze nie istnieje - bootlog na polu gracza (dump: ar_bootlog).
+	if (thePlayer)
+	{
+		core = thePlayer.mcm_ar_core;
+		if (core)
+		{
+			core.PushDebugLine(msg);
+		}
+		else
+		{
+			thePlayer.mcm_ar_bootlog.PushBack(msg);
+			if (thePlayer.mcm_ar_bootlog.Size() > 30)
+			{
+				thePlayer.mcm_ar_bootlog.Erase(0);
+			}
+		}
+	}
+
+	if (forceHUD || (thePlayer && MCM_AR_GetConfig().IsDebugHudOn()))
+	{
+		if (thePlayer)
+		{
+			thePlayer.DisplayHudMessage(msg);
+		}
+	}
+}
+
+// Tryb diagnostyczny ticków - przełączany przez exec ar_debug (fakt, znika z sesją)
+function MCM_AR_IsDebugOn() : bool
+{
+	return FactsQuerySum('mcme_ar_debug') > 0;
+}
 
 
 
@@ -117,8 +173,7 @@ class MCM_RomanceAffinityResolver
 	{
 		var config : MCM_AR_ConfigWrapper;
 		var base   : int;
-		var sess   : int;
-		var saved  : int;
+		var earned : int;
 		var total  : float;
 
 		config = MCM_AR_GetConfig();
@@ -130,10 +185,10 @@ class MCM_RomanceAffinityResolver
 		base = GetBaseStoryAffinity(npcName);
 
 		// Filar 2: trwały postęp sesji (FactsQuerySum)
-		saved = GetEarnedAffinity(npcName);
+		earned = GetEarnedAffinity(npcName);
 
-		// Filar 3 (offset): tylko jeśli mnożnik != 1.0 – wpływa na skalę saved
-		total = (float)(base) + ((float)(saved) * config.GetAffinityMultiplier());
+		// Filar 3 (offset): tylko jeśli mnożnik != 1.0 – wpływa na skalę earned
+		total = (float)(base) + ((float)(earned) * config.GetAffinityMultiplier());
 
 		return RoundMath(total);
 	}
@@ -141,7 +196,7 @@ class MCM_RomanceAffinityResolver
 	// -----------------------------------------------------------------------
 	// Filar 1 – deterministyczna projekcja z oryginalnych wyborów fabularnych
 	// -----------------------------------------------------------------------
-	private function GetBaseStoryAffinity(npcName : name) : int
+	public function GetBaseStoryAffinity(npcName : name) : int
 	{
 		var score : int;
 
@@ -191,7 +246,7 @@ class MCM_RomanceAffinityResolver
 				break;
 
 			// ----- Cerys -----
-			case 'cerys':
+			case 'becca':
 				if (FactsQuerySum('sq202_cerys_queen') > 0)            score += 50;
 				if (FactsQuerySum('q206_berserker_solved') > 0)        score += 20;
 				break;
@@ -206,13 +261,13 @@ class MCM_RomanceAffinityResolver
 	// -----------------------------------------------------------------------
 	public function GetEarnedAffinity(npcName : name) : int
 	{
-		return FactsQuerySum(StringToName("mcme_ar_" + NameToString(npcName) + "_affinity"));
+		return FactsQuerySum("mcme_ar_" + NameToString(npcName) + "_affinity");
 	}
 
 	// Dodaj punkty zażyłości (wywoływane po wykonaniu akcji)
 	public function AddAffinityPoints(npcName : name, amount : int)
 	{
-		FactsAdd(StringToName("mcme_ar_" + NameToString(npcName) + "_affinity"), amount);
+		FactsAdd("mcme_ar_" + NameToString(npcName) + "_affinity", amount);
 		LogChannel('MCM_AR', "[AR] Affinity +" + amount + " dla " + npcName + " (łącznie: " + GetEarnedAffinity(npcName) + ")");
 	}
 
@@ -231,5 +286,11 @@ class MCM_RomanceAffinityResolver
 
 function MCM_AR_GetAffinity() : MCM_RomanceAffinityResolver
 {
-	return thePlayer.mcm_ar_core.registry.affinity;
+	var core : MCM_AutonomousRomanceCore;
+	core = MCM_AR_GetCore();
+	if (core && core.registry)
+	{
+		return core.registry.affinity;
+	}
+	return NULL;
 }

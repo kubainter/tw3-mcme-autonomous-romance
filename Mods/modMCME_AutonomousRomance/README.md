@@ -23,7 +23,7 @@ In vanilla **Multi Companion Mod Enhanced (MCME)**, companion interactions are p
 ### 1. 4-Tier Escalation Ladder
 * **Tier 1 (Flirt & Banter):** Atmospheric one-liners spoken naturally with in-game voiced lines and subtitles while traveling or resting.
 * **Tier 2 (Physical & Emotional Care):** Companions approach Geralt, express concern when he is wounded after combat, apply healing gestures, or sit down by campfires.
-* **Tier 3 (Intimate Invitations):** Companions approach and invite Geralt to pause their journey. A discrete HUD prompt (`[E] Respond`) appears for 8 seconds, letting the player choose whether to accept.
+* **Tier 3 (Intimate Invitations):** Companions approach and invite Geralt to pause their journey. A discrete HUD prompt (`[C] Respond`) appears for 10 seconds, letting the player choose whether to accept.
 * **Tier 4 (Full Story Scenes):** Relaxing in special locations (such as Corvo Bianco) can trigger intimate scenes with full consent safeguards.
 
 ### 2. 3-Pillar Stateless Affinity Engine
@@ -45,12 +45,12 @@ Built exclusively with native Next-Gen annotations (`@wrapMethod`, `@addMethod`,
 | Companion | Tiers | Key Triggers & Behaviors |
 | :--- | :---: | :--- |
 | **Yennefer of Vengerberg** | T1 – T4 | Post-combat concern & Quen, campfire evenings, Corvo Bianco intimacy, Triss jealousy snark. |
-| **Triss Merigold** | T1 – T3 | Post-combat hugs, campfire warmth, garden kisses, Yen jealousy snark. |
-| **Keira Metz** | T1 – T3 | Playful teasing, field medical checks, night proposals, witch-by-the-fire remarks. |
-| **Shani** | T1 – T3 | Medic battlefield care, teasing compliments, late-night relaxation offers. |
-| **Anna Henrietta** *(DLC)* | T1 – T3 | Regal wit, prideful wound checks, Duchess's private company invitations. |
-| **Vivienne de Tabris** *(DLC)* | T1 – T2 | Subtle mystery flirts, reflective campfire moments. |
-| **Cerys an Craite** *(DLC)* | T1 – T3 | Skellige-style direct banter, warrior honor wound checks, blunt nighttime invitations. |
+| **Triss Merigold** | T1 – T4 | Post-combat hugs, campfire warmth, garden kisses, Yen jealousy snark. |
+| **Keira Metz** | T1 – T4 | Playful teasing, field medical checks, night proposals, witch-by-the-fire remarks. |
+| **Shani** | T1 – T4 | Medic battlefield care, teasing compliments, late-night relaxation offers. |
+| **Anna Henrietta** *(DLC)* | T1 – T4 | Regal wit, prideful wound checks, Duchess's private company invitations. |
+| **Vivienne de Tabris** *(DLC)* | T1 – T4 | Subtle mystery flirts, reflective campfire moments. |
+| **Cerys an Craite** *(DLC)* | T1 – T4 | Skellige-style direct banter, warrior honor wound checks, blunt nighttime invitations. |
 
 ---
 
@@ -59,11 +59,11 @@ Built exclusively with native Next-Gen annotations (`@wrapMethod`, `@addMethod`,
 Navigate to **Options → Gameplay / Mods → MCME - Autonomous Romance**:
 
 * **Enable Mod:** Toggle the entire autonomous system on/off.
-* **Initiative Interval:** Slider from 180s (3 min) to 1200s (20 min). *Default: 720s (12 min)*.
+* **Initiative Interval:** Slider from 60s (1 min) to 1200s (20 min). *Default: 720s (12 min)*.
 * **Affinity Multiplier:** Adjust relationship progression speed from 0.5x to 5.0x.
 * **Jealousy Mode:** Toggle between Jealousy (rivalry) and Polyamory (free love).
 * **Sandbox Mode:** Instantly unlock all tiers and romantic scenes regardless of quest decisions.
-* **Player Consent Prompt:** Toggle whether Tier 3/4 scenes require pressing `[E]` or trigger automatically upon approach.
+* **Player Consent Prompt:** Toggle whether Tier 3 scenes require pressing `[C]` or trigger automatically upon approach (Tier 4 always requires `[C]`).
 
 ---
 
@@ -78,6 +78,8 @@ Navigate to **Options → Gameplay / Mods → MCME - Autonomous Romance**:
 ---
 
 ## 🧩 Architecture & Source Structure
+
+> Full mod FLOW, gating, MCME/vanilla API map & roadmap: **[ARCHITECTURE.md](ARCHITECTURE.md)**
 
 ```
 modMCME_AutonomousRomance/
