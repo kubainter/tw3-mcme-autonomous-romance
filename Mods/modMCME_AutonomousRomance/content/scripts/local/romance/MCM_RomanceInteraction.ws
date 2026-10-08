@@ -585,7 +585,7 @@ class MCM_RomanceInteraction
 
 		FactsRemove('mcme_ar_awaiting_consent');
 		FactsRemove('mcme_ar_consent_given');
-		MCM_AR_Log("[AR] Consent timeout (" + (int)timeoutSec + "s) - odmowa");
+		MCM_AR_Log("[AR] Consent timeout (" + (int)timeoutSec + "s) - odmowa, presses=" + nowTaps);
 		return false;
 	}
 
@@ -610,6 +610,7 @@ class MCM_RomanceInteraction
 			}
 			if (theGame.GetEngineTimeAsSeconds() - mcm.DialogueManager.lastProgress > 20.0)
 			{
+				MCM_AR_Log("[AR] WaitForDialogueFree: kolejka bez postepu >20s - stale, bypass");
 				return true;
 			}
 			Sleep(0.5);
@@ -631,12 +632,13 @@ class MCM_RomanceInteraction
 		var sawScene     : bool;
 
 		// Gate: scena nie startuje w trakcie swiezej kolejki czatu MCME.
-		// 10s wystarcza na onelinery (~4-8s); dluzsze czekanie trzyma
-		// lock staged bez potrzeby (CR botex m3).
-		dialogueFree = WaitForDialogueFree(10.0);
+		// 25s: musi przekraczac prog stale (20s) wewnatrz helpera, inaczej
+		// martwa kolejka nigdy nie doczeka bypassu i scena pada zawsze
+		// (runtime 310930: abort po 10s przy naszym wlasnym barku w kolejce).
+		dialogueFree = WaitForDialogueFree(25.0);
 		if (!dialogueFree)
 		{
-			MCM_AR_Log("[AR] PlayScene ABORT: DialogueManager zajety >10s: " + scenePath);
+			MCM_AR_Log("[AR] PlayScene ABORT: DialogueManager zajety >25s: " + scenePath);
 			return false;
 		}
 
@@ -804,10 +806,10 @@ class MCM_RomanceInteraction
 		if (!npc || !npc.scmcc) return false;
 
 		// Gate: scena nie startuje w trakcie swiezej kolejki czatu MCME
-		dialogueFree = WaitForDialogueFree(10.0);
+		dialogueFree = WaitForDialogueFree(25.0);
 		if (!dialogueFree)
 		{
-			MCM_AR_Log("[AR] PlayDialogueScene ABORT: DialogueManager zajety >10s: " + scenePath);
+			MCM_AR_Log("[AR] PlayDialogueScene ABORT: DialogueManager zajety >25s: " + scenePath);
 			return false;
 		}
 
@@ -952,10 +954,10 @@ class MCM_RomanceInteraction
 		nm = npc.scmcc.data.nam;
 
 		// Gate: scena nie startuje w trakcie swiezej kolejki czatu MCME
-		dialogueFree = WaitForDialogueFree(10.0);
+		dialogueFree = WaitForDialogueFree(25.0);
 		if (!dialogueFree)
 		{
-			MCM_AR_Log("[AR] IntimateScene ABORT: DialogueManager zajety >10s dla " + NameToString(nm));
+			MCM_AR_Log("[AR] IntimateScene ABORT: DialogueManager zajety >25s dla " + NameToString(nm));
 			return false;
 		}
 
@@ -975,10 +977,37 @@ class MCM_RomanceInteraction
 			return false;
 		}
 
-		// Sciezka manualna: LoadResource PRZED mutacjami stanu –
-		// przy braku sceny wychodzimy czysto.
-		if (!(npc.scmcc.specialData && StrLen(npc.scmcc.specialData.naughtyScene) > 0))
+		if (npc.scmcc.specialData && StrLen(npc.scmcc.specialData.naughtyScene) > 0)
 		{
+			// Precheck zasobu: delayedDialogue robi LoadResource w timerze
+			// i przy NULL po cichu nic nie odpala - stalibysmy 90s w
+			// WaitForSceneEnd z NPC w stanie staged.
+			scene = (CStoryScene)LoadResource(npc.scmcc.specialData.naughtyScene, true);
+			if (!scene)
+			{
+				MCM_AR_Log("[AR] IntimateScene FAIL: LoadResource NULL: " + npc.scmcc.specialData.naughtyScene);
+				return false;
+			}
+
+			// Fakt mod_scm_allownaughty: w vanilla-flow ustawia go
+			// PreDialogue przy wejsciu w hub-dialog (OnPlayerInteract).
+			// My omijamy hub, wiec bez tego wywolania fakt zostaje 0 i
+			// scena startuje "martwa" lub wcale (runtime: end ok=false
+			// po 90s, NPC zawieszony w scenie). Wymaga punktu <=16m
+			// (ciasniej niz nasz check 20m) + satisfiesNaughtyRequirements.
+			scm.NaughtyManager.PreDialogue(npc);
+			if (FactsQuerySum('mod_scm_allownaughty') <= 0)
+			{
+				MCM_AR_Log("[AR] IntimateScene FAIL: allownaughty=0 dla " + NameToString(nm) +
+				           " (punkt >16m lub niespelnione reqs)");
+				return false;
+			}
+			MCM_AR_Log("[AR] IntimateScene: allownaughty=1, scena=" + npc.scmcc.specialData.naughtyScene);
+		}
+		else
+		{
+			// Sciezka manualna: LoadResource PRZED mutacjami stanu –
+			// przy braku sceny wychodzimy czysto.
 			path = NaughtyScenePath(nm);
 			scene = (CStoryScene)LoadResource(path, true);
 			if (!scene)
@@ -986,6 +1015,10 @@ class MCM_RomanceInteraction
 				MCM_AR_Log("[AR] IntimateScene FAIL: LoadResource NULL: " + path);
 				return false;
 			}
+			// Sceny manualne moga czytac ten sam fakt - consent gracza
+			// jest juz jawny, ustawiamy sami (specialData nie istnieje,
+			// wiec PreDialogue ustawilby 0).
+			FactsSet('mod_scm_allownaughty', 1);
 		}
 
 		if (mcm.JobManager)
@@ -1027,6 +1060,13 @@ class MCM_RomanceInteraction
 
 		ok = WaitForSceneEnd(npc, 90.0);
 		MCM_AR_Log("[AR] IntimateScene end: ok=" + ok + " dla " + NameToString(nm));
+		// Scena mogla zawisnac (np. czeka na pozycje aktora przy AP) –
+		// IsInGameplayScene nadal true po timeout = NPC stoi do reloadu.
+		if (!ok && npc && npc.IsInGameplayScene())
+		{
+			MCM_AR_Log("[AR] IntimateScene WARN: " + NameToString(nm) +
+			           " nadal IsInGameplayScene po timeout - scena wiszaca");
+		}
 		// Bezpiecznik: PostNaughty = superset ShowAllExcept (re-equip ekwipunku,
 		// reset appearance, odsloniecie reszty) – idempotentne, gdy scena sama
 		// juz zawolala mod_scm_Naughty(true); ratuje gdy scena umarla w polowie.
