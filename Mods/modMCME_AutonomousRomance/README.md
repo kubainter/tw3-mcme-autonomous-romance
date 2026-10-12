@@ -1,41 +1,45 @@
 # MCME Autonomous Romance (Witcher 3 Next-Gen)
 
 **Autonomous Romance Initiative for Multi Companion Mod Enhanced (MCME)**  
-*Next-Gen Native Architecture (v4.04 / v5.00+)*
+*Remaster Native Architecture (v5.00+)*
 
-[![Compatibility](https://img.shields.io/badge/Witcher%203-Next--Gen%20v4.04%20%2F%20v5.00%2B-blue.svg)](#)
-[![Dependency](https://img.shields.io/badge/Dependency-MCME%20Remastered-orange.svg)](#)
-[![Scripts](https://img.shields.io/badge/Script%20Merger-Zero%20Conflicts-brightgreen.svg)](#)
-[![License](https://img.shields.io/badge/License-MIT-lightgrey.svg)](#)
+[![Compatibility](https://img.shields.io/badge/Witcher%203-Next--Gen%20v5.00%2B-blue.svg)](https://github.com/kubainter/tw3-mcme-autonomous-romance#requirements)
+[![Dependency](https://img.shields.io/badge/Dependency-MCME%20Remastered-orange.svg)](https://www.nexusmods.com/witcher3/mods/13144)
+[![Scripts](https://img.shields.io/badge/Script%20Merger-Zero%20Conflicts-brightgreen.svg)](https://github.com/kubainter/tw3-mcme-autonomous-romance#4-zero-script-merger-conflicts)
+[![License](https://img.shields.io/badge/License-Apache%202.0-lightgrey.svg)](https://github.com/kubainter/tw3-mcme-autonomous-romance/blob/main/LICENSE)
 
 ---
 
 ## 📖 Overview
 
-In vanilla **Multi Companion Mod Enhanced (MCME)**, companion interactions are purely passive: Geralt must manually approach a companion and navigate dialog menus to trigger conversations, gestures, or romantic scenes.
+In vanilla **Multi Companion Mod Enhanced (MCME)**, companions wait for you. Every conversation, gesture, or romance scene starts the same way: Geralt walks up, you pick a line from a dialog menu.
 
-**MCME Autonomous Romance** brings companions to life by introducing **autonomous, context-aware romantic and emotional initiative**. Companions will naturally observe their surroundings, react to combat fatigue and low health, cozy up near campfires at night, exchange banter, playfully tease Geralt, and invite him to intimate moments.
+**MCME Autonomous Romance** flips that around. Companions get their own initiative: they watch what's going on, fuss over Geralt when he's wounded after a fight, settle in by the campfire at night, trade banter, tease him, and invite him to intimate moments.
 
 ---
 
 ## ✨ Key Features
 
 ### 1. 4-Tier Escalation Ladder
+
 * **Tier 1 (Flirt & Banter):** Atmospheric one-liners spoken naturally with in-game voiced lines and subtitles while traveling or resting.
 * **Tier 2 (Physical & Emotional Care):** Companions approach Geralt, express concern when he is wounded after combat, apply healing gestures, or sit down by campfires.
-* **Tier 3 (Intimate Invitations):** Companions approach and invite Geralt to pause their journey. A discrete HUD prompt (`[C] Respond`) appears for 10 seconds, letting the player choose whether to accept.
+* **Tier 3 (Intimate Invitations):** Companions approach and invite Geralt to pause their journey. A discreet HUD prompt (`[C] Respond`) appears for 10 seconds, letting the player choose whether to accept.
 * **Tier 4 (Full Story Scenes):** Relaxing in special locations (such as Corvo Bianco) can trigger intimate scenes with full consent safeguards.
 
 ### 2. 3-Pillar Stateless Affinity Engine
+
 * **Pillar 1 (Vanilla Story Projection):** Real-time evaluation of original story choices (e.g. *The Last Wish*, *Now or Never*, Fyke Isle, Shani's wedding) without altering quest states.
 * **Pillar 2 (Safe Save Progress):** Dynamic relationship points are recorded via safe engine facts (`mcme_ar_<npc>_affinity`). Unlike `saved var` objects, removing the mod leaves save files 100% clean and intact.
 * **Pillar 3 (In-Game Menu Customization):** Full MCM control over pacing, affinity gains, and sandbox mode.
 
 ### 3. Jealousy vs. Polyamory Mode
+
 * **Jealousy Mode (Default):** Having multiple romantic partners (e.g., Yennefer and Triss) in the party causes them to exchange witty rival banter and prevents private intimacy unless alone.
 * **Polyamory Mode:** Disables jealousy checks, allowing unrestricted intimacy regardless of party composition.
 
 ### 4. Zero Script Merger Conflicts
+
 Built exclusively with native Next-Gen annotations (`@wrapMethod`, `@addMethod`, `@addField`). Does not overwrite any vanilla or MCME script files, eliminating merge conflicts.
 
 ---
@@ -79,9 +83,9 @@ Navigate to **Options → Gameplay / Mods → MCME - Autonomous Romance**:
 
 ## 🧩 Architecture & Source Structure
 
-> Full mod FLOW, gating, MCME/vanilla API map & roadmap: **[ARCHITECTURE.md](ARCHITECTURE.md)**
+> Full mod FLOW, gating, MCME/vanilla API map & roadmap: **[ARCHITECTURE.md](https://github.com/kubainter/tw3-mcme-autonomous-romance/blob/main/ARCHITECTURE.md)**
 
-```
+```text
 modMCME_AutonomousRomance/
 └── content/
     └── scripts/
@@ -91,7 +95,9 @@ modMCME_AutonomousRomance/
                 ├── MCM_RomanceAffinity.ws      # Stateless 3-pillar affinity resolver & MCM config wrapper
                 ├── MCM_RomanceInteraction.ws   # Interaction base classes, Action Registry, consent loop
                 ├── MCM_RomanceActions_Main.ws  # Actions & authentic voice lines for Yen, Triss, Keira, Shani
-                └── MCM_RomanceActions_DLC.ws   # Modular actions for Anna Henrietta, Vivienne, Cerys
+                ├── MCM_RomanceActions_DLC.ws   # Modular actions for Anna Henrietta, Vivienne, Cerys
+                ├── MCM_RomanceQoL.ws           # Flash UI outfit injection in MCME, outfit persistence, gifts
+                └── MCM_RomanceTw3seDev.ws      # TW3SE developer layer (native C++ imports, IPC pipe, key polling)
 ```
 
 ---
@@ -100,4 +106,4 @@ modMCME_AutonomousRomance/
 
 * Developed for the Witcher 3 Next-Gen modding community.
 * Built on top of **Multi Companion Mod Enhanced** by *Jamezo97* and contributors.
-* Licensed under the **MIT License**.
+* Licensed under the **Apache License 2.0**.
