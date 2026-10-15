@@ -21,7 +21,94 @@
 2118800019|        |option_MCM_AR_JealousyMode|Jealousy Mode (On=Jealousy / Off=Polyamory)
 2118800020|        |option_mcm_ar_opt_force|Sandbox: Force Unlock All Romance Tiers (Bypass Affinity)
 2118800021|        |option_MCM_AR_ForceRomance|Sandbox: Force Unlock All Romance Tiers (Bypass Affinity)
-2118800022|        |option_mcm_ar_opt_consent|Require Player Consent [E] Prompt for Intimate Scenes
-2118800023|        |option_MCM_AR_RequireConsent|Require Player Consent [E] Prompt for Intimate Scenes
+2118800022|        |option_mcm_ar_opt_consent|Require Player Consent [C] Prompt for Intimate Scenes
+2118800023|        |option_MCM_AR_RequireConsent|Require Player Consent [C] Prompt for Intimate Scenes
 2118800024|        |option_mcm_ar_opt_debug|Debug: Show Real-Time HUD Messages
 2118800025|        |option_MCM_AR_DebugHud|Debug: Show Real-Time HUD Messages
+2118800026|        |option_mcm_ar_opt_tick|Decision tick interval (seconds)
+2118800027|        |option_MCM_AR_TickInterval|Decision tick interval (seconds)
+2118800028|        |ar_prompt_yen_closer|[C] Come closer to Yennefer
+2118800029|        |ar_prompt_yen_intimate|[C] Stay alone with Yennefer
+2118800030|        |ar_prompt_triss_stay|[C] Stay with Triss
+2118800031|        |ar_prompt_triss_kiss|[C] Kiss Triss
+2118800032|        |ar_prompt_triss_intimate|[C] Stay alone with Triss
+2118800033|        |ar_prompt_keira_invite|[C] Accept Keira's invitation
+2118800034|        |ar_prompt_keira_intimate|[C] Stay alone with Keira
+2118800035|        |ar_prompt_shani_stay|[C] Stay with Shani
+2118800036|        |ar_prompt_shani_intimate|[C] Stay alone with Shani
+2118800037|        |ar_prompt_anarietta_escort|[C] Accompany the Duchess
+2118800038|        |ar_prompt_anarietta_intimate|[C] Stay alone with the Duchess
+2118800039|        |ar_prompt_vivienne_stay|[C] Stay with Vivienne
+2118800040|        |ar_prompt_vivienne_intimate|[C] Stay alone with Vivienne
+2118800041|        |ar_prompt_cerys_stay|[C] Stay with Cerys
+2118800042|        |ar_prompt_cerys_intimate|[C] Stay alone with Cerys
+2118800043|        |ar_prompt_consent_hint|(hold [C] ~1s or tap twice)
+2118800044|        |ar_prompt_gift|[C] Give {1} to {2}
+2118800045|        |ar_msg_healed|{1} healed you (+{2} HP)
+2118800046|        |ar_msg_item_gone|The drink is no longer in your inventory.
+2118800047|        |ar_msg_remove_fail|Couldn't remove {1} from your inventory.
+2118800048|        |ar_msg_gift_given|Gave {1} to {2} (+3 affinity)
+2118800049|        |ar_msg_naughty_near|The mood is right for intimacy...
+2118800050|        |ar_msg_companion|Companion
+2118800051|        |ar_menu_outfit|Outfit: 
+2118800052|        |ar_outfit_normal|Normal
+2118800053|        |ar_outfit_underwear|Underwear
+2118800054|        |ar_outfit_nude|Nude
+2118800055|        |ar_line_yen_oneliner_flirt|Perhaps it's strange, but I like watching you work.
+2118800056|        |ar_line_yen_postcombat_care|Next time stand behind me, all right? I'd rather defend you than have to patch you up afterwards.
+2118800057|        |ar_line_yen_night_invitation|Come, Geralt.
+2118800058|        |ar_line_yen_campfire_evening|Splendid. We finally got the chance to talk.
+2118800059|        |ar_line_yen_intimate_invite|That I regret we didn't try that earlier. Much earlier.
+2118800060|        |ar_line_yen_jealousy_snark|Come, now, Geralt. I know you. Well enough to know exactly what's going on with you and Triss.
+2118800061|        |ar_line_yen_jealousy_snark2|If you think I can't see what's happening between you and that red-haired witch... you're wrong, Geralt.
+2118800062|        |ar_line_yen_tavern_wine|Geralt?
+2118800063|        |ar_line_triss_oneliner_flirt|It's good to have you near, Geralt.
+2118800064|        |ar_line_triss_postcombat_hug|Tsk Oh Geralt What've you gotten yourself into now?
+2118800065|        |ar_line_triss_night_whisper|Hmmmm, Geraaalt
+2118800066|        |ar_line_triss_campfire_warmth|Stay by the fire a while, Geralt.
+2118800067|        |ar_line_triss_garden_kiss|Come here, Geralt.
+2118800068|        |ar_line_triss_intimate_invite|Hmmmm, Geraaalt
+2118800069|        |ar_line_triss_jealousy_snark|Oh, you really want to talk about it? Maybe I should get Yennefer? Wouldn't want her to miss any of this.
+2118800070|        |ar_line_keira_oneliner_flirt|Oh, you're definitely no boy. You're a strong, poised witcher who will surely help a woman in need.
+2118800071|        |ar_line_keira_postcombat_heal|Hold still, let me look at that wound.
+2118800072|        |ar_line_keira_night_proposal|I daresay this one, once sprung, would thrill you Ah well, change your mind - come and see me.
+2118800073|        |ar_line_keira_campfire_witch|Perhaps perhaps you'd stay just a bit longer? There's one small favor you might yet do for me.
+2118800074|        |ar_line_keira_intimate_invite|I daresay this one, once sprung, would thrill you Ah well, change your mind - come and see me.
+2118800075|        |ar_line_shani_oneliner_flirt|I think you look charming.
+2118800076|        |ar_line_shani_postcombat_medic|Do you need help?
+2118800077|        |ar_line_shani_night_relax|It would do you good to be more relaxed sometimes.
+2118800078|        |ar_line_shani_intimate_invite|It would do you good to be more relaxed sometimes.
+2118800079|        |ar_line_yen_gift_request|A glass of good wine would be lovely, Geralt.
+2118800080|        |ar_line_triss_gift_request|Geralt, do you happen to have some wine?
+2118800081|        |ar_line_keira_gift_request|I could really use a sip of good wine right now.
+2118800082|        |ar_line_shani_gift_request|A long day... Do you have anything to drink?
+2118800083|        |ar_line_anarietta_oneliner_flirt|An excellent wine. You've good taste.
+2118800084|        |ar_line_anarietta_postcombat_pride|There's something I'd like to know… How can you be so damned calm?
+2118800085|        |ar_line_anarietta_night_royal|Come, witcher.
+2118800086|        |ar_line_anarietta_intimate_invite|Come, witcher.
+2118800087|        |ar_line_vivienne_oneliner_flirt|A fine day for a ride, don't you think?
+2118800088|        |ar_line_vivienne_campfire_mystery|Come.
+2118800089|        |ar_line_vivienne_night_invitation|Will you walk with me, Geralt?
+2118800090|        |ar_line_vivienne_intimate_invite|The night is kind to us, Geralt.
+2118800091|        |ar_line_cerys_oneliner_flirt|Show me what you've got, monster slayer!
+2118800092|        |ar_line_cerys_postcombat_skellige|Still standing? Good. Skellige needs no widows.
+2118800093|        |ar_line_cerys_night_invitation|Geralt! Come! Think I've got an idea!
+2118800094|        |ar_line_cerys_intimate_invite|Geralt! Come! Think I've got an idea!
+2118800095|        |ar_line_anarietta_gift_request|An excellent wine. You've good taste.
+2118800096|        |ar_line_vivienne_gift_request|Would you share a drink with me, witcher?
+2118800097|        |ar_line_cerys_gift_request|Got something strong in that pack of yours, witcher?
+2118800098|        |ar_line_philippa_gift_request|Pour me something decent, Geralt.
+2118800099|        |ar_line_syanna_gift_request|Spare a drink, witcher? Walking builds a thirst.
+2118800100|        |ar_line_salma_gift_request|Do you have any sweet wine on you?
+2118800101|        |ar_line_ves_gift_request|Got any spirits to wash down the road dust?
+2118800102|        |ar_thanks_yen|Thank you, Geralt.
+2118800103|        |ar_thanks_triss|Thank you, that's wonderful.
+2118800104|        |ar_thanks_keira|Mmm, you do know how to treat a lady.
+2118800105|        |ar_thanks_shani|Just what I needed, thank you Geralt.
+2118800106|        |ar_thanks_anarietta|You have my sincere gratitude, witcher.
+2118800107|        |ar_thanks_vivienne|You are very kind, Geralt.
+2118800108|        |ar_thanks_cerys|Hah, that's what I'm talking about!
+2118800109|        |ar_thanks_philippa|Acceptable. You've learned some manners.
+2118800110|        |ar_thanks_syanna|Thanks. I needed that.
+2118800111|        |ar_thanks_salma|Mmm, delightful. Thank you.
+2118800112|        |ar_thanks_ves|Good stuff. Much appreciated, Geralt.

@@ -102,7 +102,8 @@ function OnMenuCreated()
 	wrappedMethod();
 	if (MCM_AR_NPCHasAltLooks(COMPANION))
 	{
-		enumer = AddEnum('ar_outfit', "Ubior: ", "Normalny,Bielizna,Nago", ",");
+		enumer = AddEnum('ar_outfit', AR_T("ar_menu_outfit", "Outfit: "),
+			AR_T("ar_outfit_normal", "Normal") + "," + AR_T("ar_outfit_underwear", "Underwear") + "," + AR_T("ar_outfit_nude", "Nude"), ",");
 		// Preselekcja na AKTUALNY ubiorz (z bazy faktow lub data.appearance)
 		sd = COMPANION.scmcc.specialData;
 		if (enumer && sd)
@@ -129,9 +130,9 @@ function OnChange(element : SCMMenu_BaseElement)
 		enumer = (SCMMenu_Enum)element;
 		if (enumer)
 		{
-			if (enumer.GetSelectedEnum() == "Bielizna")       idx = 1;
-			else if (enumer.GetSelectedEnum() == "Nago")      idx = 2;
-			else                                              idx = 0;
+			if (enumer.GetSelectedEnum() == AR_T("ar_outfit_underwear", "Underwear"))      idx = 1;
+			else if (enumer.GetSelectedEnum() == AR_T("ar_outfit_nude", "Nude"))           idx = 2;
+			else                                                                           idx = 0;
 			MCM_AR_ApplyOutfit(COMPANION, idx);
 			window.PlaySelectSound();
 		}
@@ -189,37 +190,37 @@ exec function ar_dress(optional npcStr : string)
 {
 	var npc : CNewNPC;
 	npc = MCM_AR_FindCompanion(npcStr);
-	if (!npc) { thePlayer.DisplayHudMessage("[AR] Brak towarzysza w zasiegu."); return; }
+	if (!npc) { thePlayer.DisplayHudMessage("[AR] No companion in range."); return; }
 	MCM_AR_ApplyOutfit(npc, 0);
-	thePlayer.DisplayHudMessage("[AR] " + NameToString(npc.scmcc.data.nam) + ": ubior normalny.");
+	thePlayer.DisplayHudMessage("[AR] " + NameToString(npc.scmcc.data.nam) + ": normal outfit.");
 }
 
 exec function ar_undress(optional npcStr : string)
 {
 	var npc : CNewNPC;
 	npc = MCM_AR_FindCompanion(npcStr);
-	if (!npc) { thePlayer.DisplayHudMessage("[AR] Brak towarzysza w zasiegu."); return; }
+	if (!npc) { thePlayer.DisplayHudMessage("[AR] No companion in range."); return; }
 	if (!MCM_AR_NPCHasAltLooks(npc))
 	{
-		thePlayer.DisplayHudMessage("[AR] " + NameToString(npc.scmcc.data.nam) + " nie ma wariantow ubioru.");
+		thePlayer.DisplayHudMessage("[AR] " + NameToString(npc.scmcc.data.nam) + " has no outfit variants.");
 		return;
 	}
 	MCM_AR_ApplyOutfit(npc, 1);
-	thePlayer.DisplayHudMessage("[AR] " + NameToString(npc.scmcc.data.nam) + ": bielizna.");
+	thePlayer.DisplayHudMessage("[AR] " + NameToString(npc.scmcc.data.nam) + ": underwear.");
 }
 
 exec function ar_naked(optional npcStr : string)
 {
 	var npc : CNewNPC;
 	npc = MCM_AR_FindCompanion(npcStr);
-	if (!npc) { thePlayer.DisplayHudMessage("[AR] Brak towarzysza w zasiegu."); return; }
+	if (!npc) { thePlayer.DisplayHudMessage("[AR] No companion in range."); return; }
 	if (!MCM_AR_NPCHasAltLooks(npc))
 	{
-		thePlayer.DisplayHudMessage("[AR] " + NameToString(npc.scmcc.data.nam) + " nie ma wariantow ubioru.");
+		thePlayer.DisplayHudMessage("[AR] " + NameToString(npc.scmcc.data.nam) + " has no outfit variants.");
 		return;
 	}
 	MCM_AR_ApplyOutfit(npc, 2);
-	thePlayer.DisplayHudMessage("[AR] " + NameToString(npc.scmcc.data.nam) + ": nago.");
+	thePlayer.DisplayHudMessage("[AR] " + NameToString(npc.scmcc.data.nam) + ": nude.");
 }
 
 // ---------------------------------------------------------------------------
@@ -238,16 +239,16 @@ exec function ar_gift(optional npcStr : string)
 	npc = MCM_AR_FindCompanion(npcStr);
 	if (!npc)
 	{
-		thePlayer.DisplayHudMessage("[AR] Brak towarzysza w zasiegu (5m) lub zla nazwa.");
+		thePlayer.DisplayHudMessage("[AR] No companion in range (5m) or invalid name.");
 		return;
 	}
 	npcName = npc.scmcc.data.nam;
 
 	// Kandydaci prezentowi – wina/alkohole z inventory gry
-	wines.PushBack('est_est');
-	wines.PushBack('erveluce');
-	wines.PushBack('fiorano');
-	wines.PushBack('metinna_rosee');
+	wines.PushBack('Est Est');
+	wines.PushBack('Erveluce');
+	wines.PushBack('Beauclair White');
+	wines.PushBack('Mettina Rose');
 	wines.PushBack('Alcohest');
 	wines.PushBack('Dwarven spirit');
 
@@ -263,7 +264,7 @@ exec function ar_gift(optional npcStr : string)
 
 	if (!IsNameValid(w))
 	{
-		thePlayer.DisplayHudMessage("[AR] Brak prezentu w ekwipunku (wino/alkohol).");
+		thePlayer.DisplayHudMessage("[AR] No gift in inventory (wine/alcohol).");
 		return;
 	}
 
@@ -274,6 +275,6 @@ exec function ar_gift(optional npcStr : string)
 	// Reakcja: head look-at + mimika + napis
 	npc.EnableDynamicLookAt(thePlayer, 6.0);
 	npc.PlayVoiceset(100, 'greeting_geralt');
-	thePlayer.DisplayHudMessage("[AR] Podarowano " + NameToString(w) + " dla " + NameToString(npcName) + " (+3 zazylosci)");
+	thePlayer.DisplayHudMessage("[AR] Gave " + NameToString(w) + " to " + NameToString(npcName) + " (+3 affinity)");
 	MCM_AR_Log("[AR] Gift: " + NameToString(w) + " -> " + NameToString(npcName));
 }
