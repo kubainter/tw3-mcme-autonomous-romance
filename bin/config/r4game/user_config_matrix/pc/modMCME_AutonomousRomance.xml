@@ -6,6 +6,7 @@
             <Preset id="0" displayName="mcm_ar_preset_default">
                 <Entry varId="MCM_AR_Enabled"         value="1"/>
                 <Entry varId="MCM_AR_CooldownSlider"  value="720"/>
+                <Entry varId="MCM_AR_TickInterval"    value="30"/>
                 <Entry varId="MCM_AR_AffinityMult"    value="10"/>
                 <Entry varId="MCM_AR_JealousyMode"    value="1"/>
                 <Entry varId="MCM_AR_ForceRomance"    value="0"/>
@@ -16,6 +17,7 @@
             <Preset id="1" displayName="mcm_ar_preset_active">
                 <Entry varId="MCM_AR_Enabled"         value="1"/>
                 <Entry varId="MCM_AR_CooldownSlider"  value="300"/>
+                <Entry varId="MCM_AR_TickInterval"    value="20"/>
                 <Entry varId="MCM_AR_AffinityMult"    value="20"/>
                 <Entry varId="MCM_AR_JealousyMode"    value="1"/>
                 <Entry varId="MCM_AR_ForceRomance"    value="0"/>
@@ -26,6 +28,7 @@
             <Preset id="2" displayName="mcm_ar_preset_relaxed">
                 <Entry varId="MCM_AR_Enabled"         value="1"/>
                 <Entry varId="MCM_AR_CooldownSlider"  value="1200"/>
+                <Entry varId="MCM_AR_TickInterval"    value="60"/>
                 <Entry varId="MCM_AR_AffinityMult"    value="5"/>
                 <Entry varId="MCM_AR_JealousyMode"    value="1"/>
                 <Entry varId="MCM_AR_ForceRomance"    value="0"/>
@@ -36,6 +39,7 @@
             <Preset id="3" displayName="mcm_ar_preset_sandbox">
                 <Entry varId="MCM_AR_Enabled"         value="1"/>
                 <Entry varId="MCM_AR_CooldownSlider"  value="60"/>
+                <Entry varId="MCM_AR_TickInterval"    value="20"/>
                 <Entry varId="MCM_AR_AffinityMult"    value="50"/>
                 <Entry varId="MCM_AR_JealousyMode"    value="0"/>
                 <Entry varId="MCM_AR_ForceRomance"    value="1"/>
@@ -58,6 +62,11 @@
                  displayName="mcm_ar_opt_cooldown"
                  displayType="SLIDER;60;1200;19"
                  defaultValue="720"/>
+
+            <Var id="MCM_AR_TickInterval"
+                 displayName="mcm_ar_opt_tick"
+                 displayType="SLIDER;20;160;14"
+                 defaultValue="30"/>
 
             <Var id="MCM_AR_AffinityMult"
                  displayName="mcm_ar_opt_affinity"
