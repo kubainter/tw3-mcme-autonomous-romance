@@ -14,8 +14,7 @@ public var mcm_ar_core : MCM_AutonomousRomanceCore;
 @addField(CR4Player)
 public var mcm_ar_ambient : MCM_AmbientRomanceChannel;
 
-// Bootlog: wiadomosci zapisane ZANIM powstal core (scriptslog.txt umiera
-// po burstcie startowym na tej instalacji - obejscie diagnostyki przez HUD).
+// Bufor komunikatów diagnostycznych przed inicjalizacją obiektu core.
 @addField(CR4Player)
 public var mcm_ar_bootlog : array<string>;
 
@@ -46,19 +45,7 @@ function MCM_AR_OnPlayerReady()
 		mcm_ar_config = new MCM_AR_ConfigWrapper in this;
 	}
 
-	// Rejestracja listenera klawisza zgody gracza [C].
-	// NIE uzywamy E/Interaction/Talk/Interact – to klawisze interakcji
-	// vanilla, wiec akceptacja promptu jednoczesnie odpalala dialog MCME
-	// z towarzyszem. MCM_K_C = custom akcja MCME zbindowana na IK_C
-	// (input.settings), nie ma innej funkcji w eksploracji.
-	// Uwaga: MCM_K_C z input.settings siedzi w sekcji [SCMMenuBase] –
-	// dispatchuje TYLKO w kontekscie menu MCME, nigdy w eksploracji.
-	// [C] w kontekscie Exploration = akcja 'SwordSheathe' (juz zbindowana),
-	// wiec nasluchujemy jej zamiast; efekt uboczny to zapiecie/schowanie
-	// miecza przy akceptacji – akceptowalne w kontekscie promptu.
-	// Stare rejestracje NIE sa derejestrowywane –
-	// UnregisterListener(this,'Talk') na CR4Player zdjeloby tez vanilla-owe
-	// handlery interakcji gracza. Listenery rejestruja sie swiezo na spawnie.
+	// Rejestracja listenera akcji 'SwordSheathe' ([C]) dla zgody na romans.
 	theInput.RegisterListener(this, 'OnMCM_AR_ConsentKey', 'SwordSheathe');
 
 	// Bezpiecznik: latent-abort ShowConsentPrompt mogl zostawic fakty
@@ -87,15 +74,15 @@ exec function ar_test()
 	}
 }
 
-// Marker diagnostyczny zapisywany do user.settings przez config wrapper.
-// Kanal niezalezny od scriptslog.txt (ktory umiera po burstcie startowym
-// na tej instalacji). Zapis idzie wylacznie do surowej sekcji [AR_Diag] -
-// NIE ruszamy realnych varow MCM (wczesniej SetVarValue na CooldownSlider
-// nadpisywal cooldown gracza przy kazdym spawnie).
-// W przyszlosci usunac albo zastapic trwalym kanalem logowania.
+// Marker diagnostyczny sekcji [AR_Diag] (aktywny w trybie ar_debug).
 function MCM_AR_DiagMark(code : int)
 {
 	var wrapper : CInGameConfigWrapper;
+
+	if (!MCM_AR_IsDebugOn())
+	{
+		return;
+	}
 
 	wrapper = theGame.GetInGameConfigWrapper();
 	if (wrapper)
@@ -103,15 +90,11 @@ function MCM_AR_DiagMark(code : int)
 		wrapper.SetRawConfigValueByStr("AR_Diag", "last", "" + code);
 		wrapper.SetRawConfigValueByStr("AR_Diag", "t" + code, "" + RoundMath(theGame.GetEngineTimeAsSeconds()));
 	}
-	// Flush wewnatrz markera: DiagMark to kanar na crash - gdyby caller
-	// umarl przed wlasnym zapisem, marker musi juz byc na dysku, inaczej
-	// diagnoza "gdzie zdechlo" jest niemozliwa (CR agy).
+	// Zapis synchroniczny tylko w trybie diagnostycznym (ar_debug).
 	theGame.SaveUserSettings();
 }
 
-// Inicjalizacja wewnatrz bazowego cyklu OnSpawned gracza.
-// InitRemasterSettings() jest wolana na koncu bazowego OnSpawned w content0 (linia 740).
-// Zaden inny mod (w tym BIA) jej nie wrapuje, wiec wywolanie ZAWSZE dociera tutaj!
+// Inicjalizacja moda w cyklu OnSpawned gracza.
 @wrapMethod(CR4Player)
 function InitRemasterSettings()
 {
@@ -124,13 +107,7 @@ function InitRemasterSettings()
 	MCM_AR_DiagMark(3);
 }
 
-// Sonda diagnostyczna: wrap na metodzie z gwarantowanym dispatchem.
-// BIA wrapuje to samo CPlayerInput.Initialize i jego logi sa widoczne
-// w scriptslog.txt - jesli nasz log tu nie strzeli, nasze @wrapMethod
-// nie rejestruja sie w ogole (problem kompilacji/mounta, nie kodu).
-// isFromLoad=true oznacza spawnData.restored - prawdziwy load save'a.
-// Uwaga: samo LogChannel, bez MCM_AR_Log/FactsAdd - za wczesny etap
-// spawnu na thePlayer/config/facts (powodowalo CTD przy loadzie).
+// Sonda inicjalizacji wejścia gracza (CPlayerInput).
 @wrapMethod(CPlayerInput)
 function Initialize(isFromLoad : bool, optional previousInput : CPlayerInput)
 {
@@ -152,9 +129,7 @@ function MCM_AR_InitCore()
 		mcm_ar_ambient = new MCM_AmbientRomanceChannel in this;
 		mcm_ar_ambient.Init();
 	}
-	// Interwal ticku decyzyjnego z MCM (MCM_AR_TickInterval, suwak 20-160s,
-	// default 30s). Wartosc czytana raz przy starcie timera - zmiana w menu
-	// wymaga reloadu sesji (AddTimer nie potrafi rearmowac interwalu).
+	// Interwał timera decyzyjnego z konfiguracji MCM (domyślnie 30s).
 	AddTimer('MCM_AR_AutonomousTick', MCM_AR_GetConfig().GetTickIntervalSeconds(), true);
 	AddTimer('MCM_AR_AmbientTick', 10.0, true);
 }
@@ -173,9 +148,7 @@ timer function MCM_AR_AutonomousTick(dt : float, id : int)
 @addMethod(CR4Player)
 timer function MCM_AR_AmbientTick(dt : float, id : int)
 {
-	// Idle-suspend: wybudzenie po ruchu gracza i fazy jobow moving->posed
-	// leca na szybkiej kadencji ambient (~10s) - przy konfigurowalnym
-	// ticku decyzji (domyslnie 30s) pozy inaczej "mulalyby".
+	// Szybki timer ambientu (~10s) do aktualizacji póz postoju.
 	if (mcm_ar_core)
 	{
 		mcm_ar_core.UpdateIdleAmbient();
@@ -190,10 +163,7 @@ timer function MCM_AR_AmbientTick(dt : float, id : int)
 // Klasa główna – silnik decyzyjny
 // ---------------------------------------------------------------------------
 
-// Pojedyncza "praca" idle-suspendu: NPC dochodzi do punktu obok gracza
-// i wchodzi w pose. Fazy: 0=moving (ActionMoveToWithHeadingAsync),
-// 1=posed (slot-anim gra na miejscu). Deadline ruchu = awaryjnie poza
-// w miejscu (brak navmesh-query - bliskie offsety i tak przechodza).
+// Zadanie postoju: faza 0=ruch ku pozycji, faza 1=animacja postoju w slocie.
 class MCM_AR_IdleJob
 {
 	var npc       : CNewNPC;
@@ -237,6 +207,13 @@ statemachine class MCM_AutonomousRomanceCore
 	public var naughtySpotNotified : bool;
 	default naughtySpotNotified = false;
 
+	// Pasywny przyrost Affinity ze wspólnej podróży:
+	// Co 600s (~10 min) aktywnego podążania za Geraltem -> +1 Affinity
+	private var arTravelNpcNames : array<name>;
+	private var arTravelSeconds  : array<float>;
+	private var arLastTravelTime : float;
+	default arLastTravelTime     = -9999.0;
+
 	// W2/I1 idle-suspend: companion "zyje" gdy gracz stoi w miejscu.
 	// Detektor postoju (kotwica + czas ostatniego ruchu) i lista NPC
 	// zawieszonych przez nas (StopFollowing(true) - tag/flaga zostaja).
@@ -245,16 +222,8 @@ statemachine class MCM_AutonomousRomanceCore
 	private var arIdleJobs   : array<MCM_AR_IdleJob>;
 	default arIdleSince = -9999.0;
 
-	// Zawieszenie follow podczas postoju gracza (W2/I1). Suspend uzywa
-	// StopFollowing(true) = czysta pauza locomocji: tag mod_scm_IsFollowing
-	// i flaga isFollowing zostaja, wiec (a) nasza eligibility nadal ja widzi,
-	// (b) spawn-scan MCME nie teleportuje/nie niszczy jej jako "non-follower",
-	// (c) StartFollowing(true) wznawia czysto. Idle-anim przez slot
-	// (SCMPlayIdleAnim odpada - FixIdleAnimInPos teleportuje do SpawnPos!).
-	// Resume: gracz ruszyl >1.5m lub unsafe (walka/dialog/menu).
-	// Wybudza wszystkie zawieszone NPC (czysta pauza -> StartFollowing).
-	// Wspoldzielone miedzy wolna kadencja ProcessTick (UpdateIdleSuspend)
-	// a szybka kadencja ambient ~10s (UpdateIdleAmbient).
+	// Zawieszenie podążania towarzyszki na czas postoju gracza.
+	// Wybudzenie następuje po ruchu gracza (>1.5m) lub wejściu w stan unsafe.
 	private function WakeIdleJobs()
 	{
 		var i     : int;
@@ -269,10 +238,7 @@ statemachine class MCM_AutonomousRomanceCore
 		for (i = arIdleJobs.Size() - 1; i >= 0; i -= 1)
 		{
 			npc = arIdleJobs[i].npc;
-			// NPC przejeta przez staging/scene (wasInTalkInteraction,
-			// gameplay-scene, busyNpc) - nie ruszamy jej lokomocji, konczy
-			// ja EndInteraction. Swiezy job zostaje; przeterminowany jest
-			// martwy - bez tego erase hasJob blokowalby nowy wpis na zawsze.
+			// NPC w trakcie interakcji lub sceny - lokomocję przywraca EndInteraction.
 			if (npc && (npc.wasInTalkInteraction || npc.IsInGameplayScene() || npc == busyNpc))
 			{
 				if (nowT >= arIdleJobs[i].deadline)
@@ -298,10 +264,7 @@ statemachine class MCM_AutonomousRomanceCore
 		MCM_AR_Log("[AR] idle: waking " + woken + " NPCs (busyKept=" + kept + ")");
 	}
 
-	// Usuwa rekord idle-suspendu danego NPC bez ruszania jej lokomocji.
-	// Wywolywane z EndSoft/EndInteraction - interakcja sama przywraca
-	// follow; bez tego job zostawalby martwy/guarded wpis na zawsze
-	// (hasJob blokowalby kolejny) albo dal poza NPC w followu.
+	// Usuwa rekord postoju dla danego NPC bez modyfikacji lokomocji.
 	public function RemoveIdleJobFor(npc : CNewNPC)
 	{
 		var i : int;
@@ -315,12 +278,7 @@ statemachine class MCM_AutonomousRomanceCore
 		}
 	}
 
-	// Szybki cykl idle-suspendu wywolywany z timera MCM_AR_AmbientTick
-	// (~10s, niezaleznie od suwaka MCM_AR_TickInterval): wykrywa koniec
-	// postoju (gracz ruszyl >1.5m od kotwicy albo unsafe) i popycha fazy
-	// aktywnych jobow (moving->posed + prune martwych wpisow).
-	// Tworzenie jobow celowo zostaje w UpdateIdleSuspend (ProcessTick) -
-	// rzadszy cykl = lagodny rozrzut zawieszen zamiast flash-mobu.
+	// Cykl ambient (~10s): wykrywa ruch gracza i aktualizuje fazy postoju.
 	public function UpdateIdleAmbient()
 	{
 		var i          : int;
@@ -357,10 +315,7 @@ statemachine class MCM_AutonomousRomanceCore
 					continue;
 				}
 				if (job.phase == 2) continue;
-				// Ta sama ochrona co wybudzanie: NPC w stagingu/scenie
-				// nie dostaje pozy - EndInteraction nia zarzadza.
-				// Job przeterminowany pod guardem jest martwy - usuwamy
-				// go, inaczej hasJob blokowalby nowy wpis na zawsze.
+				// NPC w scenie nie otrzymuje pozy postoju.
 				if (job.npc.wasInTalkInteraction || job.npc.IsInGameplayScene() || job.npc == busyNpc)
 				{
 					if (nowT >= job.deadline)
@@ -459,7 +414,7 @@ statemachine class MCM_AutonomousRomanceCore
 			}
 			if (!npc.HasTag('mod_scm_IsFollowing'))
 			{
-				MCM_AR_Log("[AR] idle: skip " + NameToString(npc.scmcc.data.nam) + " - bez follow tag");
+				MCM_AR_Log("[AR] idle: skip " + NameToString(npc.scmcc.data.nam) + " - no follow tag");
 				continue;
 			}
 			dist = VecDistance(npc.GetWorldPosition(), playerPos);
@@ -504,10 +459,7 @@ statemachine class MCM_AutonomousRomanceCore
 			job = new MCM_AR_IdleJob in this;
 			job.npc  = npc;
 			job.anim = IdleAnimFor(npc.scmcc.data.nam);
-			// Punkt odpoczynku: ~1.6m od NPC w strone OD gracza (osobista
-			// przestrzen) - krotki spacer wyglada naturalniej niz zastygniecie
-			// w slad za Geraltem. Bez navmesh: deadline w fazie moving i tak
-			// awaryjnie pozuje ja w miejscu.
+			// Wyznaczenie pozycji odpoczynku w odległości ~1.6m.
 			away = npc.GetWorldPosition() - playerPos;
 			away.Z = 0;
 			if (VecLength(away) < 0.5) away = VecFromHeading(thePlayer.GetHeading() + 180.0);
@@ -534,11 +486,92 @@ statemachine class MCM_AutonomousRomanceCore
 		MCM_AR_Log("[AR] idle: suspend - jobow=" + arIdleJobs.Size() + "/" + companions.Size());
 	}
 
-	// Slot-anim przez CMovingPhysicalAgentComponent (dowiedzione
-	// ar_probeanim -> true na Yen): actorowe ActionPlaySlotAnimationAsync
-	// odrzuca gdy action-queue zajete (false mimo ze anim jest w
-	// animsecie). scmcc.PlayAnim odpada - pole Anim martwe (private,
-	// nigdy nie tworzone w Remastered).
+	// -----------------------------------------------------------------------
+	// Pasywny przyrost Affinity z czasu podróży:
+	// Towarzyszki podążające za Geraltem (mod_scm_IsFollowing, dist <= 25m)
+	// zyskują +1 Affinity za każde 600s (~10 min) aktywnego marszu/biegu.
+	// Ignoruje postoje (idle-suspend) oraz skoki czasu (load/medytacja).
+	// -----------------------------------------------------------------------
+	public function UpdatePassiveTravelAffinity(companions : array<CNewNPC>)
+	{
+		var i, j, idx : int;
+		var npc       : CNewNPC;
+		var nam       : name;
+		var nowT      : float;
+		var dt        : float;
+		var dist      : float;
+		var playerPos : Vector;
+
+		nowT = theGame.GetEngineTimeAsSeconds();
+		if (arLastTravelTime < 0.0)
+		{
+			arLastTravelTime = nowT;
+			return;
+		}
+
+		dt = nowT - arLastTravelTime;
+		arLastTravelTime = nowT;
+
+		// Odrzuc anomalie czasowe (np. wczytanie save'a, pauza w menu, medytacja)
+		if (dt <= 0.0 || dt > 180.0)
+		{
+			return;
+		}
+
+		// Gracz stoi w miejscu (idle-suspend) – nie naliczaj za bezczynny afk
+		if (GetIdleSuspendCount() > 0)
+		{
+			return;
+		}
+
+		playerPos = thePlayer.GetWorldPosition();
+
+		for (i = 0; i < companions.Size(); i += 1)
+		{
+			npc = companions[i];
+			if (!npc || !npc.scmcc || !npc.scmcc.data) continue;
+			if (!npc.HasTag('mod_scm_IsFollowing')) continue;
+
+			nam = npc.scmcc.data.nam;
+			if (!MCM_AR_IsRomanceNPC(nam)) continue;
+
+			dist = VecDistance(npc.GetWorldPosition(), playerPos);
+			if (dist > 25.0) continue;
+
+			idx = -1;
+			for (j = 0; j < arTravelNpcNames.Size(); j += 1)
+			{
+				if (arTravelNpcNames[j] == nam)
+				{
+					idx = j;
+					break;
+				}
+			}
+
+			if (idx < 0)
+			{
+				arTravelNpcNames.PushBack(nam);
+				arTravelSeconds.PushBack(0.0);
+				idx = arTravelNpcNames.Size() - 1;
+			}
+
+			arTravelSeconds[idx] += dt;
+
+			// Co 600s (~10 minut) aktywnej drogi: +1 Affinity
+			if (arTravelSeconds[idx] >= 600.0)
+			{
+				arTravelSeconds[idx] = 0.0;
+				if (registry && registry.affinity)
+				{
+					registry.affinity.AddAffinityPoints(nam, 1);
+					thePlayer.DisplayHudMessage("[AR] " + AR_Fmt(AR_T("ar_msg_travel_aff", "Your bond with {1} grows through journey (+1)"), MCM_AR_GetCompanionDisplayName(npc)));
+					MCM_AR_Log("[AR] Travel affinity +1 for " + NameToString(nam));
+				}
+			}
+		}
+	}
+
+	// Odtworzenie animacji postoju przez CMovingPhysicalAgentComponent.
 	private function PlayIdleSlotAnim(npc : CNewNPC, anim : name) : bool
 	{
 		var animComp : CMovingPhysicalAgentComponent;
@@ -559,18 +592,7 @@ statemachine class MCM_AutonomousRomanceCore
 		return arIdleJobs.Size();
 	}
 
-	// Pose idle dla zawieszonej towarzyszki. W MCME Remastered warstwa
-	// specialNPCInfos/scmcc.info jest martwa (initCommon ma zakomentowane
-	// //info = specialNPCInfos.getNPCInfo, a samo pole i init wylaczone
-	// w SpawnCompanions.ws), MCM_NPCEntry.idleAnimation tez nigdy nie jest
-	// ustawiane - nie ma skad pobrac konfiguracji.
-	// UWAGA na naturalnosc (potwierdzone wizualnie w grze): kazda poza
-	// wymagajaca rekwizytu/kontaktu zostawia NPC w powietrzu lub oparta
-	// o niewidzialna sciane. Zakazane: high_sitting_* i low_sitting_* BEZ
-	// 'ground' (krzeslo), high_lying_down_* (gwaltowne wejscie + lezy w
-	// powietrzu) oraz high_standing_leaning_back* (podpora = sciana).
-	// Dozwolone: low_sitting_ground_* (siedzenie na ziemi - grunt jest w
-	// animie) oraz high_standing_* bez 'leaning'. Fallback = standing-bored.
+	// Dobór animacji postoju dopasowanej do postaci (pozy na ziemi bez rekwizytów).
 	private function IdleAnimFor(nam : name) : name
 	{
 		var pool : array<name>;
@@ -578,12 +600,7 @@ statemachine class MCM_AutonomousRomanceCore
 		return pool[RandRange(pool.Size(), 0)];
 	}
 
-	// Pula animacji idle do losowego wyboru. Tylko pozy "na ziemi" lub
-	// samowystarczalne - nic co wymaga rekwizytu (high_sitting_* = krzeslo,
-	// deckchair, lustro itp. zawieszalyby NPC w powietrzu). high_standing_*
-	// usuniete - wizualnie wygladaja jak "NPC po prostu stoi".
-	// Gdy nazwa nie przejdzie w slocie (slotAnim=false), fallback
-	// na low_sitting_ground_leaning_back_bored_idle.
+	// Pula animacji odpoczynku na ziemi do losowego wyboru.
 	private function IdleAnimPool() : array<name>
 	{
 		var pool : array<name>;
@@ -597,9 +614,8 @@ statemachine class MCM_AutonomousRomanceCore
 		return pool;
 	}
 
-	// (usunieto ForgiveIdleNPC - zastapione guardem w wake-loop:
-	// NPC w stagingu/scenie zostaje w arIdleJobs i jest pomijana,
-	// wiec latent-abort nie moze jej osierocic - review Gemini/R1)
+	// Guard w wake-loop: NPC w stagingu/scenie zostaje w arIdleJobs i jest pomijana,
+	// co zabezpiecza przed przerwaniem stanu przez latent-abort.
 
 	// Wymusza suspend przy nastepnym ticku (debug - bez czekania 50s).
 	// Respektuje safe/dystans/tagi; do sondy w parze z ar_diag.
@@ -610,13 +626,7 @@ statemachine class MCM_AutonomousRomanceCore
 		MCM_AR_Log("[AR] idle: threshold forced (ar_idlenow) - suspend on next tick");
 	}
 
-	// Auto-pick opcji w naszych scenach *FollowWithKiss: wrap OnDialogChoicesSet
-	// (HUD) wybiera opcje kiss, WaitForSceneEnd wykonuje select+accept z krotkim
-	// opoznieniem (wzorcem tw3-automatic-dialog-picker). Phase 0 = kiss
-	// (strukturalnie: opcja romansu = index 1 szablonu hub-menu, walidacja po
-	// ikonie EXIT na ostatniej pozycji – niezaleznie od lokalizacji; keywords
-	// w tekscie opcji sa tylko fallbackiem dla scen o odmiennym ukladzie).
-	// Phase 1 = po kiss wybierz exit gdy menu wraca (scena pokazuje hub w petli).
+	// Automatyczny wybór opcji w scenach FollowWithKiss (faza 0=kiss, faza 1=exit).
 	public var arAutoPick       : bool;
 	public var arPickPhase      : int;
 	public var arPendingPickIdx : int;
@@ -644,12 +654,7 @@ statemachine class MCM_AutonomousRomanceCore
 		}
 	}
 
-	// -----------------------------------------------------------------------
-	// Wywolywane z wrapa OnDialogChoicesSet (CR4HudModuleDialog) za kazdym
-	// pokazaniem menu wyborow podczas uzbrojonej sceny (arAutoPick). Tylko
-	// ustawia pending pick – faktyczny select/accept robi WaitForSceneEnd
-	// (latent, z opoznieniem jak u gracza). Nie-latent!
-	// -----------------------------------------------------------------------
+	// Rejestruje oczekujący wybór dialogowy podczas uzbrojonej sceny (arAutoPick).
 	public function MCM_AR_OnDialogChoices(choices : array<SSceneChoice>)
 	{
 		var i, idx : int;
@@ -674,23 +679,14 @@ statemachine class MCM_AutonomousRomanceCore
 
 		if (arPickPhase == 0)
 		{
-			// Wszystkie sceny *FollowWithKiss dziela jeden szablon hub-menu
-			// (auto-generowane): [0] wyjscie-link, [1] linia romansu = kiss,
-			// [2] wejscie do menu naughty, [3] hub pytan, [4] wyjscie z ikona
-			// EXIT. Opcja romansu to zawsze index 1 – identyfikujemy ja
-			// STRUKTURALNIE po szablonie, nie po tekscie: ostatnia opcja musi
-			// miec ikone DialogAction_EXIT (enum, locale-free). Dziala w kazdej
-			// lokalizacji bez znajomosci tlumaczen.
+			// Wybór opcji romansu (indeks 1 w szablonie menu).
 			if (choices.Size() >= 3 &&
 			    choices[choices.Size() - 1].dialogAction == DialogAction_EXIT &&
 			    choices[1].dialogAction != DialogAction_EXIT && !choices[1].disabled)
 			{
 				idx = 1;
 			}
-			// Fallback dla scen o odmiennym ukladzie – match keywords po tekscie
-			// (EN/PL/DE/FR/ES/CZ). Opcja kiss kryje sie pod linia romansu
-			// ("Kocham cie, Yen", "I love you"), wiec matchujemy frazy milosne.
-			// Nie matchujemy "ustrone miejsce" – to wejscie do menu naughty.
+			// Fallback dopasowania opcji po słowach kluczowych dialogu.
 			if (idx < 0)
 			{
 				for (i = 0; i < choices.Size(); i += 1)
@@ -817,6 +813,9 @@ statemachine class MCM_AutonomousRomanceCore
 		arAutoPick = false;
 		arPickPhase = 0;
 		arPendingPickIdx = -1;
+		arTravelNpcNames.Clear();
+		arTravelSeconds.Clear();
+		arLastTravelTime = -9999.0;
 
 		amb = thePlayer.mcm_ar_ambient;
 		if (amb)
@@ -841,10 +840,7 @@ statemachine class MCM_AutonomousRomanceCore
 			reason = "player state=" + thePlayer.GetCurrentStateName() + " (req. Exploration)";
 			return false;
 		}
-		// Kontekst input musi być eksploracyjny – w menu (SCMMenuBase,
-		// RadialMenu itd.) prompt consent bylby niewidoczny, a sceny
-		// strzelalyby "pod" otwartym UI. Player state zostaje Exploration
-		// przy otwartych menu, wiec sam state-check tego nie lapi e.
+		// Blokada w menu oraz radial menu (wymagany kontekst Exploration).
 		if (theInput.GetContext() != 'Exploration')
 		{
 			reason = "inputContext=" + NameToString(theInput.GetContext());
@@ -862,11 +858,7 @@ statemachine class MCM_AutonomousRomanceCore
 			reason = "DialogOrCutscenePlaying";
 			return false;
 		}
-		// Uwaga: DialogueManager.IsBusy MCME celowo NIE jest tu gate'em –
-		// to stan MCM_DM_Talking (kolejka onelinerow/banteru), w ktorej
-		// nasze barki i ambient same sie kolejkuja. Sceny maja wlasny
-		// gate WaitForDialogueFree w PlayScene/PlayDialogueScene/
-		// PlayIntimateScene (stale>20s przepuszcza martwa kolejke).
+		// DialogueManager.IsBusy jest sprawdzany dedykowanie w PlayScene.
 		// Gracz nie może pływać ani być na łodzi
 		if (thePlayer.IsSwimming())
 		{
@@ -957,10 +949,7 @@ statemachine class MCM_AutonomousRomanceCore
 			}
 		}
 		cachedContext.rivalCount = rivalCount;
-		// Zazdrosc = WYLACZNIE kanoniczny trojkat Yen vs Triss. Inne
-		// romansowalne towarzyszki (Ves, Keira, ...) wspolistniejace w party
-		// nie wlaczaja rywalizacji - wczesniej (rivalCount > 1) zaparkowana
-		// Ves blokowala wszystkie akcje staged (regresja po dodaniu 'ves').
+		// Rywalizacja: kanoniczny trójkąt Yennefer vs Triss.
 		cachedContext.hasRivals  = cachedContext.companionsInParty.Contains('yennefer') &&
 		                           cachedContext.companionsInParty.Contains('triss');
 
@@ -1043,13 +1032,7 @@ statemachine class MCM_AutonomousRomanceCore
 
 		now = theGame.GetEngineTimeAsSeconds();
 
-		// Watchdog: latent Execute moze abortowac w polowie –
-		// EndStagedInteraction nigdy nie strzeli i kanal staged
-		// bylby martwy do ar_reset. Lock starszy niz 300s traktujemy
-		// jako stary, logujemy i uwalniamy przed normalnym acquire.
-		// (300s > najdluzsza legitna sciezka: approach + prompt 10s
-		// + WaitForSceneEnd do 90s; 120s byloby za ciasne i zdjeloby
-		// zywy lock -> nakladajace sie staged interakcje.)
+		// Watchdog: uwalnia przedawniony lock interakcji (>300s).
 		if (interactionBusy && now - busyStartTime > 300.0)
 		{
 			if (busyNpc && busyNpc.scmcc)
@@ -1252,7 +1235,7 @@ state ProcessingTick in MCM_AutonomousRomanceCore
 	}
 
 	// -----------------------------------------------------------------------
-	// Główny tick (wywoływany co 4s przez timer CR4Player za pomocą stanu)
+	// Główny tick (wywoływany cyklicznie przez timer CR4Player za pomocą stanu)
 	// -----------------------------------------------------------------------
 	latent function ProcessTick()
 	{
@@ -1300,6 +1283,9 @@ state ProcessingTick in MCM_AutonomousRomanceCore
 		// przestaja chodzic za Geralta i graja swoja idle-anim;
 		// wznowienie przy ruchu gracza albo unsafe.
 		parent.UpdateIdleSuspend(true);
+
+		// Pasywny przyrost Affinity za czas wspólnej aktywnej podróży
+		parent.UpdatePassiveTravelAffinity(companions);
 
 		// Notifier "sweet spot": jednorazowy HUD przy wejściu w zasięg punktu
 		// intymnego, reset dopiero po wyjściu >40m (histereza anti-flap).
@@ -1504,10 +1490,7 @@ state AmbientTick in MCM_AmbientRomanceChannel
 
 		now = theGame.GetEngineTimeAsSeconds();
 
-		// Globalny bark cooldown (~90s) bramkuje TYLKO strzal barku/powitania.
-		// UWAGA: bookkeeping greetSeenTime musi biec CO TICK – wczesny return
-		// na cooldown zamrozilby stemple i po ~90s kazdy obecny NPC mialby
-		// gap>60s -> masa falszywych "powitan po absencji".
+		// Globalny cooldown barków (~90s) bramkuje odtworzenie kwestii.
 		canBark = (parent.GetBarkCooldownRemaining() <= 0.0);
 
 		// ---------------------------------------------------------------
@@ -1729,10 +1712,7 @@ exec function ar_force()
 	}
 }
 
-// Awaryjny reset stanu sesji AR - po TW3SE_ReloadScripts (latent-loope
-// umieraja bez cleanupu -> osierocone fakty/locki w save) albo gdy cos
-// zawisl. Nie dotyka cooldownow ani affinity. Dziala tez w release
-// (nie uzywa TW3SE) - narzedzie supportowe.
+// Awaryjny reset stanu sesji AR (odblokowanie locków i faktów).
 exec function ar_devreset()
 {
 	var core : MCM_AutonomousRomanceCore;
@@ -1759,7 +1739,7 @@ exec function ar_idlenow()
 	if (core)
 	{
 		core.ForceIdleSuspendNow();
-		thePlayer.DisplayHudMessage("[AR] idle: suspend forced - see ar_diag in ~4s");
+		thePlayer.DisplayHudMessage("[AR] idle: suspend forced - see ar_diag in ~10s");
 	}
 }
 
@@ -2039,11 +2019,11 @@ exec function ar_eval()
 	core.MCM_AR_IsSafeToInitiate(safeReason);
 	if (safeReason == "")
 	{
-		MCM_AR_Log("Bezpieczenstwo: OK");
+		MCM_AR_Log("Safety: OK");
 	}
 	else
 	{
-		MCM_AR_Log("Bezpieczenstwo: BLOKADA - " + safeReason);
+		MCM_AR_Log("Safety: BLOCKED - " + safeReason);
 	}
 
 	MCM_AR_Log("Companions: " + companions.Size() + " | Actions in registry: " + reg.GetActionCount());

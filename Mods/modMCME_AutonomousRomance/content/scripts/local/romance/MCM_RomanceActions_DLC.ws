@@ -89,7 +89,7 @@ class MCM_AR_Anarietta_PostCombatPride extends MCM_RomanceInteraction
 	default barkMimic       = 'concern';
 	// ID 1199342: "...How can you be so damned calm?" – idealne po walce
 	default lineId          = 1199342;
-	default lineText        = "There's something I'd like to know… How can you be so damned calm?";
+	default lineText        = "There's something I'd like to know... How can you be so damned calm?";
 	default lineKey         = "ar_line_anarietta_postcombat_pride";
 
 	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string

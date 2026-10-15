@@ -63,17 +63,17 @@
 2118800061|        |ar_line_yen_jealousy_snark2|If you think I can't see what's happening between you and that red-haired witch... you're wrong, Geralt.
 2118800062|        |ar_line_yen_tavern_wine|Geralt?
 2118800063|        |ar_line_triss_oneliner_flirt|It's good to have you near, Geralt.
-2118800064|        |ar_line_triss_postcombat_hug|Tsk Oh Geralt What've you gotten yourself into now?
-2118800065|        |ar_line_triss_night_whisper|Hmmmm, Geraaalt
+2118800064|        |ar_line_triss_postcombat_hug|Tsk... Oh Geralt... What've you gotten yourself into now?
+2118800065|        |ar_line_triss_night_whisper|Hmmmm, Geraaalt...
 2118800066|        |ar_line_triss_campfire_warmth|Stay by the fire a while, Geralt.
 2118800067|        |ar_line_triss_garden_kiss|Come here, Geralt.
-2118800068|        |ar_line_triss_intimate_invite|Hmmmm, Geraaalt
+2118800068|        |ar_line_triss_intimate_invite|Hmmmm, Geraaalt...
 2118800069|        |ar_line_triss_jealousy_snark|Oh, you really want to talk about it? Maybe I should get Yennefer? Wouldn't want her to miss any of this.
 2118800070|        |ar_line_keira_oneliner_flirt|Oh, you're definitely no boy. You're a strong, poised witcher who will surely help a woman in need.
 2118800071|        |ar_line_keira_postcombat_heal|Hold still, let me look at that wound.
-2118800072|        |ar_line_keira_night_proposal|I daresay this one, once sprung, would thrill you Ah well, change your mind - come and see me.
-2118800073|        |ar_line_keira_campfire_witch|Perhaps perhaps you'd stay just a bit longer? There's one small favor you might yet do for me.
-2118800074|        |ar_line_keira_intimate_invite|I daresay this one, once sprung, would thrill you Ah well, change your mind - come and see me.
+2118800072|        |ar_line_keira_night_proposal|I daresay this one, once sprung, would thrill you... Ah well, change your mind - come and see me.
+2118800073|        |ar_line_keira_campfire_witch|Perhaps... perhaps you'd stay just a bit longer? There's one small favor you might yet do for me.
+2118800074|        |ar_line_keira_intimate_invite|I daresay this one, once sprung, would thrill you... Ah well, change your mind - come and see me.
 2118800075|        |ar_line_shani_oneliner_flirt|I think you look charming.
 2118800076|        |ar_line_shani_postcombat_medic|Do you need help?
 2118800077|        |ar_line_shani_night_relax|It would do you good to be more relaxed sometimes.
@@ -83,7 +83,7 @@
 2118800081|        |ar_line_keira_gift_request|I could really use a sip of good wine right now.
 2118800082|        |ar_line_shani_gift_request|A long day... Do you have anything to drink?
 2118800083|        |ar_line_anarietta_oneliner_flirt|An excellent wine. You've good taste.
-2118800084|        |ar_line_anarietta_postcombat_pride|There's something I'd like to know… How can you be so damned calm?
+2118800084|        |ar_line_anarietta_postcombat_pride|There's something I'd like to know... How can you be so damned calm?
 2118800085|        |ar_line_anarietta_night_royal|Come, witcher.
 2118800086|        |ar_line_anarietta_intimate_invite|Come, witcher.
 2118800087|        |ar_line_vivienne_oneliner_flirt|A fine day for a ride, don't you think?
@@ -112,3 +112,4 @@
 2118800110|        |ar_thanks_syanna|Thanks. I needed that.
 2118800111|        |ar_thanks_salma|Mmm, delightful. Thank you.
 2118800112|        |ar_thanks_ves|Good stuff. Much appreciated, Geralt.
+2118800113|        |ar_msg_travel_aff|Your bond with {1} grows through journey (+1)

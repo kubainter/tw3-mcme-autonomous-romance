@@ -130,9 +130,8 @@ function OnChange(element : SCMMenu_BaseElement)
 		enumer = (SCMMenu_Enum)element;
 		if (enumer)
 		{
-			if (enumer.GetSelectedEnum() == AR_T("ar_outfit_underwear", "Underwear"))      idx = 1;
-			else if (enumer.GetSelectedEnum() == AR_T("ar_outfit_nude", "Nude"))           idx = 2;
-			else                                                                           idx = 0;
+			idx = enumer.selectedIndex;
+			if (idx < 0 || idx > 2) idx = 0;
 			MCM_AR_ApplyOutfit(COMPANION, idx);
 			window.PlaySelectSound();
 		}

@@ -64,10 +64,10 @@
 2118800062|        |ar_line_yen_tavern_wine|Geralcie?
 2118800063|        |ar_line_triss_oneliner_flirt|Dobrze, że jesteś blisko, Geralcie.
 2118800064|        |ar_line_triss_postcombat_hug|Tsa, o Geralcie. W co tym razem się wpakowałeś?
-2118800065|        |ar_line_triss_night_whisper|Hmmmm, Geraaalcie
+2118800065|        |ar_line_triss_night_whisper|Hmmmm, Geraaalcie...
 2118800066|        |ar_line_triss_campfire_warmth|Pozostań przy ogniu jeszcze chwilę, Geralcie.
 2118800067|        |ar_line_triss_garden_kiss|Chodź tu, Geralcie.
-2118800068|        |ar_line_triss_intimate_invite|Hmmmm, Geraaalcie
+2118800068|        |ar_line_triss_intimate_invite|Hmmmm, Geraaalcie...
 2118800069|        |ar_line_triss_jealousy_snark|O, naprawdę chcesz o tym rozmawiać? Może powinnam zawołać Yennefer? Szkoda, żeby to przegapiła.
 2118800070|        |ar_line_keira_oneliner_flirt|Och, zdecydowanie nie jesteś chłopcem. Jesteś silnym, opanowanym wiedźminem, który z pewnością pomoże damie w potrzebie.
 2118800071|        |ar_line_keira_postcombat_heal|Nie ruszaj się, pozwól, że obejrzę tę ranę.
@@ -112,3 +112,4 @@
 2118800110|        |ar_thanks_syanna|Dzięki. Potrzebowałam tego.
 2118800111|        |ar_thanks_salma|Mmm, przepyszne. Dziękuję.
 2118800112|        |ar_thanks_ves|Dobre. Wielkie dzięki, Geralcie.
+2118800113|        |ar_msg_travel_aff|Więź z {1} zacieśnia się podczas wspólnej drogi (+1)

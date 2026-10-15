@@ -572,8 +572,8 @@ Mitigacje (stan wdrożenia: pkt 1–2 zrobione w W0, kompilacja 0 błędów 07.1
 
 ### A. Z TODO.md (stan bieżący)
 
-1. **Stabilizacja bazy** — diagnoza „mod nie reaguje" przez `ar_status`/`ar_eval`/
-   `ar_trigger`/`ar_debug`; retest `triss_intimate` po fixie klawisza [C].
+1. ✅ **Stabilizacja bazy** — zamknięte po release (diagnoza przez `ar_status`/
+   `ar_eval`/`ar_trigger`/`ar_debug`; retest `triss_intimate` po fixie [C]).
 2. ✅ Done: consent [C]=`SwordSheathe`; auto-pick strukturalny; fixy consent/gating.
 3. **Do decyzji:** nocny wypełniacz T1 (dużo `blocked:` nocą = zamierzone filtrowanie);
    kolizje-duchy (design MCME — wrapować czy zostawić).
@@ -826,6 +826,25 @@ wejście w enklawę = idle-mode aktywny (§16.F) AND
   getter `MCM_AR_GetNearestAP(pos,r)` albo iteracja (wrapy na private
   metodach są OK — dodajemy metodę, nie nadpisujemy),
 - proste enklawy bez AP (losowe obozowiska) → tylko I1/I2.
+
+### H. Backlog otwarty (przeniesione z TODO.md przy czyszczeniu 2026-10-15)
+
+**Naprawy / usprawnienia bieżącej bazy:**
+- **Combat-rescue heal** — towarzyszka leczy Geralta W TRAKCIE walki. Wymaga osobnego kanału: `IsSafeToInitiate` blokuje combat, `WaitForApproach` abortuje na `IsInCombat`. Wariant fire-and-forget (bez approach/staging/consentu): bark + `cast_sign_quen_idle` z miejsca + `GainStat`. Bramki: affinity ≥80, hp <30%, raz na walkę / ~20 min cd. Ryzyko: balans + NPC w combat jest „duchem" bez AI walki.
+- **Affinity-weighted wybór NPC** — wagi są per-NPC (`TryExecute` filtruje `targetNpc`), wybór między NPC = `ShuffleCompanions` + per-NPC cd 12 min. Warianty: (a) twardy sort po affinity — ODRZUCONY (dominacja ~80%, zabija autonomię); (b) ważony shuffle (szansa ~ affinity); (c) skrócenie initiative cooldown z affinity (najbezpieczniejsze).
+- **Prawdziwe siadanie przy ognisku** — seat-entity/prop snap albo ground-sit anim; model Keiry zostaje jako fallback. Idle-suspend już udowadnia `low_sitting_ground_*` w praktyce; wariant „stay seated" pokrywa C-N19.
+- **`triss_garden_kiss`** — brak bramki lokacyjnej, odpala wszędzie przy aff≥70. Opcja: `GetExtraBlockReason` na teren (ogród/Corvo) albo rename id.
+- **Płynny pocałunek v2.0** — animacja szkieletowa w świecie (`determined_gesture_passionate_kiss_f/_m`) zamiast `.w2scene`+autoPick. Pełna spec: `RESEARCH_SEAMLESS_ROMANCE_PLAYBACK.md`.
+- **Alternatywa auto-pick/auto-EXIT** — (a) brak autoEXIT — gracz kończy scenę sam; (b) przełącznik MCM; (c) hybryda. Uwaga: `.w2scene` to binarki — opcji nie da się dodać, tylko wybór istniejących w runtime.
+- **`_start/_end` w idle-suspend** — joby wchodzą od razu w idle-anim (skok w pozycję). Dodać opcjonalne pola `*_start` (wejście) / `_end` (wyjście) per NPC/spot jak vanilla sit-loopy + `animPhase` w `MCM_AR_IdleJob`. Wymaga audytu anim w w2anims (`ar_probeanim`).
+- **Nocny filler T1** — wszystkie `*_oneliner_flirt` blokowane nocą (`night`/`night_or_campfire`); `*_night_*` są T3. Decyzja z §16.A.
+- **Tavern banter dla pozostałych** (claim wycofany z opisu Nexus) — `yen_tavern_wine` jedyna akcja z `isInTavern`; dodać odpowiedniki Triss/Keira/Shani + DLC, żeby „tavern chatter" mógł wrócić do opisu.
+
+**Duże funkcje (dawniej „Roadmap v1.1"):**
+- **`MCM_AR_SceneExists(path): bool`** w `MCM_RomanceInteraction.ws` — `(CStoryScene)LoadResource(path,true)`. Runtime już degraduje się bezpiecznie (prechecki `LoadResource` z logiem NULL na l.1031/1205/1232); brakuje gate'u `GetExtraBlockReason` → `blocked: no_dlc_scene` dla scen leżących w opcjonalnym `dlc_spawn_control_girls` (Fringilla, Margarita, Priscilla, Orianna, Edna, Ciri-intimate).
+- **Roster Etap 2** (tabela §16.C): Fringilla (`fringilla_vigo`), Margarita (`margarita` → typo `margaritta`), Priscilla (`pryscilla`) — T1–T3 + gift w bazie, T4 warunkowe przez `SceneExists`. Display-name resolver już zna `margarita`/`fringilla`/`ciri` (Interaction l.1727+).
+- **Ciri dual-mode** — opcja MCM `option_MCM_AR_CiriMode` (enum: `Lore-Friendly (Family Bond)` [domyślna] / `MCME Adult`). Lore: T1 wiedźmiński banter, T2 duma po walce, T3 ognisko/wspominki Kaer Morhen, T4 = `ciriFollowWithHug` (istnieje w bazowym MCME!), prezenty: prowiant. Adult: `ciriFollowWithKiss` + `naughty\ciri` za `SceneExists`. Klasy: `MCM_AR_Ciri_OneLinerBanter`, `_PostCombatPride`, `_CampfireBond`, `_BondHug`, `_GiftRequest`; T4 rozgałęzione wg `GetCiriInteractionMode()`. ⚠️ `ciriFollowWithHug` jest domyślnym dialogiem MCME — auto-pick re-walidować (§16.C pkt 5).
+- **Bro-Tier** — koncept dla męskich companionów (§16.C traktuje ich jako follow-only, max T1): `MCM_AR_Bro_DrinkTogether_Base` — propozycja toastu w tawernie/ognisku → prompt `[C] Wypij z: <imię>` → konsumpcja mocnego alkoholu z EQ (Dwarven spirit / Temerska żytnia / Alcohest) + anim toastu (`ActionPlaySlotAnimationAsync`) + `thePlayer.AddEffectDefault(EET_Drunkenness, NULL, "Drunk")` (EnableDrunkFx, chwiejny krok) + bark toastu + +3 affinity. Postacie: Zoltan (`zoltan_chivay`) — krasnoludzki humor/pieśń bojowa; Regis (`regis`) — mandragora, opatrunek po walce; Jaskier (`dandelion`) — narzekanie na marsz, panika po walce, wino; Eskel (`eskel`) — wiedźmiński szacunek. T1 docinki w marszu; T2 szacunek po walce. Lokalizacja: prompty/linie/toasty w `en/pl.w3strings.csv` + re-encode.
 
 ## 17. Konwencje i jak rozszerzać
 

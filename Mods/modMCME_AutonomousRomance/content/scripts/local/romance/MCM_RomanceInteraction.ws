@@ -73,11 +73,7 @@ class MCM_RomanceInteraction
 	// gestow nie maja bloku var, wiec trzymamy scratch na klasie)
 	protected var approachOk : bool;
 
-	// Stan follow PRZED stagingiem. Sceny .w2scene MCME moga wywolac
-	// mod_scm_toggle_follow(npc,false) = pelny StopFollowing() bez
-	// parametru -> zdejmuje isFollowing+tag+czlonkostwo. Bez tego pola
-	// EndInteraction (guard IsFollowing()) nigdy nie wznawial follow
-	// i towarzyszka zostawala "zaparkowana" po scenie intymnej.
+	// Stan podążania przed rozpoczęciem interakcji.
 	protected var npcWasFollowing : bool;
 	default npcWasFollowing = false;
 
@@ -100,11 +96,7 @@ class MCM_RomanceInteraction
 		MCM_AR_Log("[AR] Reject: " + id + " backoff " + backoff + "s (x" + rejectCount + ")");
 	}
 
-	// Próba wykonania: startuje cooldown akcji (chroni przed spamem
-	// retry przy fail-start), ale NIE rusza backoffu odmowy.
-	// UWAGA: cooldown liczony od PROBY (attempt), nie od sukcesu -
-	// swiadoma decyzja: fail-start (abort podejscia/odmowa) tez zajmuje
-	// slot czasowy akcji.
+	// Próba wykonania akcji (ustawia cooldown inicjatywy).
 	public function MarkAttempted()
 	{
 		lastExecTime = theGame.GetEngineTimeAsSeconds();
@@ -314,36 +306,47 @@ class MCM_RomanceInteraction
 	}
 
 	// -------------------------------------------------------------------
-	// Realny heal akcji opiekuńczych: procent maks. zdrowia Geralta.
+	// Realny heal akcji opiekuńczych: procent maks. zdrowia Geralta,
+	// skalowany bieżącym poziomem zażyłości (Affinity).
+	// Bazowy ułamek (0.20 dla Yen/Triss, 0.25 dla Keiry/Shani) jest
+	// modyfikowany od 0.6x (niski poziom) do 1.4x (maksymalne Affinity).
 	// Vanilla GainStat(BCS_Vitality, ...) – jak mikstury w r4Player.ws.
 	// -------------------------------------------------------------------
 	protected function HealPlayer(npc : CNewNPC, player : CR4Player, frac : float)
 	{
-		var amount : int;
+		var amount        : int;
+		var aff           : int;
+		var effectiveFrac : float;
+		var resolver      : MCM_RomanceAffinityResolver;
 
-		amount = RoundMath(player.GetStatMax(BCS_Vitality) * frac);
+		if (!player) return;
+
+		resolver = MCM_AR_GetAffinity();
+		if (resolver && npc && npc.scmcc && npc.scmcc.data)
+		{
+			aff = resolver.GetAffinity(npc.scmcc.data.nam);
+		}
+		else
+		{
+			aff = 20; // bezpieczny fallback
+		}
+
+		if (aff < 0) aff = 0;
+		if (aff > 100) aff = 100;
+
+		effectiveFrac = frac * (0.6 + 0.8 * ((float)aff / 100.0));
+		amount = RoundMath(player.GetStatMax(BCS_Vitality) * effectiveFrac);
 		if (amount < 1) amount = 1;
+
 		player.GainStat(BCS_Vitality, amount);
 		player.DisplayHudMessage(AR_Fmt(AR_T("ar_msg_healed", "{1} healed you (+{2} HP)"), MCM_AR_GetCompanionDisplayName(npc), "" + amount));
-		MCM_AR_Log("[AR] " + id + ": heal +" + amount + " HP");
+		MCM_AR_Log("[AR] " + id + ": heal +" + amount + " HP (aff=" + aff + ", effFrac=" + effectiveFrac + ")");
 	}
 
 	// -------------------------------------------------------------------
-	// Staging inicjatywy "twarzą w twarz".
-	// Naprawia "kwestia rzucona w plecy w biegu":
-	//  - wstrzymuje follow AI towarzyszki (suspensja wewnętrzna: tag i
-	//    członkostwo w drużynie zostają, wznowienie w EndInteraction),
-	//  - zatrzymuje ją, obraca twarzą do Geralta, włącza head-tracking
-	//    i flagę rozmowy (jak vanilla greeting / MCME talk),
-	//  - wyłącza jej kolizje (jak MCME przy dialogu) i podprowadza na
-	//    dystans rozmowy – wcześniej follow trzymał ją ~3.5m za plecami,
-	//  - zatrzymuje Geralta i obraca go ku niej – kamera pościgowa
-	//    ustawia się wtedy na towarzyszkę.
-	// OBOWIĄZKOWO: na każdej ścieżce wyjścia wołać EndInteraction()!
+	// Staging interakcji twarzą w twarz:
+	// Faza 1 (miękkie podejście): NPC kieruje się asynchronicznie ku graczowi.
 	// -------------------------------------------------------------------
-	// FAZA 1 – miękkie podejście: NPC suspendsuje follow i kieruje się ku
-	// graczowi asynchronicznie (goni ruchomego gracza). ZERO locka gracza —
-	// propozycja może być zignorowana bez przerywania gry.
 	protected latent function SoftApproach(npc : CNewNPC, player : CR4Player, targetDist : float)
 	{
 		if (!npc || !player) return;
@@ -357,8 +360,7 @@ class MCM_RomanceInteraction
 		// wake-loop omija ja dzieki wasInTalkInteraction/scenie/busyNpc,
 		// a po EndInteraction wpis sprząta sie sam przy nastepnym wake.
 
-		// Bez tego follow AI (BTAP_Emergency) goniło za graczem i gwałciło
-		// nasze ActionMoveToNode / ActionRotateTo – towarzyszka "uciekała".
+		// Zatrzymanie ruchu towarzyszki przed rozpoczęciem obrotu.
 		if (npc.scmcc && npc.scmcc.IsFollowing())
 		{
 			npc.scmcc.StopFollowing(true);
@@ -462,11 +464,7 @@ class MCM_RomanceInteraction
 		npc.DisableLookAt();
 		npc.EnableCharacterCollisions(true);
 		npc.wasInTalkInteraction = false;
-		// UWAGA: StopFollowing/StartFollowing MUSZĄ dostawać 'true'
-		// (dontModifyPlayersList) – wtedy MCME suspensduje follow bez
-		// zerowania isFollowing/tagu i IsFollowing() tu nadal zwraca true.
-		// Ze StopFollowing() bez parametru towarzyszka straciłaby
-		// członkostwo w drużynie i nigdy nie wznowiłaby follow.
+		// Wznowienie podążania bez modyfikacji listy drużyny.
 		if (npc.scmcc && npc.scmcc.IsFollowing())
 		{
 			npc.scmcc.StartFollowing(true);
@@ -493,12 +491,7 @@ class MCM_RomanceInteraction
 		}
 		if (npc)
 		{
-			// IsInGameplayScene zostaje true jeszcze ~kilka s po koncu dialogu
-			// (scena wychodzi z aktora). ForceAIBehavior w StartFollowing
-			// wywolane na aktorze wciaz w scenie jest ignorowane -> NPC
-			// raportuje follow=true ale stoi zamrozona (raport: Yen jak
-			// slup po FollowWithKiss). Czekamy max 6s az scena zwolni
-			// aktora, potem dopiero cleanup + restore follow.
+			// Oczekiwanie na zwolnienie aktora przez scenę dialogową.
 			t = 0.0;
 			while (npc.IsInGameplayScene() && t < 6.0)
 			{
@@ -510,10 +503,7 @@ class MCM_RomanceInteraction
 				MCM_AR_Log("[AR] EndInteraction: IsInGameplayScene >6s - restore follow mimo to (NPC moze utknac)");
 			}
 
-			// CancelAll: zdejmuje wszelkie residualne akcje sceny/stagin─gu
-			// (gameplay-scene AI, move-to, rotate). Bez tego NPC zostaje
-			// zamrozona w ostatniej pozycji sceny bo AI nie moze przejac
-			// kontroli.
+			// Zresetowanie akcji lokomocji po zakończeniu sceny.
 			npc.ActionCancelAll();
 
 			// Jezeli NPC utknela w SCMPlayIdleAnim (job MCME), pop – inaczej
@@ -544,12 +534,7 @@ class MCM_RomanceInteraction
 					MCM_AR_Log("[AR] EndInteraction: SCM NULL - mimiki bez reinit (cleanup kontynuowany)");
 				}
 
-				// Wznów podążanie według stanu z początku stagingu
-				// (npcWasFollowing), nie wg IsFollowing() po scenie:
-				// sceny .w2scene MCME wywoluja mod_scm_toggle_follow =
-				// StopFollowing() BEZ parametru -> zdejmuje isFollowing,
-				// tag i czlonkostwo w druzynie. Gdybysmy patrzyli na
-				// IsFollowing() po scenie, NPC zostawal "zaparkowany".
+				// Wznowienie podążania według stanu sprzed rozpoczęcia sceny.
 				if (npcWasFollowing)
 				{
 					if (npc.scmcc.IsFollowing())
@@ -572,12 +557,7 @@ class MCM_RomanceInteraction
 		if (MCM_AR_GetCore()) MCM_AR_GetCore().RemoveIdleJobFor(npc);
 	}
 
-	// Skrót: pokaż prompt HUD i poczekaj na odpowiedź gracza (Tier 3)
-	// Consent = PRZYTRZYMANIE [C] ~1s. Zwykle tapniecie chowa miecz i nic
-	// nie robi - filtruje przypadkowe akceptacje ([C]=SwordSheathe jest
-	// wciskane non-stop w eksploracji; wczesniej kazde tapniecie/FactsSet
-	// z listenera zaliczalo consent). Prompt odswiezany co ~2s bo
-	// DisplayHudMessage znika za szybko, zeby zdazyc zareagowac.
+	// Wyświetla prompt HUD i oczekuje na potwierdzenie gracza (przytrzymanie [C] ~1s).
 	protected latent function ShowConsentPrompt(promptText : string, timeoutSec : float, optional npc : CNewNPC) : bool
 	{
 		var elapsed      : float;
@@ -603,7 +583,7 @@ class MCM_RomanceInteraction
 
 		// step 0.05: dokladniejszy hold. Tapniecia liczy eventowo listener
 		// OnMCM_AR_ConsentKey (FactsAdd) - przetrwa klikniecia <50ms,
-		// ktore polling moglby zgubic (CR botex m2).
+		// ktore polling moglby zgubic.
 		step = 0.05;
 		elapsed = 0.0;
 		heldFor = 0.0;
@@ -613,11 +593,7 @@ class MCM_RomanceInteraction
 		vkTaps = 0;
 		pressedFresh = false;
 
-		// DEV (TW3SE): gdy aktywne, consent czyta prawdziwy stan VK (hold i
-		// zbocza tapow) zamiast akcji SwordSheathe - pełny test nowej
-		// sciezki end-to-end. Akcja zostaje CIENIEM - dywergencje ląduja
-		// w DevLog (odpowiada na "czy engine blokuje SwordSheathe").
-		// Release: DevActive()=false -> dzisiejsze zachowanie bez zmian.
+		// W trybie dev odczytuje stan VK bezpośrednio przez TW3SE.
 		devVK = MCM_AR_DevActive();
 		vkC = MCM_AR_DevConfigKey('ar_consent_key');
 		if (vkC == 0) vkC = 0x43;
@@ -674,15 +650,7 @@ class MCM_RomanceInteraction
 				return false;
 			}
 
-			// Sciezka A - HOLD: liczymy dopiero po SWIEZYM nacisnieciu
-			// w oknie promptu (pressedFresh). Klawisz trzymany juz przed
-			// promptem nie konsentuje bez nowej intencji (CR botex M3).
-			// Release-path czyta stan trzymania EVENTOWO z listenera
-			// (press->held=true+pressAt, release->held=false) -
-			// GetActionValue zwraca impuls i hold nigdy nie dokladal
-			// stepow (test: tylko 2x tap dzialal).
-			// actHeld = SInputAction.value - prawdziwy stan trzymania
-			// (inaczej niz GetActionValue=impuls, ktory zawodzil).
+			// Ścieżka A (HOLD): weryfikacja przytrzymania klawisza po wyświetleniu promptu.
 			actHeld = IsPressed(theInput.GetAction('SwordSheathe'), true);
 			if (devVK)
 			{
@@ -696,12 +664,7 @@ class MCM_RomanceInteraction
 			}
 			else
 			{
-				// Consent = dwa niezalezne zrodla musza sie zgodzic:
-				// evHeld (listener press/release; pressAt>=tStart = swieze)
-				// ORAZ actHeld. Gdyby release-event nigdy nie przyszedl, samo
-				// evHeld zostawialoby held=true i tap+czekanie >=1s falszywie
-				// akceptowalo scene (CR qwen). Gdyby .value tez bylo zepsute ->
-				// hold nie dziala, ale NIGDY falszywej akceptacji (bezpieczne).
+				// Weryfikacja stanu klawisza (zdarzenie listenera oraz stan akcji).
 				evHeld = thePlayer.mcm_ar_consentHeld &&
 				         thePlayer.mcm_ar_consentPressAt >= tStart;
 				nowDown = evHeld && actHeld;
@@ -726,7 +689,7 @@ class MCM_RomanceInteraction
 				{
 					FactsRemove('mcme_ar_awaiting_consent');
 					FactsRemove('mcme_ar_consent_given');
-					MCM_AR_Log("[AR] Consent zaakceptowany (hold " + heldFor + "s) po " + elapsed + "s");
+					MCM_AR_Log("[AR] Consent accepted (hold " + heldFor + "s) after " + elapsed + "s");
 					return true;
 				}
 			}
@@ -754,7 +717,7 @@ class MCM_RomanceInteraction
 				{
 					FactsRemove('mcme_ar_awaiting_consent');
 					FactsRemove('mcme_ar_consent_given');
-					MCM_AR_Log("[AR] Consent zaakceptowany (2x tap, presses=" + nowTaps + ") po " + elapsed + "s");
+					MCM_AR_Log("[AR] Consent accepted (2x tap, presses=" + nowTaps + ") after " + elapsed + "s");
 					return true;
 				}
 				lastTapAt = elapsed;
@@ -771,12 +734,7 @@ class MCM_RomanceInteraction
 		return false;
 	}
 
-	// Czeka az kolejka czatu DialogueManager MCME bedzie wolna.
-	// IsBusy = stan MCM_DM_Talking (onelinery/banter) - scena nie
-	// powinna startowac w trakcie swiezego czatu. Stale: brak postepu
-	// kolejki >20s = martwy stan (watchdog MCME zdejmie go przy
-	// nastepnym AddChat) - przepuszczamy, inaczej martwa kolejka
-	// blokowalaby sceny na stale. Zwraca false po maxWaitSec.
+	// Oczekuje na zwolnienie kolejki dialogowej DialogueManager (maks. maxWaitSec).
 	protected latent function WaitForDialogueFree(maxWaitSec : float) : bool
 	{
 		var t   : float;
@@ -856,7 +814,7 @@ class MCM_RomanceInteraction
 
 		// Czas na timer delayedDialogue + start sceny, potem czekaj aż cicho.
 		// sawScene = scena faktycznie wystartowala - delayedDialogue moze
-		// po cichu odrzucic sciezke, wtedy zwracamy false (CR botex M2).
+		// po cichu odrzucic sciezke, wtedy zwracamy false.
 		Sleep(0.6);
 		t = 0.0;
 		sawScene = false;
@@ -1088,11 +1046,7 @@ class MCM_RomanceInteraction
 	}
 
 	// -------------------------------------------------------------------
-	// Scena intymna przy "sweet spot" (NaughtyPoint MCME).
-	// Zarejestrowane NPC (yen/triss/ciri/keira/shani/syanna): pełny pipeline
-	// PreNaughtyWith (action point + delayedDialogue + HideAllExcept).
-	// Niezarejestrowane (anarietta/vivienne): własny pipeline z konwencją
-	// naughty\<dir>\anywhere.w2scene. Zwraca false gdy brak punktu/sceny.
+	// Scena intymna w punkcie intymnym (NaughtyPoint).
 	// -------------------------------------------------------------------
 	protected function HasIntimateScene(npc : CNewNPC) : bool
 	{
@@ -1186,12 +1140,7 @@ class MCM_RomanceInteraction
 				return false;
 			}
 
-			// Fakt mod_scm_allownaughty: w vanilla-flow ustawia go
-			// PreDialogue przy wejsciu w hub-dialog (OnPlayerInteract).
-			// My omijamy hub, wiec bez tego wywolania fakt zostaje 0 i
-			// scena startuje "martwa" lub wcale (runtime: end ok=false
-			// po 90s, NPC zawieszony w scenie). Wymaga punktu <=16m
-			// (ciasniej niz nasz check 20m) + satisfiesNaughtyRequirements.
+			// Inicjalizacja punktu intymnego (ustawia fakt mod_scm_allownaughty).
 			scm.NaughtyManager.PreDialogue(npc);
 			if (FactsQuerySum('mod_scm_allownaughty') <= 0)
 			{
@@ -1264,20 +1213,13 @@ class MCM_RomanceInteraction
 			MCM_AR_Log("[AR] IntimateScene WARN: " + NameToString(nm) +
 			           " nadal IsInGameplayScene po timeout - scena wiszaca");
 		}
-		// Bezpiecznik: PostNaughty = superset ShowAllExcept (re-equip ekwipunku,
-		// reset appearance, odsloniecie reszty) – idempotentne, gdy scena sama
-		// juz zawolala mod_scm_Naughty(true); ratuje gdy scena umarla w polowie.
-		// Re-guard: WaitForSceneEnd jest latent (do 90s) – scm moglo zniknac
+		// Przywrócenie ekwipunku i wyglądu towarzyszek po scenie intymnej.
 		if (scm && scm.NaughtyManager)
 		{
 			scm.NaughtyManager.PostNaughty();
 		}
 
-		// Scena intymna chowa pozostale towarzyszki (HideAllExcept) – wypadaja
-		// z tagu 'GeraltsBFF' i po odslonieciu wygladaja jak "powrot po
-		// absencji" (falszywe powitania). Przestempluj bookkeeping na "teraz".
-		// Uwaga: greetSeenTime[i]=x przez obiekt nie dziala (array = kopia) –
-		// kopiujemy cala tablice, modyfikujemy, przypisujemy z powrotem.
+		// Aktualizacja czasu widoczności towarzyszek po ukryciu podczas sceny intymnej.
 		amb = thePlayer.mcm_ar_ambient;
 		if (amb)
 		{
@@ -1347,13 +1289,9 @@ class MCM_AR_GiftRequest_Base extends MCM_RomanceInteraction
 	// fallback na surowe id.
 	public function GetGiftDisplayName(item : name) : string
 	{
-		var disp : string;
-		disp = GetLocStringByKeyExt(thePlayer.inv.GetItemLocalizedNameByName(item));
-		if (StrLen(disp) <= 0)
-		{
-			disp = NameToString(item);
-		}
-		return disp;
+		var key : string;
+		key = thePlayer.inv.GetItemLocalizedNameByName(item);
+		return AR_T(key, NameToString(item));
 	}
 
 	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
@@ -1430,13 +1368,6 @@ class MCM_AR_GiftRequest_Base extends MCM_RomanceInteraction
 
 		// Usunięcie 1 sztuki z ekwipunku
 		removed = player.inv.RemoveItemByName(chosenGift, 1);
-		if (!removed)
-		{
-			// Fallback: natywne C++ moze nie widziec itemu przez skryptowy
-			// wrapper – sprobuj bezposrednio przez thePlayer
-			removed = thePlayer.inv.RemoveItemByName(chosenGift, 1);
-			MCM_AR_Log("[AR] Gift: fallback thePlayer.inv.RemoveItemByName(" + NameToString(chosenGift) + ") = " + removed);
-		}
 		if (!removed)
 		{
 			player.DisplayHudMessage("[AR] " + AR_Fmt(AR_T("ar_msg_remove_fail", "Couldn't remove {1} from your inventory."), giftName));
@@ -1638,12 +1569,7 @@ class MCM_RomanceActionRegistry
 // (zarejestruj odpowiedź gracza na prompt [C])
 // ---------------------------------------------------------------------------
 
-// Stan trzymania klawisza consentu na graczu (transient, samo-czyszczace:
-// release zeruje flage; pressAt to tylko timestamp). Listener dostaje
-// eventy press ORAZ release - jak OnCommSprintToggle w vanilla
-// playerInput.ws (l.652-660): hold mierzony czasem miedzy eventami.
-// GetActionValue('SwordSheathe') zwraca impuls, nie stan trzymania -
-// dlatego poprzedni hold-detektor nigdy nie dochodzil do 1s.
+// Stan trzymania klawisza zgody [C] na graczu (czas naciśnięcia i flaga aktywnego trzymania).
 @addField(CR4Player)
 public var mcm_ar_consentPressAt : float;
 
@@ -1723,13 +1649,7 @@ function MCM_AR_GetCompanionDisplayName(npc : CNewNPC) : string
 	}
 }
 
-// ---------------------------------------------------------------------------
-// Sonda dostępności animacji w animsecie danego NPC (§15.1 – cicha degradacja).
-// Replikuje scmcc.PlayAnimSimple (SpawnCompanionsSCMCC l.403), ale trzyma
-// zwrot PlaySlotAnimationAsync: false = animacji brak w w2anims tego NPC
-// LUB slot zajęty – sondować w stanie idle, ewentualnie drugim podejściem.
-// Zwraca true, gdy którykolwiek slot przyjął animację.
-// ---------------------------------------------------------------------------
+// Sonda sprawdzająca dostępność animacji w slotach animacji danego NPC.
 function MCM_AR_ProbeAnim(npc : CNewNPC, animName : name) : bool
 {
 	var animComp : CMovingPhysicalAgentComponent;
@@ -1754,13 +1674,7 @@ function MCM_AR_ProbeAnim(npc : CNewNPC, animName : name) : bool
 	return played;
 }
 
-// ---------------------------------------------------------------------------
-// Wrap: engine zglasza nowe menu wyborow dialogowych (OnDialogChoicesSet
-// strzela przy kazdym pokazaniu – tez powrocie do hubu po kiss). Gdy nasza
-// scena FollowWithKiss ma uzbrojony auto-pick (arAutoPick na core), core
-// wybiera opcje; WaitForSceneEnd dokonuje select+accept. Poza naszymi
-// scenami arAutoPick=false – zwykly dialog przechodzi nietkniety.
-// ---------------------------------------------------------------------------
+// Obsługa wyboru dialogowego w scenach FollowWithKiss.
 @wrapMethod(CR4HudModuleDialog)
 function OnDialogChoicesSet(choices : array<SSceneChoice>, alternativeUI : bool)
 {
@@ -1783,10 +1697,7 @@ function OnDialogChoicesSet(choices : array<SSceneChoice>, alternativeUI : bool)
 	}
 }
 
-// Drugi wrap na nizszej warstwie: SendDialogChoicesToUI dostaje wybor
-// takze przez OnMissingContentDialogClosed i ewentualne sciezki omijajace
-// OnDialogChoicesSet. Podwojny strzal na ten sam zestaw jest bezpieczny –
-// handler ma guard arPendingPickIdx>=0.
+// Obsługa menu wyboru dialogowego na poziomie warstwy interfejsu (SendDialogChoicesToUI).
 @wrapMethod(CR4HudModuleDialog)
 function SendDialogChoicesToUI(choices : array<SSceneChoice>, allowContentMissingDialog : bool)
 {

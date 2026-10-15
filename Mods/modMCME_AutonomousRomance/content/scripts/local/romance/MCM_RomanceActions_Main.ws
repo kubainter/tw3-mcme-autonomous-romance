@@ -436,7 +436,7 @@ class MCM_AR_Triss_PostCombatHug extends MCM_RomanceInteraction
 	default barkMimic       = 'concern';
 	// ID 1127010: "Tsk… Oh Geralt… What've you gotten yourself into now?"
 	default lineId          = 1127010;
-	default lineText        = "Tsk… Oh Geralt… What've you gotten yourself into now?";
+	default lineText        = "Tsk... Oh Geralt... What've you gotten yourself into now?";
 	default lineKey         = "ar_line_triss_postcombat_hug";
 
 	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
@@ -482,7 +482,7 @@ class MCM_AR_Triss_NightWhisper extends MCM_RomanceInteraction
 	// (1074691 "Gladly. I was about to ask the same." byla ODPOWIEDZIA
 	//  na zaproszenie – zla jako zaproszenie, zamieniona.)
 	default lineId          = 1000783;
-	default lineText        = "Hmmmm, Geraaalt…";
+	default lineText        = "Hmmmm, Geraaalt...";
 	default lineKey         = "ar_line_triss_night_whisper";
 
 	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
@@ -627,7 +627,7 @@ class MCM_AR_Triss_IntimateInvite extends MCM_RomanceInteraction
 	default barkMimic       = 'flirt';
 	// "Hmmmm Geraaalt" – ciepla, wymowna linia Triss
 	default lineId          = 1000783;
-	default lineText        = "Hmmmm, Geraaalt…";
+	default lineText        = "Hmmmm, Geraaalt...";
 	default lineKey         = "ar_line_triss_intimate_invite";
 
 	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
@@ -797,7 +797,7 @@ class MCM_AR_Keira_NightProposal extends MCM_RomanceInteraction
 	// ID 589402: "I daresay this one, once sprung, would thrill you…
 	//  Ah well, change your mind - come and see me." (jej linia)
 	default lineId          = 589402;
-	default lineText        = "I daresay this one, once sprung, would thrill you… Ah well, change your mind - come and see me.";
+	default lineText        = "I daresay this one, once sprung, would thrill you... Ah well, change your mind - come and see me.";
 	default lineKey         = "ar_line_keira_night_proposal";
 
 	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
@@ -854,7 +854,7 @@ class MCM_AR_Keira_CampfireWitch extends MCM_RomanceInteraction
 	default weight          = 7;
 	// ID 588324: "Perhaps… perhaps you'd stay just a bit longer?..."
 	default lineId          = 588324;
-	default lineText        = "Perhaps… perhaps you'd stay just a bit longer? There's one small favor you might yet do for me.";
+	default lineText        = "Perhaps... perhaps you'd stay just a bit longer? There's one small favor you might yet do for me.";
 	default lineKey         = "ar_line_keira_campfire_witch";
 
 	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
@@ -886,7 +886,7 @@ class MCM_AR_Keira_IntimateInvite extends MCM_RomanceInteraction
 	default barkMimic       = 'flirt';
 	// "...thrill you... come and see me" – dwoista propozycja pasuje idealnie
 	default lineId          = 589402;
-	default lineText        = "I daresay this one, once sprung, would thrill you… Ah well, change your mind - come and see me.";
+	default lineText        = "I daresay this one, once sprung, would thrill you... Ah well, change your mind - come and see me.";
 	default lineKey         = "ar_line_keira_intimate_invite";
 
 	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
