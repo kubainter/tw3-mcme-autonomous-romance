@@ -35,6 +35,7 @@ import function TW3SE_KeyPressed(vk : int) : bool;
 import function TW3SE_KeyJustPressed(vk : int) : bool;
 import function TW3SE_Emit(text : string);
 import function TW3SE_ReloadScripts();
+import function TW3SE_Lua(code : string) : string;
 
 // --- detekcja warstwy (stub zwraca 0/false) -------------------------------
 
@@ -145,6 +146,15 @@ function MCM_AR_DevHasVar(k : string) : bool
 function MCM_AR_DevDelVar(k : string) : bool
 {
 	return TW3SE_DeleteVar(k);
+}
+
+// --- Lua bridge -------------------------------------------------------------
+// Wykonuje kod Lua w wirtualce TW3SE (game thread) i zwraca wynik jako
+// string. Kanał dla mcme_bridge.lua (seamless anim doubles - Clone() i
+// templateParams nie istnieja w WitcherScript).
+function MCM_AR_DevLua(code : string) : string
+{
+	return TW3SE_Lua(code);
 }
 
 // --- hot reload (OSTROZNIE: zabija latent-loope -> ar_devreset po powrocie) --
