@@ -19,7 +19,7 @@
   <p align="center">
     <strong>Autonomous, context-aware romantic initiative for companions in The Witcher 3 Remastered (v5.00+).</strong>
     <br />
-    Companions observe, care, banter, tease — and invite Geralt over on their own terms.
+    Companions observe, care, banter, tease - and invite Geralt over on their own terms.
     <br />
     <br />
     <a href="CODEBASE.md"><strong>Explore the Architecture »</strong></a>
@@ -89,10 +89,10 @@ In vanilla **Multi Companion Mod Enhanced (MCME)**, companions are passive follo
 
 **MCME Autonomous Romance** flips that dynamic entirely. Companions are given dynamic initiative and behavioral agency:
 - They actively watch Geralt's combat condition and rush over to patch up his wounds when he's injured.
-- They warm up by campfires — sharing wine, remarks, and witty banter.
+- They warm up by campfires - sharing wine, remarks, and witty banter.
 - They initiate authentic flirts and tease Geralt using genuine, context-aware voiced lines and subtitles.
 - They invite Geralt to intimate romantic moments, dates at Corvo Bianco, or quiet evenings with full player consent safeguards.
-- When Geralt pauses during a journey, companions stop following, find a spot, and settle into idle poses — resuming the moment he moves on.
+- When Geralt pauses during a journey, companions stop following, find a spot, and settle into idle poses - resuming the moment he moves on.
 - Companions can even ask Geralt for a bottle of wine or spirits while relaxing at a tavern, campfire, or at Corvo Bianco.
 
 ```text
@@ -131,8 +131,8 @@ In vanilla **Multi Companion Mod Enhanced (MCME)**, companions are passive follo
 #### 1. 4-Tier Escalation Ladder
 * **Tier 1 (Flirt & Ambient Banter):** Spontaneous one-liners delivered with genuine in-game voice lines and subtitles while traveling the open world or resting.
 * **Tier 2 (Physical & Emotional Care):** Companions approach Geralt, express concern when he takes heavy combat damage, heal his wounds, or share a moment by glowing campfires.
-* **Tier 3 (Intimate Invitations):** Companions approach and discreetly invite Geralt to pause their journey. A non-intrusive 10-second HUD prompt (`[C] Respond`) allows the player to accept or decline.
-* **Tier 4 (Full Story Intimacy & Dates):** Private chambers, Corvo Bianco estate relaxation, and custom romantic scenes with authentic dialogue trees and animations.
+* **Tier 3 (Intimate Invitations):** Companions approach and discreetly invite Geralt to pause their journey. A non-intrusive 20-second HUD prompt (`[C] Respond`) allows the player to accept or decline.
+* **Tier 4 (Full Story Intimacy & Dates):** Private chambers, Corvo Bianco estate relaxation, and romantic cutscenes playing cleanly without dialogue wheel soft-locks.
 
 #### 2. 3-Pillar Stateless Affinity Engine
 * **Pillar 1 (Vanilla Story Projection):** Real-time evaluation of original story choices (e.g. *The Last Wish*, *Now or Never*, Fyke Isle, Shani's wedding) without altering quest progression states.
@@ -146,11 +146,12 @@ In vanilla **Multi Companion Mod Enhanced (MCME)**, companions are passive follo
 #### 4. Non-Intrusive Player Consent Safeguard
 * Tier 3 & Tier 4 romantic initiatives never hijack player controls abruptly.
 * When a companion initiates, an on-screen HUD prompt appears: `[C] Respond`.
-* Uses vanilla `'SwordSheathe'` ([C]), preventing conflicts with MCME's default dialogue activation (`[E]`). Walking away or waiting 10 seconds politely declines without penalties.
+* Ships its own input action `MCM_AR_Consent` - bound to **C** on keyboard and **D-pad Left/Right** on gamepad, so consent works regardless of how you remapped sheathing. The prompt itself shows your real bound key/glyph (via `ReplaceTagsToIcons`). Vanilla `'SwordSheathe'` is still honored as a fallback. Walking away or waiting 20 seconds politely declines without penalties.
 
 #### 5. Configurable Pacing & Full Localization
-* A dedicated **Decision Tick Interval** slider (20–160 s, default 30 s) controls how often companions evaluate new initiatives — separate from the initiative cooldown per companion.
-* All player-facing text (prompts, HUD messages, voiced-line subtitles, MCM labels) ships in **English and Polish** via W3Strings; other game languages fall back to English.
+* A dedicated **Decision Tick Interval** slider (20-160 s, default 30 s) controls how often companions evaluate new initiatives - separate from the initiative cooldown per companion.
+* A **Companion Chatter** preset (Quiet / Default / Chatty) tunes ambient bark frequency.
+* All player-facing text (prompts, HUD messages, voiced-line subtitles, MCM labels) ships in **English, Polish, Spanish and Latin American Spanish** via W3Strings; other game languages fall back to English.
 
 #### 6. Zero Script Merger Conflicts
 * Built exclusively with native Remaster annotations (`@wrapMethod`, `@addMethod`, `@addField`).
@@ -162,14 +163,26 @@ In vanilla **Multi Companion Mod Enhanced (MCME)**, companions are passive follo
 
 | Companion | Tiers | Key Triggers & Dialogue Behaviors | Romance Spots & Scenarios |
 | :--- | :---: | :--- | :--- |
-| **Yennefer of Vengerberg** | T1 – T4 | Post-combat scolding and wound care, campfire evenings, Triss rivalry banter. | Corvo Bianco guest room, Kaer Morhen chambers, intimate dates. |
-| **Triss Merigold** | T1 – T4 | Post-combat hugs, warm campfire closeness, garden teasing, Yen rivalry banter. | Passiflora private suite, Triss's Novigrad house, Corvo Bianco. |
-| **Keira Metz** | T1 – T4 | Playful banter, field remedies with a sorcerous flourish, night proposals, witch-by-the-fire remarks. | Kaer Morhen chambers, Corvo Bianco, quiet evenings by the fire. |
-| **Shani** | T1 – T4 | Field medic battlefield triage, teasing compliments, late-night relaxation invitations. | Shani's clinic in Oxenfurt, moonlit meadows. |
-| **Anna Henrietta** *(DLC)* | T1 – T4 | Regal wit, wound inspection, Duchess's private company invitations. | Beauclair Palace, Corvo Bianco master bedroom. |
-| **Vivienne de Tabris** *(DLC)* | T1 – T4 | Subtle mystery flirts, reflective campfire moments, quiet night conversations. | Tourney Grounds pavilion, secluded Toussaint groves. |
-| **Cerys an Craite** *(DLC)* | T1 – T4 | Skellige-style direct banter, warrior honor checks, blunt nighttime drinking invitations. | Kaer Trolde keep, mountain campfires. |
-| **Philippa / Syanna / Ves / Salma** | Gift | Autonomous drink requests (+3 affinity) when the party relaxes. | Campfires, taverns, Corvo Bianco, quiet rest stops. |
+| **Yennefer of Vengerberg** | T1 - T4 | Post-combat scolding and wound care, campfire evenings, Triss rivalry banter, tavern wine, night remarks, personalized walking afterglow. | Corvo Bianco guest room, Kaer Morhen chambers, intimate dates. |
+| **Triss Merigold** | T1 - T4 | Post-combat hugs, warm campfire closeness, kiss invitations, Yen rivalry banter, tavern drinks, night remarks, personalized walking afterglow. | Passiflora private suite, Triss's Novigrad house, Corvo Bianco. |
+| **Keira Metz** | T1 - T4 | Playful banter, field remedies with a sorcerous flourish, night proposals, witch-by-the-fire remarks, tavern drinks, personalized walking afterglow. | Kaer Morhen chambers, Corvo Bianco, quiet evenings by the fire. |
+| **Shani** | T1 - T4 | Field medic battlefield triage, teasing compliments, late-night relaxation invitations, tavern drinks, personalized walking afterglow. | Shani's clinic in Oxenfurt, moonlit meadows. |
+| **Anna Henrietta** *(DLC)* | T1 - T4 | Regal wit, wound inspection, Duchess's private company invitations, tavern drinks, night remarks, personalized walking afterglow. | Beauclair Palace, Corvo Bianco master bedroom. |
+| **Vivienne de Tabris** *(DLC)* | T1 - T4 | Subtle mystery flirts, reflective campfire moments, quiet night conversations, tavern drinks, personalized walking afterglow. | Tourney Grounds pavilion, secluded Toussaint groves. |
+| **Cerys an Craite** *(DLC)* | T1 - T4 | Skellige-style direct banter, warrior honor checks, blunt nighttime drinking invitations, tavern drinks, personalized walking afterglow. | Kaer Trolde keep, mountain campfires. |
+| **Syanna** *(DLC)* | T1 - T4 | Cynical wit, post-combat remarks, universal kiss, and full cloud intimacy with native CDPR mesh, personalized walking afterglow. | Romantic sweet spots, secluded Toussaint chambers. |
+| **Cirilla (Ciri)** | T3 Hug | Warm family embrace interaction without dialogue traps, trail companionship, affectionate walking afterglow. | Open world, campfires, roadside rests. |
+| **Rosa var Attre** | T1 - T3 | Sharp-tongued fencing banter, fine-wine requests, universal kiss, personalized walking afterglow. | Taverns, campfires, rest stops. |
+| **Tomira** | T1 - T3 | Gentle herbalist warmth, spirit requests for tinctures, universal kiss, personalized walking afterglow. | Taverns, campfires, rest stops. |
+| **Philippa Eilhart** | T1 - T3 | Coldly pragmatic combat care, sharp condescending banter, spirit requests, universal kiss, personalized walking afterglow. | Campfires, taverns, rest stops. |
+| **Ves** | T1 - T3 | Frontline Blue Stripes camaraderie, campfire stillness, drink requests, universal kiss, personalized walking afterglow. | Campfires, taverns, rest stops. |
+| **Salma** *(Deadly Delights)* | T1 - T3 | Seductive campfire allure, spirit requests, universal kiss, sensory warmth afterglow. | Campfires, taverns, rest stops. |
+| **Priscilla** | T1 - T3 | Poetic road observations, ballad care, fine wine requests, universal kiss, personalized walking afterglow. | Campfires, taverns, rest stops. |
+| **Edna var Attre** | T1 - T3 | Sisterly rivalry banter, Nilfgaardian court fatigue, vintage requests, universal kiss, personalized walking afterglow. | Campfires, taverns, rest stops. |
+| **Fringilla Vigo** | T1 - T3 | Guarded Nilfgaardian flirts, magical warmth triage, southern wine requests, universal kiss, personalized walking afterglow. | Campfires, taverns, rest stops. |
+| **Margarita Laux-Antille** | T1 - T3 | Oxenfurt prison recovery, comforting triage, spirit requests, universal kiss, personalized walking afterglow. | Campfires, taverns, rest stops. |
+| **Orianna** *(DLC)* | T1 - T3 | Dark refined elegance, bloody curiosity, vintage requests, universal kiss, lingering taste afterglow. | Campfires, taverns, rest stops. |
+| **All companions** | T1 + Gestures | Context-aware chatter: weather, riding, boats, interiors; physical drinking animations when gifted wine or sharing a round in taverns; personalized walking afterglow. | Open world, inns, on the road and on water. |
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -200,6 +213,9 @@ In vanilla **Multi Companion Mod Enhanced (MCME)**, companions are passive follo
    * `bin/config/r4game/user_config_matrix/pc/modMCME_AutonomousRomance.xml` → `<Witcher 3>/bin/config/r4game/user_config_matrix/pc/modMCME_AutonomousRomance.xml`
 3. Launch the game. Witcher 3 will automatically compile the scripts on first startup.
 4. **No Script Merger is needed.** Because the mod uses `@wrapMethod` annotations and touches zero base files, no merging is required.
+5. **Input bindings (consent key):** the mod ships `Mods/modMCME_AutonomousRomance/MCME_AR.input.settings` with the `MCM_AR_Consent` action (keyboard **C** + gamepad **D-pad Left/Right**).
+   * **TW3 Mod Manager / Vortex:** merges `.input.settings` files automatically - nothing to do.
+   * **Manual install:** the game does NOT auto-merge mod input files. Append the lines from `MCME_AR.input.settings` to your `Documents\The Witcher 3\input.settings` under each matching context section (`[Exploration]`, `[Combat]`, `[Horse]`, `[Boat]`, `[Swimming]`). If skipped, consent still works via your `SwordSheathe` binding (default: C / D-pad), just not independently of it.
 
 ### First Run & Verification
 
@@ -229,10 +245,11 @@ Navigate to **Options → Gameplay / Mods → MCME - Autonomous Romance**:
 | Setting | Range / Options | Default | Description |
 | :--- | :---: | :---: | :--- |
 | **Enable Mod** | On / Off | `On` | Global master toggle for autonomous companion logic. |
-| **Initiative Interval** | 60s – 1200s | `720s` (12 min) | Per-companion cooldown between autonomous initiatives. |
-| **Decision Tick Interval** | 20s – 160s (step 10s) | `30s` | How often the mod evaluates the world and picks an initiative. The timer reads this value when a game session starts, so changes apply after a save reload. |
-| **Affinity Multiplier** | 0.5x – 5.0x | `1.0x` | Adjusts how quickly dynamic relationship points are earned. |
+| **Initiative Interval** | 60s - 1200s | `720s` (12 min) | Per-companion cooldown between autonomous initiatives. |
+| **Decision Tick Interval** | 20s - 160s (step 10s) | `30s` | How often the mod evaluates the world and picks an initiative. The timer reads this value when a game session starts, so changes apply after a save reload. |
+| **Affinity Multiplier** | 0.5x - 5.0x | `1.0x` | Adjusts how quickly dynamic relationship points are earned. |
 | **Jealousy Mode** | Jealousy / Polyamory | `Jealousy` | Enables rivalry banter and exclusivity, or unlocks free love. |
+| **Companion Chatter** | Quiet / Default / Chatty | `Default` | How talkative companions are: Quiet ~30%, Default ~65%, Chatty ~100% of ambient bark opportunities. |
 | **Sandbox Mode** | On / Off | `Off` | Bypasses story quest gates and maximizes affinity for instant testing. |
 | **Player Consent Prompt** | On / Off | `On` | Requires `[C]` key confirmation before triggering intimate scenes. |
 | **Debug HUD Messages** | On / Off | `On` | Shows `[AR]` diagnostic notifications on the HUD. |
@@ -240,14 +257,14 @@ Navigate to **Options → Gameplay / Mods → MCME - Autonomous Romance**:
 ### Player Consent Safeguard ([C] Key)
 
 When a companion approaches Geralt for a romantic date or intimate scene:
-1. A subtle HUD notification appears: `[C] Respond to <Companion>` (with a reminder to hold `[C]` ~1s or tap it twice).
-2. You have **10 seconds** to respond — hold `[C]` for about a second, or double-tap it quickly.
+1. A subtle HUD notification appears: `[C] Respond to <Companion>` - the prompt renders the **actual key/button bound on your setup** (keyboard or gamepad glyph), not a hardcoded letter.
+2. You have **20 seconds** to respond - hold the shown key (default **C** / gamepad **D-pad Left or Right**) for about a second, or double-tap it quickly.
 3. On accept, the cutscene or romantic dialogue smoothly initiates.
 4. If you walk more than ~12 m away or let the timer expire, the companion offers an understanding remark and the mod enters a short grace cooldown without penalty.
 
 ### Companion Gifting Mechanic
 
-Companions can autonomously request a drink or gift — but only when the mood is right: while relaxing in a tavern, at Corvo Bianco, around a campfire, or during an idle rest stop.
+Companions can autonomously request a drink or gift - but only when the mood is right: while relaxing in a tavern, at Corvo Bianco, around a campfire, or during an idle rest stop.
 - When Geralt carries fine wine or spirits in his inventory (*Est Est*, *Erveluce*, *Beauclair White*, *Mettina Rosé*, *Alcohest*, *Dwarven Spirit*), the companion approaches and asks for a drink.
 - Pressing `[C]` offers the gift, consuming one bottle from inventory and awarding **+3 Affinity Points** along with a thank-you remark.
 - Requests are deliberately rare (long cooldown, low initiative weight) and never trigger during normal travel or combat.
@@ -258,7 +275,7 @@ Companions can autonomously request a drink or gift — but only when the mood i
 
 Open the game console (`~`) to execute diagnostic commands:
 
-#### Core Status & Controls
+#### Core Engine & Lifecycle
 | Command | Parameters | Description |
 | :--- | :--- | :--- |
 | `ar_test` | None | Instant sanity test verifying player entity handle and mod presence. |
@@ -267,19 +284,22 @@ Open the game console (`~`) to execute diagnostic commands:
 | `ar_trigger` | None | Clears internal timers and immediately forces an autonomous decision tick. |
 | `ar_force` | None | Toggles Sandbox Mode on/off directly from console. |
 | `ar_consent` | None | Programmatically triggers the `[C]` consent key via console. |
+| `ar_idlenow` | None | Immediately forces idle-suspend resting poses for all active companions. |
 | `ar_reset` | None | Resets active timers, cooldowns, and action registries. |
 | `ar_devreset` | None | Complete factory reset: wipes all stored affinity facts and restarts engine loop. |
 
-#### Relationship & Appearance Management
+#### Romance, Gestures & Appearance
 | Command | Parameters | Description |
 | :--- | :--- | :--- |
+| `ar_kiss` | `optional npc: string` | Triggers the clean universal kiss scene for the target companion (or Triss if omitted). |
+| `ar_hug` | None | Triggers Ciri's warm family embrace interaction. |
 | `ar_affinity` | `name: string, points: int` | Adds or subtracts affinity points for a given companion (e.g., `ar_affinity('yen', 25)`). |
 | `ar_gift` | None | Tests the gifting logic manually, consuming a drink and awarding affinity. |
 | `ar_dress` | None | Restores default companion outfits. |
 | `ar_undress` | None | Switches companion to underwear mesh for intimate scenes. |
 | `ar_naked` | None | Switches companion to naked mesh. |
 
-#### Diagnostics & Audio
+#### Diagnostics, Audio & TW3SE
 | Command | Parameters | Description |
 | :--- | :--- | :--- |
 | `ar_debug` | None | Toggles real-time decision digest messages on the HUD. |
@@ -288,6 +308,8 @@ Open the game console (`~`) to execute diagnostic commands:
 | `ar_diag` | None | Detailed memory and state dump for all companion actors. |
 | `ar_line` | `name: string, lineId: int` | Plays a specific voice line ID on the targeted companion for audio testing. |
 | `ar_probeanim` | `name: string, anim: string` | Probes whether a specific animation slot is supported on the companion mesh. |
+| `ar_devinfo` | None | (TW3SE) Displays development build version and extender status. |
+| `ar_reload` | None | (TW3SE) Reloads development configuration on the fly. |
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -295,8 +317,8 @@ Open the game console (`~`) to execute diagnostic commands:
 
 The mod logs through two independent channels:
 
-1. **TW3SE dev channel (recommended for development):** every `[AR]` line lands in `bin\x64_dx12\tw3se\out\ar_log.txt` and on the `\\.\pipe\tw3se` named pipe — no launch flags needed. `scripts\run_game_dev.bat` starts the game plus a live-follow window; `scripts\tw3se_pipe.ps1 -Cmd "exec ar_status()"` runs console commands without opening `~`.
-2. **Vanilla `scriptslog.txt`:** launch with `scripts\run_game_debug.bat` (`-debugscripts` only — **never add `-net`**, it redirects output to a dead debug socket and kills the file). Verify `user.settings` contains:
+1. **TW3SE dev channel (recommended for development):** every `[AR]` line lands in `bin\x64_dx12\tw3se\out\ar_log.txt` and on the `\\.\pipe\tw3se` named pipe - no launch flags needed. `scripts\run_game_dev.bat` starts the game plus a live-follow window; `scripts\tw3se_pipe.ps1 -Cmd "exec ar_status()"` runs console commands without opening `~`.
+2. **Vanilla `scriptslog.txt`:** launch with `scripts\run_game_debug.bat` (`-debugscripts` only - **never add `-net`**, it redirects output to a dead debug socket and kills the file). Verify `user.settings` contains:
    ```ini
    [Scripts]
    DebugScriptsLogDir=Documents\The Witcher 3
