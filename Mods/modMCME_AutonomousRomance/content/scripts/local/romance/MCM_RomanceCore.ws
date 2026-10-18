@@ -14,8 +14,7 @@ public var mcm_ar_core : MCM_AutonomousRomanceCore;
 @addField(CR4Player)
 public var mcm_ar_ambient : MCM_AmbientRomanceChannel;
 
-// Bootlog: wiadomosci zapisane ZANIM powstal core (scriptslog.txt umiera
-// po burstcie startowym na tej instalacji - obejscie diagnostyki przez HUD).
+// Bufor komunikatów diagnostycznych przed inicjalizacją obiektu core.
 @addField(CR4Player)
 public var mcm_ar_bootlog : array<string>;
 
@@ -46,19 +45,7 @@ function MCM_AR_OnPlayerReady()
 		mcm_ar_config = new MCM_AR_ConfigWrapper in this;
 	}
 
-	// Rejestracja listenera klawisza zgody gracza [C].
-	// NIE uzywamy E/Interaction/Talk/Interact – to klawisze interakcji
-	// vanilla, wiec akceptacja promptu jednoczesnie odpalala dialog MCME
-	// z towarzyszem. MCM_K_C = custom akcja MCME zbindowana na IK_C
-	// (input.settings), nie ma innej funkcji w eksploracji.
-	// Uwaga: MCM_K_C z input.settings siedzi w sekcji [SCMMenuBase] –
-	// dispatchuje TYLKO w kontekscie menu MCME, nigdy w eksploracji.
-	// [C] w kontekscie Exploration = akcja 'SwordSheathe' (juz zbindowana),
-	// wiec nasluchujemy jej zamiast; efekt uboczny to zapiecie/schowanie
-	// miecza przy akceptacji – akceptowalne w kontekscie promptu.
-	// Stare rejestracje NIE sa derejestrowywane –
-	// UnregisterListener(this,'Talk') na CR4Player zdjeloby tez vanilla-owe
-	// handlery interakcji gracza. Listenery rejestruja sie swiezo na spawnie.
+	// Rejestracja listenera akcji 'SwordSheathe' ([C]) dla zgody na romans.
 	theInput.RegisterListener(this, 'OnMCM_AR_ConsentKey', 'SwordSheathe');
 
 	// Bezpiecznik: latent-abort ShowConsentPrompt mogl zostawic fakty
@@ -79,7 +66,7 @@ exec function ar_test()
 	if (thePlayer)
 	{
 		thePlayer.MCM_AR_OnPlayerReady();
-		MCM_AR_Log("thePlayer OK, Core zainicjalizowany!", true);
+		MCM_AR_Log("thePlayer OK, Core initialized!", true);
 	}
 	else
 	{
@@ -87,15 +74,15 @@ exec function ar_test()
 	}
 }
 
-// Marker diagnostyczny zapisywany do user.settings przez config wrapper.
-// Kanal niezalezny od scriptslog.txt (ktory umiera po burstcie startowym
-// na tej instalacji). Zapis idzie wylacznie do surowej sekcji [AR_Diag] -
-// NIE ruszamy realnych varow MCM (wczesniej SetVarValue na CooldownSlider
-// nadpisywal cooldown gracza przy kazdym spawnie).
-// W przyszlosci usunac albo zastapic trwalym kanalem logowania.
+// Marker diagnostyczny sekcji [AR_Diag] (aktywny w trybie ar_debug).
 function MCM_AR_DiagMark(code : int)
 {
 	var wrapper : CInGameConfigWrapper;
+
+	if (!MCM_AR_IsDebugOn())
+	{
+		return;
+	}
 
 	wrapper = theGame.GetInGameConfigWrapper();
 	if (wrapper)
@@ -103,15 +90,11 @@ function MCM_AR_DiagMark(code : int)
 		wrapper.SetRawConfigValueByStr("AR_Diag", "last", "" + code);
 		wrapper.SetRawConfigValueByStr("AR_Diag", "t" + code, "" + RoundMath(theGame.GetEngineTimeAsSeconds()));
 	}
-	// Flush wewnatrz markera: DiagMark to kanar na crash - gdyby caller
-	// umarl przed wlasnym zapisem, marker musi juz byc na dysku, inaczej
-	// diagnoza "gdzie zdechlo" jest niemozliwa (CR agy).
+	// Zapis synchroniczny tylko w trybie diagnostycznym (ar_debug).
 	theGame.SaveUserSettings();
 }
 
-// Inicjalizacja wewnatrz bazowego cyklu OnSpawned gracza.
-// InitRemasterSettings() jest wolana na koncu bazowego OnSpawned w content0 (linia 740).
-// Zaden inny mod (w tym BIA) jej nie wrapuje, wiec wywolanie ZAWSZE dociera tutaj!
+// Inicjalizacja moda w cyklu OnSpawned gracza.
 @wrapMethod(CR4Player)
 function InitRemasterSettings()
 {
@@ -124,13 +107,7 @@ function InitRemasterSettings()
 	MCM_AR_DiagMark(3);
 }
 
-// Sonda diagnostyczna: wrap na metodzie z gwarantowanym dispatchem.
-// BIA wrapuje to samo CPlayerInput.Initialize i jego logi sa widoczne
-// w scriptslog.txt - jesli nasz log tu nie strzeli, nasze @wrapMethod
-// nie rejestruja sie w ogole (problem kompilacji/mounta, nie kodu).
-// isFromLoad=true oznacza spawnData.restored - prawdziwy load save'a.
-// Uwaga: samo LogChannel, bez MCM_AR_Log/FactsAdd - za wczesny etap
-// spawnu na thePlayer/config/facts (powodowalo CTD przy loadzie).
+// Sonda inicjalizacji wejścia gracza (CPlayerInput).
 @wrapMethod(CPlayerInput)
 function Initialize(isFromLoad : bool, optional previousInput : CPlayerInput)
 {
@@ -152,7 +129,8 @@ function MCM_AR_InitCore()
 		mcm_ar_ambient = new MCM_AmbientRomanceChannel in this;
 		mcm_ar_ambient.Init();
 	}
-	AddTimer('MCM_AR_AutonomousTick', 4.0, true);
+	// Interwał timera decyzyjnego z konfiguracji MCM (domyślnie 30s).
+	AddTimer('MCM_AR_AutonomousTick', MCM_AR_GetConfig().GetTickIntervalSeconds(), true);
 	AddTimer('MCM_AR_AmbientTick', 10.0, true);
 }
 
@@ -170,6 +148,11 @@ timer function MCM_AR_AutonomousTick(dt : float, id : int)
 @addMethod(CR4Player)
 timer function MCM_AR_AmbientTick(dt : float, id : int)
 {
+	// Szybki timer ambientu (~10s) do aktualizacji póz postoju.
+	if (mcm_ar_core)
+	{
+		mcm_ar_core.UpdateIdleAmbient();
+	}
 	if (mcm_ar_ambient && mcm_ar_ambient.GetCurrentStateName() == 'Idle')
 	{
 		mcm_ar_ambient.GotoState('AmbientTick');
@@ -179,6 +162,20 @@ timer function MCM_AR_AmbientTick(dt : float, id : int)
 // ---------------------------------------------------------------------------
 // Klasa główna – silnik decyzyjny
 // ---------------------------------------------------------------------------
+
+// Zadanie postoju: faza 0=ruch ku pozycji, faza 1=animacja postoju w slocie.
+class MCM_AR_IdleJob
+{
+	var npc       : CNewNPC;
+	var spot      : Vector;
+	var heading   : float;
+	var anim      : name;
+	var phase     : int;
+	var deadline  : float;
+	// Losowe opoznienie pozy (0-10s) - rozrzuca moment "siadania"
+	// miedzy NPC, unikajac efektu "flash mob".
+	var poseDelay : float;
+}
 
 statemachine class MCM_AutonomousRomanceCore
 {
@@ -210,13 +207,426 @@ statemachine class MCM_AutonomousRomanceCore
 	public var naughtySpotNotified : bool;
 	default naughtySpotNotified = false;
 
-	// Auto-pick opcji w naszych scenach *FollowWithKiss: wrap OnDialogChoicesSet
-	// (HUD) wybiera opcje kiss, WaitForSceneEnd wykonuje select+accept z krotkim
-	// opoznieniem (wzorcem tw3-automatic-dialog-picker). Phase 0 = kiss
-	// (strukturalnie: opcja romansu = index 1 szablonu hub-menu, walidacja po
-	// ikonie EXIT na ostatniej pozycji – niezaleznie od lokalizacji; keywords
-	// w tekscie opcji sa tylko fallbackiem dla scen o odmiennym ukladzie).
-	// Phase 1 = po kiss wybierz exit gdy menu wraca (scena pokazuje hub w petli).
+	// Pasywny przyrost Affinity ze wspólnej podróży:
+	// Co 600s (~10 min) aktywnego podążania za Geraltem -> +1 Affinity
+	private var arTravelNpcNames : array<name>;
+	private var arTravelSeconds  : array<float>;
+	private var arLastTravelTime : float;
+	default arLastTravelTime     = -9999.0;
+
+	// W2/I1 idle-suspend: companion "zyje" gdy gracz stoi w miejscu.
+	// Detektor postoju (kotwica + czas ostatniego ruchu) i lista NPC
+	// zawieszonych przez nas (StopFollowing(true) - tag/flaga zostaja).
+	private var arIdleAnchor : Vector;
+	private var arIdleSince  : float;
+	private var arIdleJobs   : array<MCM_AR_IdleJob>;
+	default arIdleSince = -9999.0;
+
+	// Zawieszenie podążania towarzyszki na czas postoju gracza.
+	// Wybudzenie następuje po ruchu gracza (>1.5m) lub wejściu w stan unsafe.
+	private function WakeIdleJobs()
+	{
+		var i     : int;
+		var npc   : CNewNPC;
+		var nowT  : float;
+		var woken : int;
+		var kept  : int;
+
+		if (arIdleJobs.Size() <= 0) return;
+
+		nowT = theGame.GetEngineTimeAsSeconds();
+		for (i = arIdleJobs.Size() - 1; i >= 0; i -= 1)
+		{
+			npc = arIdleJobs[i].npc;
+			// NPC w trakcie interakcji lub sceny - lokomocję przywraca EndInteraction.
+			if (npc && (npc.wasInTalkInteraction || npc.IsInGameplayScene() || npc == busyNpc))
+			{
+				if (nowT >= arIdleJobs[i].deadline)
+				{
+					arIdleJobs.Erase(i);
+				}
+				else
+				{
+					kept += 1;
+				}
+				continue;
+			}
+			arIdleJobs.Erase(i);
+			woken += 1;
+			if (npc && npc.scmcc)
+			{
+				// CancelAll zdejmuje slot-anime/move zanim lokomocja
+				// przejmie kontrole (inaczej NPC "sunalby" w idle-pose).
+				npc.ActionCancelAll();
+				npc.scmcc.StartFollowing(true);
+			}
+		}
+		MCM_AR_Log("[AR] idle: waking " + woken + " NPCs (busyKept=" + kept + ")");
+	}
+
+	// Usuwa rekord postoju dla danego NPC bez modyfikacji lokomocji.
+	public function RemoveIdleJobFor(npc : CNewNPC)
+	{
+		var i : int;
+		if (!npc) return;
+		for (i = arIdleJobs.Size() - 1; i >= 0; i -= 1)
+		{
+			if (arIdleJobs[i].npc == npc)
+			{
+				arIdleJobs.Erase(i);
+			}
+		}
+	}
+
+	// Cykl ambient (~10s): wykrywa ruch gracza i aktualizuje fazy postoju.
+	public function UpdateIdleAmbient()
+	{
+		var i          : int;
+		var job        : MCM_AR_IdleJob;
+		var nowT       : float;
+		var playerPos  : Vector;
+		var dist       : float;
+		var slotOk     : bool;
+		var safeReason : string;
+
+		if (!isInit) return;
+
+		nowT      = theGame.GetEngineTimeAsSeconds();
+		playerPos = thePlayer.GetWorldPosition();
+
+		// Koniec postoju: gracz ruszyl z kotwicy albo kontekst niebezpieczny.
+		if (!MCM_AR_IsSafeToInitiate(safeReason) || VecDistance(playerPos, arIdleAnchor) > 1.5)
+		{
+			arIdleAnchor = playerPos;
+			arIdleSince  = nowT;
+			WakeIdleJobs();
+			return;
+		}
+
+		// Joby aktywne: tick faz moving->posed + prune martwych wpisow.
+		if (arIdleJobs.Size() > 0)
+		{
+			for (i = arIdleJobs.Size() - 1; i >= 0; i -= 1)
+			{
+				job = arIdleJobs[i];
+				if (!job.npc || !job.npc.scmcc)
+				{
+					arIdleJobs.Erase(i);
+					continue;
+				}
+				if (job.phase == 2) continue;
+				// NPC w scenie nie otrzymuje pozy postoju.
+				if (job.npc.wasInTalkInteraction || job.npc.IsInGameplayScene() || job.npc == busyNpc)
+				{
+					if (nowT >= job.deadline)
+					{
+						arIdleJobs.Erase(i);
+						MCM_AR_Log("[AR] idle: pruned stale job " + NameToString(job.npc.scmcc.data.nam));
+					}
+					continue;
+				}
+				dist = VecDistance2D(job.npc.GetWorldPosition(), job.spot);
+				if (dist <= 0.7 || nowT >= job.deadline)
+				{
+					if (job.phase == 0)
+					{
+						job.phase = 1;
+						// CancelAll tylko przy timeout - gdy dojscie zakonczylo
+						// sie naturalnie mover juz wszedl w idle.
+						if (dist > 0.7) job.npc.ActionCancelAll();
+					}
+					// Rozrzut czasowy: nie wszyscy "siadaja" w tym samym
+					// momencie - poseDelay losuje 0-10s per NPC.
+					if (nowT >= job.poseDelay)
+					{
+						job.phase = 2;
+						slotOk = PlayIdleSlotAnim(job.npc, job.anim);
+						if (!slotOk)
+						{
+							// Nazwa z puli nie przeszla w slocie (brak w animsecie
+							// lub slot zajety) - fallback na sprawdzona poza.
+							slotOk = PlayIdleSlotAnim(job.npc, 'low_sitting_ground_leaning_back_bored_idle');
+							MCM_AR_Log("[AR] idle: " + NameToString(job.npc.scmcc.data.nam) +
+							           " FALLBACK anim=" + NameToString(job.anim) +
+							           " slotAnim=" + slotOk);
+						}
+						else
+						{
+							MCM_AR_Log("[AR] idle: " + NameToString(job.npc.scmcc.data.nam) +
+							           " posed, anim=" + NameToString(job.anim) +
+							           " slotAnim=" + slotOk +
+							           " (dist=" + dist + ")");
+						}
+					}
+				}
+			}
+		}
+	}
+
+	public function UpdateIdleSuspend(safe : bool)
+	{
+		var i          : int;
+		var j          : int;
+		var npc        : CNewNPC;
+		var job        : MCM_AR_IdleJob;
+		var nowT       : float;
+		var playerPos  : Vector;
+		var companions : array<CNewNPC>;
+		var dist       : float;
+		var away       : Vector;
+		var suspendedThisTick : int;
+		var hasJob     : bool;
+
+		nowT      = theGame.GetEngineTimeAsSeconds();
+		playerPos = thePlayer.GetWorldPosition();
+
+		// Koniec postoju: gracz ruszyl z kotwicy albo kontekst niebezpieczny.
+		// (Bezpiecznik - ten sam check robi UpdateIdleAmbient co ~10s.)
+		if (!safe || VecDistance(playerPos, arIdleAnchor) > 1.5)
+		{
+			arIdleAnchor = playerPos;
+			arIdleSince  = nowT;
+			WakeIdleJobs();
+			return;
+		}
+
+		// Prog postoju 50s - za krotko, czekamy.
+		if (nowT - arIdleSince < 50.0) return;
+
+		// (Fazy jobow moving->posed: UpdateIdleAmbient na timerze ~10s.)
+
+		// Staged interakcja w toku - nie zawieszaj w trakcie podejscia/sceny.
+		if (IsStagedBusy()) return;
+
+		theGame.GetNPCsByTag('GeraltsBFF', companions);
+		MCM_AR_Log("[AR] idle: threshold " + (int)(nowT - arIdleSince) + "s reached, companions=" + companions.Size());
+		// Losowy rozrzut: max 2 NPC zawieszane w jednym ticku, reszta
+		// czeka kolejny tick decyzyjny. Unika efektu "flash mob" gdzie wszyscy
+		// towarzysze jednoczesnie zamrażają sie w identycznej pozie.
+		suspendedThisTick = 0;
+		for (i = 0; i < companions.Size(); i += 1)
+		{
+			npc = companions[i];
+			if (!npc || !npc.scmcc)
+			{
+				MCM_AR_Log("[AR] idle: skip - npc/scmcc NULL");
+				continue;
+			}
+			if (!npc.HasTag('mod_scm_IsFollowing'))
+			{
+				MCM_AR_Log("[AR] idle: skip " + NameToString(npc.scmcc.data.nam) + " - no follow tag");
+				continue;
+			}
+			dist = VecDistance(npc.GetWorldPosition(), playerPos);
+			if (dist > 15.0)
+			{
+				MCM_AR_Log("[AR] idle: skip " + NameToString(npc.scmcc.data.nam) + " - dist=" + (int)dist + "m");
+				continue;
+			}
+			// NPC w stagingu/scenie/dialogu - job utworzony teraz bylby
+			// wiecznie guarded (ambient+wake go omijaja, hasJob blokuje nowy).
+			if (npc.wasInTalkInteraction || npc.IsInGameplayScene() || npc == busyNpc)
+			{
+				MCM_AR_Log("[AR] idle: skip " + NameToString(npc.scmcc.data.nam) + " - busy/scene");
+				continue;
+			}
+			// Losowa szansa na "teraz" (70%) lub "poczekaj kolejny tick"
+			if (RandRange(100, 0) >= 70 && suspendedThisTick > 0)
+			{
+				MCM_AR_Log("[AR] idle: skip " + NameToString(npc.scmcc.data.nam) + " - random delay");
+				continue;
+			}
+			if (suspendedThisTick >= 2)
+			{
+				MCM_AR_Log("[AR] idle: skip " + NameToString(npc.scmcc.data.nam) + " - limit 2/tick");
+				continue;
+			}
+			// Guard: nie duplikuj jobow dla tego samego NPC
+			hasJob = false;
+			for (j = 0; j < arIdleJobs.Size(); j += 1)
+			{
+				if (arIdleJobs[j].npc == npc)
+				{
+					hasJob = true;
+					break;
+				}
+			}
+			if (hasJob) continue;
+
+			npc.scmcc.StopFollowing(true);
+			suspendedThisTick += 1;
+
+			job = new MCM_AR_IdleJob in this;
+			job.npc  = npc;
+			job.anim = IdleAnimFor(npc.scmcc.data.nam);
+			// Wyznaczenie pozycji odpoczynku w odległości ~1.6m.
+			away = npc.GetWorldPosition() - playerPos;
+			away.Z = 0;
+			if (VecLength(away) < 0.5) away = VecFromHeading(thePlayer.GetHeading() + 180.0);
+			job.spot    = npc.GetWorldPosition() + VecNormalize(away) * 1.6;
+			job.heading = VecHeading(playerPos - job.spot);
+			job.phase   = 0;
+			// Losowy deadline (spacer 6-12s) i poseDelay (0-10s) - rozrzut
+			// czasowy miedzy towarzyszami unikajac synchronicznego "siadania".
+			job.deadline  = nowT + 6.0 + RandRange(60, 0) / 10.0;
+			job.poseDelay = nowT + RandRange(100, 0) / 10.0;
+			// Juz daleko od gracza - bez spaceru, prosto w poze (ale z delay).
+			if (VecDistance2D(npc.GetWorldPosition(), job.spot) < 0.9)
+			{
+				job.phase = 1;
+				MCM_AR_Log("[AR] idle: " + NameToString(npc.scmcc.data.nam) +
+				           " in-place, delay=" + (int)(job.poseDelay - nowT) + "s");
+			}
+			else
+			{
+				npc.ActionMoveToWithHeadingAsync(job.spot, job.heading);
+			}
+			arIdleJobs.PushBack(job);
+		}
+		MCM_AR_Log("[AR] idle: suspend - jobow=" + arIdleJobs.Size() + "/" + companions.Size());
+	}
+
+	// -----------------------------------------------------------------------
+	// Pasywny przyrost Affinity z czasu podróży:
+	// Towarzyszki podążające za Geraltem (mod_scm_IsFollowing, dist <= 25m)
+	// zyskują +1 Affinity za każde 600s (~10 min) aktywnego marszu/biegu.
+	// Ignoruje postoje (idle-suspend) oraz skoki czasu (load/medytacja).
+	// -----------------------------------------------------------------------
+	public function UpdatePassiveTravelAffinity(companions : array<CNewNPC>)
+	{
+		var i, j, idx : int;
+		var npc       : CNewNPC;
+		var nam       : name;
+		var nowT      : float;
+		var dt        : float;
+		var dist      : float;
+		var playerPos : Vector;
+
+		nowT = theGame.GetEngineTimeAsSeconds();
+		if (arLastTravelTime < 0.0)
+		{
+			arLastTravelTime = nowT;
+			return;
+		}
+
+		dt = nowT - arLastTravelTime;
+		arLastTravelTime = nowT;
+
+		// Odrzuc anomalie czasowe (np. wczytanie save'a, pauza w menu, medytacja)
+		if (dt <= 0.0 || dt > 180.0)
+		{
+			return;
+		}
+
+		// Gracz stoi w miejscu (idle-suspend) – nie naliczaj za bezczynny afk
+		if (GetIdleSuspendCount() > 0)
+		{
+			return;
+		}
+
+		playerPos = thePlayer.GetWorldPosition();
+
+		for (i = 0; i < companions.Size(); i += 1)
+		{
+			npc = companions[i];
+			if (!npc || !npc.scmcc || !npc.scmcc.data) continue;
+			if (!npc.HasTag('mod_scm_IsFollowing')) continue;
+
+			nam = npc.scmcc.data.nam;
+			if (!MCM_AR_IsRomanceNPC(nam)) continue;
+
+			dist = VecDistance(npc.GetWorldPosition(), playerPos);
+			if (dist > 25.0) continue;
+
+			idx = -1;
+			for (j = 0; j < arTravelNpcNames.Size(); j += 1)
+			{
+				if (arTravelNpcNames[j] == nam)
+				{
+					idx = j;
+					break;
+				}
+			}
+
+			if (idx < 0)
+			{
+				arTravelNpcNames.PushBack(nam);
+				arTravelSeconds.PushBack(0.0);
+				idx = arTravelNpcNames.Size() - 1;
+			}
+
+			arTravelSeconds[idx] += dt;
+
+			// Co 600s (~10 minut) aktywnej drogi: +1 Affinity
+			if (arTravelSeconds[idx] >= 600.0)
+			{
+				arTravelSeconds[idx] = 0.0;
+				if (registry && registry.affinity)
+				{
+					registry.affinity.AddAffinityPoints(nam, 1);
+					thePlayer.DisplayHudMessage("[AR] " + AR_Fmt(AR_T("ar_msg_travel_aff", "Your bond with {1} grows through journey (+1)"), MCM_AR_GetCompanionDisplayName(npc)));
+					MCM_AR_Log("[AR] Travel affinity +1 for " + NameToString(nam));
+				}
+			}
+		}
+	}
+
+	// Odtworzenie animacji postoju przez CMovingPhysicalAgentComponent.
+	private function PlayIdleSlotAnim(npc : CNewNPC, anim : name) : bool
+	{
+		var animComp : CMovingPhysicalAgentComponent;
+		var settings : SAnimatedComponentSlotAnimationSettings;
+
+		if (!npc || !IsNameValid(anim)) return false;
+		animComp = (CMovingPhysicalAgentComponent)npc.GetComponentByClassName('CMovingPhysicalAgentComponent');
+		if (!animComp) return false;
+		settings.blendIn  = 1.2;
+		settings.blendOut = 0.8;
+		if (animComp.PlaySlotAnimationAsync(anim, 'NPC_ANIM_SLOT', settings)) return true;
+		return animComp.PlaySlotAnimationAsync(anim, 'GAMEPLAY_SLOT', settings);
+	}
+
+	// Ilu towarzyszow jest obecnie zawieszonych (digest debug).
+	public function GetIdleSuspendCount() : int
+	{
+		return arIdleJobs.Size();
+	}
+
+	// Dobór animacji postoju dopasowanej do postaci (pozy na ziemi bez rekwizytów).
+	private function IdleAnimFor(nam : name) : name
+	{
+		var pool : array<name>;
+		pool = IdleAnimPool();
+		return pool[RandRange(pool.Size(), 0)];
+	}
+
+	// Pula animacji odpoczynku na ziemi do losowego wyboru.
+	private function IdleAnimPool() : array<name>
+	{
+		var pool : array<name>;
+		pool.PushBack('low_sitting_ground_leaning_back_bored_idle');
+		pool.PushBack('low_sitting_ground_happy_idle');
+		pool.PushBack('high_sitting_ground_determined_idle');
+		pool.PushBack('woman_work_sitting_on_ground_loop');
+		pool.PushBack('woman_noble_lying_relaxed_on_grass_loop_01');
+		pool.PushBack('woman_work_standing_in_a_cold_fire_loop');
+		pool.PushBack('woman_crouch_loop_3');
+		return pool;
+	}
+
+	// Guard w wake-loop: NPC w stagingu/scenie zostaje w arIdleJobs i jest pomijana,
+	// co zabezpiecza przed przerwaniem stanu przez latent-abort.
+
+	// Wymusza suspend przy nastepnym ticku (debug - bez czekania 50s).
+	// Respektuje safe/dystans/tagi; do sondy w parze z ar_diag.
+	public function ForceIdleSuspendNow()
+	{
+		arIdleAnchor = thePlayer.GetWorldPosition();
+		arIdleSince = theGame.GetEngineTimeAsSeconds() - 60.0;
+		MCM_AR_Log("[AR] idle: threshold forced (ar_idlenow) - suspend on next tick");
+	}
+
+	// Automatyczny wybór opcji w scenach FollowWithKiss (faza 0=kiss, faza 1=exit).
 	public var arAutoPick       : bool;
 	public var arPickPhase      : int;
 	public var arPendingPickIdx : int;
@@ -244,12 +654,7 @@ statemachine class MCM_AutonomousRomanceCore
 		}
 	}
 
-	// -----------------------------------------------------------------------
-	// Wywolywane z wrapa OnDialogChoicesSet (CR4HudModuleDialog) za kazdym
-	// pokazaniem menu wyborow podczas uzbrojonej sceny (arAutoPick). Tylko
-	// ustawia pending pick – faktyczny select/accept robi WaitForSceneEnd
-	// (latent, z opoznieniem jak u gracza). Nie-latent!
-	// -----------------------------------------------------------------------
+	// Rejestruje oczekujący wybór dialogowy podczas uzbrojonej sceny (arAutoPick).
 	public function MCM_AR_OnDialogChoices(choices : array<SSceneChoice>)
 	{
 		var i, idx : int;
@@ -274,23 +679,14 @@ statemachine class MCM_AutonomousRomanceCore
 
 		if (arPickPhase == 0)
 		{
-			// Wszystkie sceny *FollowWithKiss dziela jeden szablon hub-menu
-			// (auto-generowane): [0] wyjscie-link, [1] linia romansu = kiss,
-			// [2] wejscie do menu naughty, [3] hub pytan, [4] wyjscie z ikona
-			// EXIT. Opcja romansu to zawsze index 1 – identyfikujemy ja
-			// STRUKTURALNIE po szablonie, nie po tekscie: ostatnia opcja musi
-			// miec ikone DialogAction_EXIT (enum, locale-free). Dziala w kazdej
-			// lokalizacji bez znajomosci tlumaczen.
+			// Wybór opcji romansu (indeks 1 w szablonie menu).
 			if (choices.Size() >= 3 &&
 			    choices[choices.Size() - 1].dialogAction == DialogAction_EXIT &&
 			    choices[1].dialogAction != DialogAction_EXIT && !choices[1].disabled)
 			{
 				idx = 1;
 			}
-			// Fallback dla scen o odmiennym ukladzie – match keywords po tekscie
-			// (EN/PL/DE/FR/ES/CZ). Opcja kiss kryje sie pod linia romansu
-			// ("Kocham cie, Yen", "I love you"), wiec matchujemy frazy milosne.
-			// Nie matchujemy "ustrone miejsce" – to wejscie do menu naughty.
+			// Fallback dopasowania opcji po słowach kluczowych dialogu.
 			if (idx < 0)
 			{
 				for (i = 0; i < choices.Size(); i += 1)
@@ -321,7 +717,7 @@ statemachine class MCM_AutonomousRomanceCore
 			}
 			else
 			{
-				MCM_AR_Log("[AR] autoPick: brak opcji kiss/romans – wybor zostaje reczny");
+				MCM_AR_Log("[AR] autoPick: no kiss/romance option - choice stays manual");
 				arAutoPick = false;
 				return;
 			}
@@ -354,7 +750,7 @@ statemachine class MCM_AutonomousRomanceCore
 			}
 			if (idx < 0)
 			{
-				MCM_AR_Log("[AR] autoPick: brak opcji wyjscia po kiss – wybor zostaje reczny");
+				MCM_AR_Log("[AR] autoPick: no exit option after kiss - choice stays manual");
 				arAutoPick = false;
 				return;
 			}
@@ -376,7 +772,7 @@ statemachine class MCM_AutonomousRomanceCore
 
 		GotoState('Idle');
 
-		MCM_AR_Log("AutonomousRomanceCore zainicjalizowany.");
+		MCM_AR_Log("AutonomousRomanceCore initialized.");
 	}
 
 	public function UpdateCombatStatus()
@@ -417,6 +813,9 @@ statemachine class MCM_AutonomousRomanceCore
 		arAutoPick = false;
 		arPickPhase = 0;
 		arPendingPickIdx = -1;
+		arTravelNpcNames.Clear();
+		arTravelSeconds.Clear();
+		arLastTravelTime = -9999.0;
 
 		amb = thePlayer.mcm_ar_ambient;
 		if (amb)
@@ -438,13 +837,10 @@ statemachine class MCM_AutonomousRomanceCore
 		// Gracz musi być w trybie eksploracji
 		if (thePlayer.GetCurrentStateName() != 'Exploration')
 		{
-			reason = "stan gracza=" + thePlayer.GetCurrentStateName() + " (wym. Exploration)";
+			reason = "player state=" + thePlayer.GetCurrentStateName() + " (req. Exploration)";
 			return false;
 		}
-		// Kontekst input musi być eksploracyjny – w menu (SCMMenuBase,
-		// RadialMenu itd.) prompt consent bylby niewidoczny, a sceny
-		// strzelalyby "pod" otwartym UI. Player state zostaje Exploration
-		// przy otwartych menu, wiec sam state-check tego nie lapi e.
+		// Blokada w menu oraz radial menu (wymagany kontekst Exploration).
 		if (theInput.GetContext() != 'Exploration')
 		{
 			reason = "inputContext=" + NameToString(theInput.GetContext());
@@ -462,11 +858,7 @@ statemachine class MCM_AutonomousRomanceCore
 			reason = "DialogOrCutscenePlaying";
 			return false;
 		}
-		// Uwaga: DialogueManager.IsBusy MCME celowo NIE jest tu gate'em –
-		// to stan MCM_DM_Talking (kolejka onelinerow/banteru), w ktorej
-		// nasze barki i ambient same sie kolejkuja. Sceny maja wlasny
-		// gate WaitForDialogueFree w PlayScene/PlayDialogueScene/
-		// PlayIntimateScene (stale>20s przepuszcza martwa kolejke).
+		// DialogueManager.IsBusy jest sprawdzany dedykowanie w PlayScene.
 		// Gracz nie może pływać ani być na łodzi
 		if (thePlayer.IsSwimming())
 		{
@@ -540,12 +932,16 @@ statemachine class MCM_AutonomousRomanceCore
 			}
 		}
 
-		// Liczba rywalek (więcej niż 1 towarzyszka romansowa = zazdrość)
+		// Romansowalne towarzyszki AKTYWNIE podazajace (mod_scm_IsFollowing):
+		// zaparkowana lub spawnana ale nie-followujaca NPC (np. Ves) jest
+		// skipowana przy wykonywaniu akcji (tick), wiec nie moze tez brac
+		// udzialu w zazdrosci ani odpalac notifiera naughty.
 		rivalCount = 0;
 		for (i = 0; i < companions.Size(); i += 1)
 		{
 			npc = companions[i];
 			if (!npc || !npc.scmcc) continue;
+			if (!npc.HasTag('mod_scm_IsFollowing')) continue;
 			if (MCM_AR_IsRomanceNPC(npc.scmcc.data.nam))
 			{
 				cachedContext.companionsInParty.PushBack(npc.scmcc.data.nam);
@@ -553,7 +949,9 @@ statemachine class MCM_AutonomousRomanceCore
 			}
 		}
 		cachedContext.rivalCount = rivalCount;
-		cachedContext.hasRivals  = (rivalCount > 1);
+		// Rywalizacja: kanoniczny trójkąt Yennefer vs Triss.
+		cachedContext.hasRivals  = cachedContext.companionsInParty.Contains('yennefer') &&
+		                           cachedContext.companionsInParty.Contains('triss');
 
 		return cachedContext;
 	}
@@ -634,24 +1032,18 @@ statemachine class MCM_AutonomousRomanceCore
 
 		now = theGame.GetEngineTimeAsSeconds();
 
-		// Watchdog: latent Execute moze abortowac w polowie –
-		// EndStagedInteraction nigdy nie strzeli i kanal staged
-		// bylby martwy do ar_reset. Lock starszy niz 300s traktujemy
-		// jako stary, logujemy i uwalniamy przed normalnym acquire.
-		// (300s > najdluzsza legitna sciezka: approach + prompt 10s
-		// + WaitForSceneEnd do 90s; 120s byloby za ciasne i zdjeloby
-		// zywy lock -> nakladajace sie staged interakcje.)
+		// Watchdog: uwalnia przedawniony lock interakcji (>300s).
 		if (interactionBusy && now - busyStartTime > 300.0)
 		{
 			if (busyNpc && busyNpc.scmcc)
 			{
 				MCM_AR_Log("[AR] Watchdog: interactionBusy martwy (" + IntToString(RoundMath(now - busyStartTime)) +
-				           "s, npc=" + NameToString(busyNpc.scmcc.data.nam) + ") – wymuszone zwolnienie");
+				           "s, npc=" + NameToString(busyNpc.scmcc.data.nam) + ") - forced release");
 			}
 			else
 			{
 				MCM_AR_Log("[AR] Watchdog: interactionBusy martwy (" + IntToString(RoundMath(now - busyStartTime)) +
-				           "s) – wymuszone zwolnienie");
+				           "s) - forced release");
 			}
 			interactionBusy = false;
 			busyNpc = NULL;
@@ -691,6 +1083,60 @@ statemachine class MCM_AutonomousRomanceCore
 		return interactionBusy && busyNpc == npc;
 	}
 
+	// Awaryjny reset stanu RUNTIME (nie cooldownow/affinity): po
+	// TW3SE_ReloadScripts (latent-loope umieraja bez cleanupu) lub gdy
+	// latent-abort zostawil osierocony lock / zawieszonego NPC.
+	public function ForceResetRuntimeState()
+	{
+		var i   : int;
+		var npc : CNewNPC;
+
+		// Wbudz idle-suspend (ta sama sekwencja co UpdateIdleSuspend resume).
+		for (i = arIdleJobs.Size() - 1; i >= 0; i -= 1)
+		{
+			npc = arIdleJobs[i].npc;
+			arIdleJobs.Erase(i);
+			if (npc && npc.scmcc)
+			{
+				npc.ActionCancelAll();
+				npc.scmcc.StartFollowing(true);
+			}
+		}
+		// Zwolnij NPC po przerwanej interakcji (lustro EndInteraction).
+		// busyNpc to towarzyszka w stagingu -> scena mogla zdjac follow
+		// calkowicie (toggle_follow) - restore dwutorowo jak w
+		// EndInteraction, inaczej zostalaby zaparkowana.
+		if (busyNpc)
+		{
+			busyNpc.DisableLookAt();
+			busyNpc.EnableCharacterCollisions(true);
+			busyNpc.wasInTalkInteraction = false;
+			if (busyNpc.scmcc)
+			{
+				if (busyNpc.scmcc.IsFollowing())
+				{
+					busyNpc.scmcc.StartFollowing(true);
+				}
+				else
+				{
+					busyNpc.scmcc.StartFollowing();
+				}
+			}
+		}
+		if (thePlayer)
+		{
+			thePlayer.UnblockAction(EIAB_Movement, 'MCM_AR_interaction');
+			thePlayer.DisableLookAt();
+		}
+		interactionBusy = false;
+		busyNpc = NULL;
+		busyStartTime = -9999.0;
+		arAutoPick = false;
+		arPickPhase = 0;
+		arPendingPickIdx = -1;
+		GotoState('Idle');
+	}
+
 	// Globalny oddech po jakiejkolwiek staged inicjatywie (tez odmowionej)
 	public function GetStagedCooldownRemaining() : float
 	{
@@ -709,10 +1155,19 @@ statemachine class MCM_AutonomousRomanceCore
 		var i        : int;
 		var dist     : float;
 
-		// Ogniska mają tag 'campfire' w silniku
+		// Ogniska: tag 'campfire' lub silnikowy 'CarriesOpenFire' (palone light entities)
 		theGame.GetEntitiesByTag('campfire', entities);
 		for (i = 0; i < entities.Size(); i += 1)
 		{
+			dist = VecDistance(thePlayer.GetWorldPosition(), entities[i].GetWorldPosition());
+			if (dist < 6.0) return true;
+		}
+
+		entities.Clear();
+		theGame.GetEntitiesByTag(theGame.params.TAG_OPEN_FIRE, entities);
+		for (i = 0; i < entities.Size(); i += 1)
+		{
+			if ((CActor)entities[i]) continue;
 			dist = VecDistance(thePlayer.GetWorldPosition(), entities[i].GetWorldPosition());
 			if (dist < 6.0) return true;
 		}
@@ -736,6 +1191,10 @@ statemachine class MCM_AutonomousRomanceCore
 			case 'anna_henrietta':
 			case 'sq701_vivienne':
 			case 'becca':
+			case 'philippa_eilhart':
+			case 'syanna':
+			case 'mh303_succbus_v2':
+			case 'ves':
 				return true;
 		}
 		return false;
@@ -776,7 +1235,7 @@ state ProcessingTick in MCM_AutonomousRomanceCore
 	}
 
 	// -----------------------------------------------------------------------
-	// Główny tick (wywoływany co 4s przez timer CR4Player za pomocą stanu)
+	// Główny tick (wywoływany cyklicznie przez timer CR4Player za pomocą stanu)
 	// -----------------------------------------------------------------------
 	latent function ProcessTick()
 	{
@@ -803,6 +1262,7 @@ state ProcessingTick in MCM_AutonomousRomanceCore
 		if (!parent.MCM_AR_IsSafeToInitiate(safeReason))
 		{
 			if (dbg) MCM_AR_Log("[AR tick] blokada bezpieczenstwa: " + safeReason);
+			parent.UpdateIdleSuspend(false);
 			parent.GotoState('Idle');
 			return;
 		}
@@ -811,13 +1271,21 @@ state ProcessingTick in MCM_AutonomousRomanceCore
 		theGame.GetNPCsByTag('GeraltsBFF', companions);
 		if (companions.Size() == 0)
 		{
-			if (dbg) MCM_AR_Log("[AR tick] brak towarzyszy (tag 'GeraltsBFF' pusty)");
+			if (dbg) MCM_AR_Log("[AR tick] no companions (tag 'GeraltsBFF' empty)");
 			parent.GotoState('Idle');
 			return;
 		}
 
 		// Buduj kontekst globalny raz na tick
 		ctx = parent.BuildContext(companions);
+
+		// W2/I1 idle-suspend: przy postoju gracza ~50s followerzy
+		// przestaja chodzic za Geralta i graja swoja idle-anim;
+		// wznowienie przy ruchu gracza albo unsafe.
+		parent.UpdateIdleSuspend(true);
+
+		// Pasywny przyrost Affinity za czas wspólnej aktywnej podróży
+		parent.UpdatePassiveTravelAffinity(companions);
 
 		// Notifier "sweet spot": jednorazowy HUD przy wejściu w zasięg punktu
 		// intymnego, reset dopiero po wyjściu >40m (histereza anti-flap).
@@ -826,7 +1294,7 @@ state ProcessingTick in MCM_AutonomousRomanceCore
 			if (!parent.naughtySpotNotified && ctx.companionsInParty.Size() > 0)
 			{
 				parent.naughtySpotNotified = true;
-				thePlayer.DisplayHudMessage("[AR] Klimat sprzyja bliskosci...");
+				thePlayer.DisplayHudMessage("[AR] " + AR_T("ar_msg_naughty_near", "The mood is right for intimacy..."));
 			}
 		}
 		else if (parent.naughtySpotNotified)
@@ -848,6 +1316,10 @@ state ProcessingTick in MCM_AutonomousRomanceCore
 			         " taw=" + ctx.isInTavern +
 			         " corvo=" + ctx.isInCorvo +
 			         " ryw=" + ctx.rivalCount;
+			if (parent.GetIdleSuspendCount() > 0)
+			{
+				digest += " idle=" + parent.GetIdleSuspendCount();
+			}
 		}
 
 		// Anty-chaos: staged channel wzajemnie się wyklucza –
@@ -1018,10 +1490,7 @@ state AmbientTick in MCM_AmbientRomanceChannel
 
 		now = theGame.GetEngineTimeAsSeconds();
 
-		// Globalny bark cooldown (~90s) bramkuje TYLKO strzal barku/powitania.
-		// UWAGA: bookkeeping greetSeenTime musi biec CO TICK – wczesny return
-		// na cooldown zamrozilby stemple i po ~90s kazdy obecny NPC mialby
-		// gap>60s -> masa falszywych "powitan po absencji".
+		// Globalny cooldown barków (~90s) bramkuje odtworzenie kwestii.
 		canBark = (parent.GetBarkCooldownRemaining() <= 0.0);
 
 		// ---------------------------------------------------------------
@@ -1064,7 +1533,7 @@ state AmbientTick in MCM_AmbientRomanceChannel
 
 			npc.EnableDynamicLookAt(thePlayer, 6.0);
 			npc.PlayVoiceset(100, 'greeting_geralt');
-			MCM_AR_Log("[AR] Powitanie po absencji " + RoundMath(gap) + "s: " + NameToString(nam));
+			MCM_AR_Log("[AR] Greeting after " + RoundMath(gap) + "s absence: " + NameToString(nam));
 
 			if (g == -1)
 			{
@@ -1132,6 +1601,8 @@ exec function ar_status()
 	var safeReason : string;
 	var campfire   : bool;
 	var stateName  : string;
+	var followN    : int;
+	var worldAff   : string;
 
 	// Markery diagnostyczne - jesli exec spowoduje CTD, scriptslog.txt
 	// pokaze dokladnie ktory krok zabil gre (LogChannel flushuje na biezaco)
@@ -1147,7 +1618,7 @@ exec function ar_status()
 	affinity = MCM_AR_GetAffinity();
 	if (!config || !affinity)
 	{
-		thePlayer.DisplayHudMessage("[AR] Config/Affinity niezainicjalizowane!");
+		thePlayer.DisplayHudMessage("[AR] Config/Affinity not initialized!");
 		LogChannel('MCM_AR', "[AR status] no config/affinity - abort");
 		return;
 	}
@@ -1164,22 +1635,47 @@ exec function ar_status()
 	LogChannel('MCM_AR', "[AR status] step7: hud messages");
 
 	thePlayer.DisplayHudMessage("--- [AR STATUS] ---");
-	thePlayer.DisplayHudMessage("Wlaczony: " + config.IsEnabled() + " | Sandbox: " + config.IsForceRomanceOn() + " | Zazdrosc: " + config.IsJealousyModeOn());
-	thePlayer.DisplayHudMessage("Godzina: " + h + ":00 (Noc: " + (h >= 22 || h < 4) + ") | Ognisko: " + campfire + " | Stan: " + stateName);
-	thePlayer.DisplayHudMessage("Bezpiecznie: " + safe + " (" + safeReason + ") | Cooldown: " + config.GetInitiativeCooldown() + "s");
+	thePlayer.DisplayHudMessage("Enabled: " + config.IsEnabled() + " | Sandbox: " + config.IsForceRomanceOn() + " | Jealousy: " + config.IsJealousyModeOn());
+	thePlayer.DisplayHudMessage("Hour: " + h + ":00 (Night: " + (h >= 22 || h < 4) + ") | Campfire: " + campfire + " | State: " + stateName);
+	thePlayer.DisplayHudMessage("Safe: " + safe + " (" + safeReason + ") | Cooldown: " + config.GetInitiativeCooldown() + "s");
 
 	LogChannel('MCM_AR', "[AR status] step8: GetNPCsByTag");
 	theGame.GetNPCsByTag('GeraltsBFF', companions);
 	LogChannel('MCM_AR', "[AR status] step9: loop, n=" + companions.Size());
-	thePlayer.DisplayHudMessage("Aktywni towarzysze: " + companions.Size());
 
+	// Tag 'GeraltsBFF' nosi kazdy NPC zarzadzany przez MCME, w tym
+	// swiatowe spawny stojace w miastach (nie podazaja za graczem).
+	// Realnego followera rozroznia dopiero 'mod_scm_IsFollowing'.
+	followN = 0;
+	for (i = 0; i < companions.Size(); i += 1)
+	{
+		npc = companions[i];
+		if (npc && npc.scmcc && npc.HasTag('mod_scm_IsFollowing'))
+		{
+			followN += 1;
+		}
+	}
+	thePlayer.DisplayHudMessage("Following companions: " + followN + " | world NPCs tagged: " + (companions.Size() - followN));
+
+	worldAff = "";
 	for (i = 0; i < companions.Size(); i += 1)
 	{
 		npc = companions[i];
 		if (!npc || !npc.scmcc) continue;
 		nam = npc.scmcc.data.nam;
-		score = affinity.GetAffinity(nam);
-		thePlayer.DisplayHudMessage("-> " + NameToString(nam) + " | Following: " + npc.HasTag('mod_scm_IsFollowing') + " | Zazylosc: " + score + " (Base: " + affinity.GetBaseStoryAffinity(nam) + ", Earned: " + affinity.GetEarnedAffinity(nam) + ")");
+		if (npc.HasTag('mod_scm_IsFollowing'))
+		{
+			score = affinity.GetAffinity(nam);
+			thePlayer.DisplayHudMessage("-> " + NameToString(nam) + " | Affinity: " + score + " (Base: " + affinity.GetBaseStoryAffinity(nam) + ", Earned: " + affinity.GetEarnedAffinity(nam) + ")");
+		}
+		else
+		{
+			worldAff += NameToString(nam) + "=" + affinity.GetAffinity(nam) + " ";
+		}
+	}
+	if (worldAff != "")
+	{
+		MCM_AR_Log("[AR status] world NPC affinity: " + worldAff);
 	}
 	LogChannel('MCM_AR', "[AR status] step10: done");
 }
@@ -1191,7 +1687,7 @@ exec function ar_reset()
 	if (core)
 	{
 		core.ResetAllCooldowns();
-		thePlayer.DisplayHudMessage("[AR] Wszystkie cooldowny zostaly zresetowane (-9999s)!");
+		thePlayer.DisplayHudMessage("[AR] All cooldowns reset (-9999s)!");
 	}
 }
 
@@ -1206,12 +1702,64 @@ exec function ar_force()
 		if (curVal == "1" || curVal == "true")
 		{
 			wrapper.SetVarValue('MCM_AR', 'MCM_AR_ForceRomance', "0");
-			thePlayer.DisplayHudMessage("[AR] Sandbox/ForceRomance: WYLACZONY");
+			thePlayer.DisplayHudMessage("[AR] Sandbox/ForceRomance: OFF");
 		}
 		else
 		{
 			wrapper.SetVarValue('MCM_AR', 'MCM_AR_ForceRomance', "1");
-			thePlayer.DisplayHudMessage("[AR] Sandbox/ForceRomance: WLACZONY (Wymogi zazylosci pominiete)");
+			thePlayer.DisplayHudMessage("[AR] Sandbox/ForceRomance: ON (affinity requirements bypassed)");
+		}
+	}
+}
+
+// Awaryjny reset stanu sesji AR (odblokowanie locków i faktów).
+exec function ar_devreset()
+{
+	var core : MCM_AutonomousRomanceCore;
+
+	FactsRemove('mcme_ar_awaiting_consent');
+	FactsRemove('mcme_ar_consent_given');
+	core = MCM_AR_GetCore();
+	if (core)
+	{
+		core.ForceResetRuntimeState();
+	}
+	if (thePlayer)
+	{
+		thePlayer.DisplayHudMessage("[AR] devreset: consent facts + runtime state cleared");
+	}
+}
+
+// Sonda I1: wymusza prog postoju - nastepny tick (<=4s) zawiesi
+// towarzyszki bez czekania 50s. Wynik w ar_diag / ar_logdump.
+exec function ar_idlenow()
+{
+	var core : MCM_AutonomousRomanceCore;
+	core = MCM_AR_GetCore();
+	if (core)
+	{
+		core.ForceIdleSuspendNow();
+		thePlayer.DisplayHudMessage("[AR] idle: suspend forced - see ar_diag in ~10s");
+	}
+}
+
+exec function ar_consent()
+{
+	var wrapper : CInGameConfigWrapper;
+	var curVal  : string;
+	wrapper = theGame.GetInGameConfigWrapper();
+	if (wrapper)
+	{
+		curVal = wrapper.GetVarValue('MCM_AR', 'MCM_AR_RequireConsent');
+		if (curVal == "1" || curVal == "true")
+		{
+			wrapper.SetVarValue('MCM_AR', 'MCM_AR_RequireConsent', "0");
+			thePlayer.DisplayHudMessage("[AR] RequireConsent: OFF (Tier3=approach, Tier4=prompt)");
+		}
+		else
+		{
+			wrapper.SetVarValue('MCM_AR', 'MCM_AR_RequireConsent', "1");
+			thePlayer.DisplayHudMessage("[AR] RequireConsent: ON (prompt [C] for Tier3+4)");
 		}
 	}
 }
@@ -1223,11 +1771,11 @@ exec function ar_affinity(npcStr : string, amount : int)
 	npc = MCM_AR_FindCompanion(npcStr);
 	if (!npc)
 	{
-		thePlayer.DisplayHudMessage("[AR] Bledna nazwa NPC lub brak w druzynie: " + npcStr);
+		thePlayer.DisplayHudMessage("[AR] Invalid NPC name or not in party: " + npcStr);
 		return;
 	}
 	MCM_AR_GetAffinity().AddAffinityPoints(npc.scmcc.data.nam, amount);
-	thePlayer.DisplayHudMessage("[AR] Dodano +" + amount + " affinity dla " + npcStr + " (Lacznie: " + MCM_AR_GetAffinity().GetAffinity(npc.scmcc.data.nam) + ")");
+	thePlayer.DisplayHudMessage("[AR] Added +" + amount + " affinity for " + npcStr + " (total: " + MCM_AR_GetAffinity().GetAffinity(npc.scmcc.data.nam) + ")");
 }
 
 exec function ar_trigger()
@@ -1238,7 +1786,7 @@ exec function ar_trigger()
 	{
 		core.ResetAllCooldowns();
 		core.GotoState('ProcessingTick');
-		thePlayer.DisplayHudMessage("[AR] Wymuszono natychmiastowy ProcessingTick!");
+		thePlayer.DisplayHudMessage("[AR] Forced immediate ProcessingTick!");
 	}
 }
 
@@ -1252,21 +1800,21 @@ exec function ar_logdump(optional count : int)
 	core = MCM_AR_GetCore();
 	if (!core)
 	{
-		thePlayer.DisplayHudMessage("[AR] Core nie jest zainicjalizowany!");
+		thePlayer.DisplayHudMessage("[AR] Core is not initialized!");
 		return;
 	}
 	if (count <= 0) count = 15;
 
 	from = core.debugLog.Size() - count;
 	if (from < 0) from = 0;
-	thePlayer.DisplayHudMessage("=== AR LOGDUMP (ostatnie " + (core.debugLog.Size() - from) + " z " + core.debugLog.Size() + ") ===");
+	thePlayer.DisplayHudMessage("=== AR LOGDUMP (last " + (core.debugLog.Size() - from) + " of " + core.debugLog.Size() + ") ===");
 	for (i = from; i < core.debugLog.Size(); i += 1)
 	{
 		thePlayer.DisplayHudMessage(core.debugLog[i]);
 	}
 	if (core.debugLog.Size() == 0)
 	{
-		thePlayer.DisplayHudMessage("(pusty - wlacz ar_debug i poczekaj na ticki)");
+		thePlayer.DisplayHudMessage("(empty - enable ar_debug and wait for ticks)");
 	}
 }
 
@@ -1294,6 +1842,7 @@ exec function ar_diag()
 {
 	var wrapper : CInGameConfigWrapper;
 	var core    : MCM_AutonomousRomanceCore;
+	var dump    : string;
 	var i : int;
 
 	MCM_AR_DiagMark(10);
@@ -1334,9 +1883,21 @@ exec function ar_diag()
 		// tylko ustawiaja wartosci, zapis na dysk robimy raz.
 		theGame.SaveUserSettings();
 	}
+	// DEV (TW3SE): pelny ring do tw3se\out\ar_diag.txt - czytelny plik
+	// zamiast parsowania user.settings. Release stub = noop.
+	core = thePlayer.mcm_ar_core;
+	if (core)
+	{
+		dump = "";
+		for (i = 0; i < core.debugLog.Size(); i += 1)
+		{
+			dump += core.debugLog[i] + "\n";
+		}
+		MCM_AR_DevWriteFile("ar_diag.txt", dump);
+	}
 	if (thePlayer)
 	{
-		thePlayer.DisplayHudMessage("[AR] diag marker zapisany do user.settings");
+		thePlayer.DisplayHudMessage("[AR] diag marker written to user.settings");
 	}
 }
 
@@ -1349,14 +1910,14 @@ exec function ar_line(npcStr : string, lineID : int)
 
 	if (lineID <= 0)
 	{
-		thePlayer.DisplayHudMessage("[AR] Uzycie: ar_line(<npc>, <lineID>) np. ar_line(yennefer, 420362)");
+		thePlayer.DisplayHudMessage("[AR] Usage: ar_line(<npc>, <lineID>) e.g. ar_line(yennefer, 420362)");
 		return;
 	}
 
 	npc = MCM_AR_FindCompanion(npcStr);
 	if (!npc)
 	{
-		thePlayer.DisplayHudMessage("[AR] Nie znaleziono towarzysza o nazwie: " + npcStr);
+		thePlayer.DisplayHudMessage("[AR] Companion not found: " + npcStr);
 		return;
 	}
 
@@ -1376,14 +1937,14 @@ exec function ar_probeanim(npcStr : string, animName : name)
 
 	if (StrLen(npcStr) <= 0 || !IsNameValid(animName))
 	{
-		thePlayer.DisplayHudMessage("[AR] Uzycie: ar_probeanim(<npc>, <anim>) np. ar_probeanim(triss, woman_sit_stump_idle)");
+		thePlayer.DisplayHudMessage("[AR] Usage: ar_probeanim(<npc>, <anim>) e.g. ar_probeanim(triss, woman_sit_stump_idle)");
 		return;
 	}
 
 	npc = MCM_AR_FindCompanion(npcStr);
 	if (!npc)
 	{
-		thePlayer.DisplayHudMessage("[AR] Nie znaleziono towarzysza o nazwie: " + npcStr);
+		thePlayer.DisplayHudMessage("[AR] Companion not found: " + npcStr);
 		return;
 	}
 
@@ -1410,7 +1971,7 @@ exec function ar_debug(optional mode : int)
 	{
 		FactsRemove('mcme_ar_debug');
 		FactsAdd('mcme_ar_debug', 1);
-		thePlayer.DisplayHudMessage("[AR] Debug ON - digest ticku co 4s na HUD. Wylaczenie: ar_debug(0). Analiza: ar_eval()");
+		thePlayer.DisplayHudMessage("[AR] Debug ON - tick digest on HUD. Disable: ar_debug(0). Analysis: ar_eval()");
 	}
 	else
 	{
@@ -1433,6 +1994,7 @@ exec function ar_eval()
 	var act        : MCM_RomanceInteraction;
 	var i, j       : int;
 	var blocked    : int;
+	var skipped    : int;
 	var nam        : name;
 	var eligStr    : string;
 	var blockStr   : string;
@@ -1441,7 +2003,7 @@ exec function ar_eval()
 	core = MCM_AR_GetCore();
 	if (!core || !core.registry)
 	{
-		thePlayer.DisplayHudMessage("[AR eval] Core/registry niezainicjalizowane!");
+		thePlayer.DisplayHudMessage("[AR eval] Core/registry not initialized!");
 		return;
 	}
 	reg = core.registry;
@@ -1451,25 +2013,33 @@ exec function ar_eval()
 	ctx = core.BuildContext(companions);
 
 	MCM_AR_Log("=== AR EVAL ===");
-	MCM_AR_Log("h=" + ctx.hourOfDay + " noc=" + ctx.isNight + " ognisko=" + ctx.isNearCampfire + " tawerna=" + ctx.isInTavern + " corvo=" + ctx.isInCorvo + " rywalki=" + ctx.rivalCount + " naughty=" + ctx.isNearNaughtySpot);
+	MCM_AR_Log("h=" + ctx.hourOfDay + " night=" + ctx.isNight + " campfire=" + ctx.isNearCampfire + " tavern=" + ctx.isInTavern + " corvo=" + ctx.isInCorvo + " rivals=" + ctx.rivalCount + " naughty=" + ctx.isNearNaughtySpot);
 	MCM_AR_Log("enabled=" + MCM_AR_GetConfig().IsEnabled() + " force=" + MCM_AR_GetConfig().IsForceRomanceOn() + " jealousy=" + MCM_AR_GetConfig().IsJealousyModeOn() + " consent=" + MCM_AR_GetConfig().RequiresPlayerConsent());
 
 	core.MCM_AR_IsSafeToInitiate(safeReason);
 	if (safeReason == "")
 	{
-		MCM_AR_Log("Bezpieczenstwo: OK");
+		MCM_AR_Log("Safety: OK");
 	}
 	else
 	{
-		MCM_AR_Log("Bezpieczenstwo: BLOKADA - " + safeReason);
+		MCM_AR_Log("Safety: BLOCKED - " + safeReason);
 	}
 
-	MCM_AR_Log("Towarzysze: " + companions.Size() + " | Akcje w rejestrze: " + reg.GetActionCount());
+	MCM_AR_Log("Companions: " + companions.Size() + " | Actions in registry: " + reg.GetActionCount());
 
+	// Tick pominie NPC bez 'mod_scm_IsFollowing' - eval robi to samo,
+	// zeby dry-run pokazywal dokladnie to, co silnik realnie odpali.
+	skipped = 0;
 	for (i = 0; i < companions.Size(); i += 1)
 	{
 		npc = companions[i];
 		if (!npc || !npc.scmcc) continue;
+		if (!npc.HasTag('mod_scm_IsFollowing'))
+		{
+			skipped += 1;
+			continue;
+		}
 
 		nam = npc.scmcc.data.nam;
 		eligStr = "";
@@ -1503,5 +2073,54 @@ exec function ar_eval()
 			MCM_AR_Log("   blocked: " + blockStr);
 		}
 	}
+	MCM_AR_Log("(skipped " + skipped + " world NPCs not following)");
+}
+
+// Debug: wypisuje tagi encji w promieniu 10m (audyt wykrywania 'campfire')
+exec function ar_neartags()
+{
+	var entities  : array<CGameplayEntity>;
+	var ent       : CGameplayEntity;
+	var tags      : array<name>;
+	var tagStr    : string;
+	var i, j      : int;
+	var logged    : int;
+	var campfires : int;
+
+	if (!thePlayer) return;
+
+	FindGameplayEntitiesInRange(entities, thePlayer, 10.0, 100);
+	MCM_AR_Log("=== AR NEARTAGS (10m) === encje: " + entities.Size());
+
+	for (i = 0; i < entities.Size(); i += 1)
+	{
+		ent = entities[i];
+		if (!ent || ent == (CGameplayEntity)thePlayer) continue;
+
+		tags = ent.GetTags();
+		tagStr = "";
+		for (j = 0; j < tags.Size(); j += 1)
+		{
+			if (tagStr != "") tagStr += ", ";
+			tagStr += NameToString(tags[j]);
+		}
+
+		if (ent.HasTag('campfire') || ent.HasTag(theGame.params.TAG_OPEN_FIRE))
+		{
+			campfires += 1;
+			tagStr += "  <<<<< FIRE";
+		}
+
+		MCM_AR_Log("[near] " + RoundMath(VecDistance(thePlayer.GetWorldPosition(), ent.GetWorldPosition())) + "m | " + ent + " | tags=" + tagStr);
+		logged += 1;
+
+		if (logged >= 25)
+		{
+			MCM_AR_Log("[near] capped, " + entities.Size() + " entities in range");
+			break;
+		}
+	}
+
+	MCM_AR_Log("encje z tagiem 'campfire': " + campfires);
 }
 

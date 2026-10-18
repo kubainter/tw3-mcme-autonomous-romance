@@ -15,14 +15,14 @@
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│  GRA (Witcher 3 NG 4.04+)                                        │
+│  GRA (Witcher 3 Remastered v5.00+)                               │
 │   └─ CR4Player.OnSpawned → InitRemasterSettings()  [wrap]        │
 │        └─ MCM_AR_OnPlayerReady()                                 │
 │             ├─ MCM_AR_InitCore()                                 │
 │             │    ├─ MCM_AutonomousRomanceCore   (statemachine)   │
-│             │    │    └─ MCM_RomanceActionRegistry → 35 akcji    │
+│             │    │    └─ MCM_RomanceActionRegistry → 47 akcji    │
 │             │    ├─ MCM_AmbientRomanceChannel   (statemachine)   │
-│             │    ├─ timer MCM_AR_AutonomousTick  co 4s  (STAGED) │
+│             │    ├─ timer MCM_AR_AutonomousTick  MCM 20-160s(S)│
 │             │    └─ timer MCM_AR_AmbientTick     co 10s (AMBIENT)│
 │             ├─ MCM_AR_ConfigWrapper (user.settings / MCM menu)   │
 │             └─ input listener: 'SwordSheathe' → consent [C]      │
@@ -30,10 +30,10 @@
 │ MCM_RomanceCore.ws        — pętla, gating, kontekst, locki, auto-pick, execy
 │ MCM_RomanceAffinity.ws    — config wrapper + resolver zażyłości + MCM_AR_Log
 │ MCM_RomanceInteraction.ws — klasa bazowa akcji, staging, consent, sceny, rejestr
-│ MCM_RomanceActions_Main.ws— 23 akcje: Yen(7) Triss(7) Keira(5) Shani(4)
-│ MCM_RomanceActions_DLC.ws — 12 akcji: Anarietta(4) Vivienne(4) Cerys(4)
+│ MCM_RomanceActions_Main.ws— 28 akcji: Yen(8) Triss(7) Keira(5) Shani(4) + 4 gifty
+│ MCM_RomanceActions_DLC.ws — 19 akcji: Anarietta(4) Vivienne(4) Cerys(4) + 7 giftów
 │ MCM_RomanceQoL.ws         — enum ubioru w menu MCME + execy (dress/gift)
-│ bin/.../modMCME_AutonomousRomance.xml — konfiguracja MCM (7 opcji, 5 presetów)
+│ bin/.../modMCME_AutonomousRomance.xml — konfiguracja MCM (8 opcji, 5 presetów)
 │
 │ Zależność twarda: modMCME_Remastered 5.00+ (companioni, sceny, NaughtyManager,
 │ DialogueManager, JobManager, scmcc, specialData).
@@ -44,24 +44,25 @@
 
 | Ścieżka | Rola | Stan |
 |---|---|---|
-| `repo\Mods\modMCME_AutonomousRomance\content\scripts\local\romance\*.ws` ×6 | cały kod moda (Core/Affinity/Interaction/Actions_Main/Actions_DLC/QoL) | ✅ live — wdrożone przez junction 1:1 |
-| `repo\Mods\...\romance\*.ws.bak` ×5 | snapshoty sprzed ostatnich edycji | ✅ ignorowane przez kompilator, `.gitignore` i `package_release.ps1` (l.34 filtruje) |
+| `repo\Mods\modMCME_AutonomousRomance\content\scripts\local\romance\*.ws` ×7 + stub | cały kod moda (Core/Affinity/Interaction/Actions_Main/Actions_DLC/QoL/Tw3seDev + stub) | ✅ live — wdrożone przez junction 1:1 |
+| `repo\Mods\...\romance\*.ws.bak` ×5 | snapshoty sprzed ostatnich edycji | ✅ ignorowane przez kompilator, `.gitignore` i `package_release.ps1` (l.49 filtruje) |
 | `repo\Mods\...\content\*.w3strings` ×17 + `en/pl.w3strings.csv` | tablice napisów (CSV = źródło, .w3strings = build); wszystkie locale poza `pl` = kopie `en` | ✅ używane przez `GetLocStringById`/HUD; ⚠️ 15 locale = fallback na EN (brak tłumaczeń); CSV odfiltrowane z zipa |
-| `repo\Mods\modMCME_AutonomousRomance\README.md` | README w folderze moda (trafia do zipa) | ✅ zsynchronizowany z `repo\README.md` (07.10) |
+| `repo\Mods\modMCME_AutonomousRomance\README.md` | README w folderze moda (trafia do zipa) | ✅ zsynchronizowany z `repo\README.md` (14.10) |
 | `repo\bin\config\r4game\user_config_matrix\pc\modMCME_AutonomousRomance.xml` | definicja menu MCM | ✅ live (deploy kopiuje do `bin\config\...` gry) |
-| `repo\README.md` | dokument publiczny | ✅ aktualny (poprawiony `[C]`, tiery, suwak) |
+| `repo\README.md` | dokument publiczny | ✅ aktualny (14.10: tick MCM, consent hold/tap, kanały logów) |
 | `repo\ARCHITECTURE.md` | **ten dokument** | ✅ |
+| `repo\CODEBASE.md` | **Codebase & Architecture Reference** | ✅ utworzony — mapa 1:1, 22 execy, wytyczne anty-regresyjne |
 | `repo\TODO.md` | roadmapa zadań + gift design C1/C2 | ✅ aktywna |
 | `repo\GEMINI.md` | wytyczne dev (test_compile, reguły WS-NG, init przez InitRemasterSettings) | ✅ obowiązujące |
 | `repo\LICENSE`, `repo\.gitignore` | meta | ✅ |
 | `repo\scripts\test_compile.ps1` + `repo\scripts\precheck_syntax.ps1` | weryfikacja kompilacji | ✅ zsynchronizowane z kanonicznymi (07.10); uwaga: `repo\scripts\` **nigdy nie było w commitach** (git log — staged list PR nie zawiera `scripts/`), repo-copy to był snapshot sprzed Fazy 0 |
 | `scripts\test_compile.ps1` (8607 B) + `scripts\precheck_syntax.ps1` | test kompilacji przez `witcher3.exe -headless` + szybki pre-check składni | ✅ kanoniczne — Faza 0 woła `precheck_syntax.ps1` przed grą (`-SkipPrecheck` pomija) |
 | `scripts\deploy_junctions.ps1` | junction repo→`Mods\` + kopia XML do `bin\config` | ✅ (po fixie nazwy XML) |
-| `scripts\package_release.ps1` | zip release (`Mods\`+`bin\`) | ✅ działa; ⚠️ nie filtruje `.bak`/`.csv` |
+| `scripts\package_release.ps1` | zip release (`Mods\`+`bin\`) | ✅ działa; filtruje `.bak`, `.tmp`, `.csv` oraz foldery Vortexa |
 | `scripts\run_game_debug.bat` | odpalenie gry z debug konsolą | ✅ dev |
 | `scripts\known_scenes.txt` | lista scen `.w2scene` MCME | ✅ referencja |
 | `dumps\scene_and_dialog_ids.md` | baza ścieżek scen, faktów, namespace `mcme_ar_*` | ✅ referencja |
-| `nexus\description.bbcode` + `nexus\changelog.md` | opis/changelog Nexus | ✅ aktualne (`[C]` poprawione) |
+| `nexus\description.bbcode` + `nexus\changelog.md` | opis/changelog Nexus | ✅ aktualne (14.10: suwak ticku, gifty, lokalizacja EN/PL) |
 | `releases\MCME_AutonomousRomance_v1.0.0.zip` (1380 B) | — | ❌ **stub**: same puste katalogi, zero plików |
 | `.diffbase\*.ws` ×5 + `E1_interaction.diff.txt` | kopie bazowe do diffów | ✅ narzędzie dev |
 | `compile_out.txt` | ostatni log kompilacji (06.10 02:36: precheck 6 plików 0 błędów → **kompilacja 100% OK**) | ✅ artefakt testu |
@@ -89,21 +90,21 @@ w `PlayBark` — osobne pliki-sondy nie są już potrzebne.
         │    │              wrap Main (Actions_Main.ws l.11) → +23 akcje
         │    │              wrap DLC  (Actions_DLC.ws l.12)  → +12 akcji
         │    ├─ new MCM_AmbientRomanceChannel → Init()
-        │    ├─ AddTimer('MCM_AR_AutonomousTick', 4.0, loop)
+        │    ├─ AddTimer('MCM_AR_AutonomousTick', GetTickIntervalSeconds(), loop)
         │    └─ AddTimer('MCM_AR_AmbientTick',   10.0, loop)
         ├─ new MCM_AR_ConfigWrapper (lazy; Filar 3 konfiguracji)
         ├─ theInput.RegisterListener(this,'OnMCM_AR_ConsentKey','SwordSheathe')
         └─ core.ResetAllCooldowns()
 ```
 
-**Dlaczego `InitRemasterSettings`, a nie `CPlayerInput.Initialize`:** Next-Gen nie łączy
+**Dlaczego `InitRemasterSettings`, a nie `CPlayerInput.Initialize`:** Kompilator Remastered nie łączy
 wielu `@wrapMethod` różnych modów na tej samej metodzie (cienie priorytetów — np. BIA
 Priority 19 zjadłby nasz wrap). `InitRemasterSettings` jest wywoływane na końcu bazowego
 `OnSpawned` i nic go nie wrapuje → zawsze odpala (GEMINI.md §2.8).
 
 ---
 
-## 3. FLOW: Kanał STAGED — co 4 s (Tiery 2–4)
+## 3. FLOW: Kanał STAGED — tick decyzyjny MCM `MCM_AR_TickInterval` (20–160 s, dom. 30 s; Tiery 2–4)
 
 ```
 MCM_AR_AutonomousTick (Core l.110)
@@ -114,11 +115,17 @@ MCM_AR_AutonomousTick (Core l.110)
        | IsInCombat | IsDialogOrCutscenePlaying
        | MCM DialogueManager.IsBusy | IsSwimming | IsOnBoat
   3. theGame.GetNPCsByTag('GeraltsBFF') → pusto? → Idle
+       (uwaga: zwraca CAŁY roster ~30 encji MCME włącznie z zaparkowanymi
+       — realny filtr to tag 'mod_scm_IsFollowing' + dystans ≤15 m w pętli;
+       log „companions=30" NIE znaczy 30 aktywnych towarzyszy)
   4. ctx = BuildContext(companions) (l.449):
        godzina/noc(22–4)/świt(6–9) | HP gracza | obszar (Corvo=11)
        | campfire<6m (tag 'campfire') | tawerna (fakt 'player_in_inn')
        | NaughtySpot<30m | romansowe NPC + rivalCount
   5. Naughty-spot notifier: HUD raz przy wejściu w 30m; reset >40m
+  5b. UpdateIdleSuspend (Core ~l.420-530): postój gracza ≥50 s
+       → max 2 joby MCM_AR_IdleJob na tick dla NPC z 'mod_scm_IsFollowing'
+       ≤15 m; pomija NPC w stagingu/scenie/busyNpc (guard — 14.10 fix)
   6. ShuffleCompanions (fisher-yates — fairness)
   7. GATE anty-chaos: IsStagedBusy() LUB post-staged cooldown 90s → Idle
        (watchdog: lock >300s uznany za martwy → wymuszone zwolnienie)
@@ -143,6 +150,10 @@ MCM_AR_AutonomousTick (Core l.110)
 
 ```
 MCM_AR_AmbientTick (Core l.121) → ProcessAmbient() (l.935)
+  0. UpdateIdleAmbient (Core ~l.320-390): progresja jobów idle
+       (moving→posed; deadline spaceru 6–12 s, poseDelay 0–10 s per NPC),
+       prune martwych guarded-jobów po deadline, WakeIdleJobs przy ruchu
+       >1.5 m / unsafe (log „waking X NPCs (busyKept=Y)")
   1. Ta sama bramka IsSafeToInitiate + lista 'GeraltsBFF' + BuildContext
   2. BOOKKEEPING powitań CO TICK (stemple muszą biec nawet przy cooldown):
        NPC zniknął z tagu >60s i wrócił <10m
@@ -179,7 +190,7 @@ T3 Prompt (staged):
                             : WaitForApproach (brak promptu)
   → ODMOWA (timeout / gracz odjdzie >12m / brak [C]):
        EndSoft + MarkRejected → backoff 300s → 900s → 1800s
-  → AKCEPT ([C]):
+  → AKCEPT ([C] — hold ~1 s albo 2x tap; prompt sugeruje obie metody):
        HardStage (l.356): BlockAction(EIAB_Movement) gracza ~1-2s
          + obrót obojga twarzami + domknięcie dystansu
        → PlayDialogueScene → WaitForSceneEnd(60s) → EndInteraction (l.423):
@@ -271,8 +282,11 @@ Zaproszenie pada w zasięgu 30 m (ctx.isNearNaughtySpot), scena wymaga ≤20 m.
 
 | Mechanizm | Wartość | Źródło |
 |---|---|---|
-| Tick staged | 4 s | `AddTimer` InitCore (Core l.105) |
-| Tick ambient | 10 s | Core l.106 |
+| Tick staged (decyzyjny) | MCM 20–160 s, krok 10 s (dom. 30 s) | `MCM_AR_TickInterval` / `GetTickIntervalSeconds`; czytany raz przy `AddTimer` — zmiana = reload sesji |
+| Tick ambient | 10 s (stały) | Core InitCore |
+| Idle-suspend próg | 50 s bezruchu gracza | UpdateIdleSuspend (~l.438) |
+| Idle joby | max 2/tick; deadline spaceru 6–12 s; poseDelay 0–10 s | MCM_AR_IdleJob |
+| Idle wake | ruch >1.5 m od kotwicy / unsafe | WakeIdleJobs (~l.254) |
 | Lock staged (1 naraz) | `interactionBusy` | Core l.150, Begin/End l.587/627 |
 | Watchdog locka | >300 s → wymuszone zwolnienie | Core l.600 |
 | Cooldown post-staged | 90 s | `lastStagedTime` Core l.651 |
@@ -287,7 +301,7 @@ Zaproszenie pada w zasięgu 30 m (ctx.isNearNaughtySpot), scena wymaga ≤20 m.
 | Notifier naughty | 30 m in / 40 m out (histereza) | ProcessTick l.780-795 |
 | Limit na tick | 1 staged, 1 bark, 1 powitanie | pętle |
 
-## 9. Rejestr akcji (35)
+## 9. Rejestr akcji (47)
 
 Wspólne gatingi (bazowa `GetBlockReason`): cooldown akcji → backoff odmowy →
 `minAffinity` (pomijane w ForceRomance) → jealousy dla T2+ przy `hasRivals` →
@@ -296,26 +310,26 @@ dystans ≤15 m → `GetExtraBlockReason` podklasy.
 | NPC (nam) | Akcja | Tier | minAff | cd s | waga | Extra-gate / scena |
 |---|---|---|---|---|---|---|
 | yennefer | yen_oneliner_flirt | T1 | 0 | 300 | 10 | !noc && !campfire |
-| | yen_postcombat_care | T2 | 20 | 600 | 8 | HP≤55%, walka<300 s |
+| | yen_postcombat_care | T2 | 20 | 900 | 8 | HP≤55%, walka<300 s; heal 20% max HP |
 | | yen_campfire_evening | T2 | 30 | 900 | 7 | campfire; sit `woman_sit_stump_idle` |
 | | yen_night_invitation | T3 | 50 | 1800 | 5 | noc → `yenneferFollowWithKiss` |
 | | yen_intimate_invite | T4 | 80 | 3600 | 3 | NaughtyPoint≤20m + scena |
 | | yen_jealousy_snark | T1 | 0 | 480 | 9 | jealousy ON && Triss w drużynie (look-at rywalki) |
 | | yen_tavern_wine | T1 | 0 | 600 | 6 | tawerna |
 | triss | triss_oneliner_flirt | T1 | 0 | 300 | 10 | !noc |
-| | triss_postcombat_hug | T2 | 30 | 600 | 8 | HP≤60%, walka<300 s; `woman_hug_idle` |
+| | triss_postcombat_hug | T2 | 30 | 900 | 8 | HP≤60%, walka<300 s; `woman_hug_idle`; heal 20% |
 | | triss_campfire_warmth | T2 | 20 | 900 | 7 | campfire; sit |
 | | triss_night_whisper | T3 | 50 | 1800 | 5 | noc → `trissFollowWithKiss` |
 | | triss_garden_kiss | T3 | 70 | 2400 | 4 | (bez extra) → `trissFollowWithKiss` |
 | | triss_intimate_invite | T4 | 80 | 3600 | 3 | NaughtyPoint≤20m + scena |
 | | triss_jealousy_snark | T1 | 0 | 480 | 9 | jealousy ON && Yen w drużynie |
 | keira_metz | keira_oneliner_flirt | T1 | 0 | 320 | 10 | !noc |
-| | keira_postcombat_heal | T2 | 10 | 600 | 9 | HP≤50%, walka<300 s; `cast_sign_quen_idle` |
+| | keira_postcombat_heal | T2 | 10 | 900 | 9 | HP≤50%, walka<300 s; `cast_sign_quen_idle`; heal 25% |
 | | keira_campfire_witch | T1 | 0 | 600 | 7 | campfire (sam bark) |
 | | keira_night_proposal | T3 | 50 | 1800 | 5 | noc → `keiraFollowWithKiss` |
 | | keira_intimate_invite | T4 | 80 | 3600 | 3 | NaughtyPoint≤20m + scena |
 | shani | shani_oneliner_flirt | T1 | 0 | 300 | 10 | !noc |
-| | shani_postcombat_medic | T2 | 10 | 600 | 9 | HP≤55%, walka<300 s; `woman_tend_wounds_idle` |
+| | shani_postcombat_medic | T2 | 10 | 900 | 9 | HP≤55%, walka<300 s; `woman_tend_wounds_idle`; heal 25% |
 | | shani_night_relax | T3 | 50 | 1800 | 5 | noc → `shaniFollowWithKiss` |
 | | shani_intimate_invite | T4 | 80 | 3600 | 3 | NaughtyPoint≤20m + scena |
 | anna_henrietta | anarietta_oneliner_flirt | T1 | 0 | 350 | 10 | !noc |
@@ -334,12 +348,25 @@ dystans ≤15 m → `GetExtraBlockReason` podklasy.
 Akcje typu T3 z `RequiresPlayerConsent=false`: zamiast promptu — `WaitForApproach`
 (propozycja sama się „realizuje" gdy gracz stoi w miejscu).
 
+**Gift-request (11 akcji, RTT_Prompt)** — `MCM_AR_<npc>_GiftRequest` dla
+yen/triss/keira/shani (Actions_Main) + anarietta/vivienne/cerys/philippa/syanna/
+salma/ves (Actions_DLC). Wspólne pole bazowe: `minAffinity=20`, `cd=3600 s`,
+`waga=2`. Gate `GetExtraBlockReason`: `no_gift` gdy brak trunku w EQ,
+`not_relaxed` poza kontekstem relaksu (tawerna / Corvo / ognisko <6 m /
+idle-suspend >0). Wybór trunku wg preferencji per NPC; sukces:
+`RemoveItemByName` + FactsAdd +3 affinity + bark podziękowania
+(`thanksLineKey`/`thanksLineId`).
+
 ## 10. Silnik zażyłości (3 filary)
 
-`MCM_RomanceAffinityResolver.GetAffinity` (Affinity l.163) =
-`base` (fakty fabularne, tabela w GetBaseStoryAffinity l.190) +
-`earned` (FactsQuerySum `mcme_ar_<npc>_affinity`; +1 za wykonaną akcję, +3 gift)
-× `GetAffinityMultiplier` (suwak /10). `ForceRomance` → zawsze 200.
+`MCM_RomanceAffinityResolver.GetAffinity` (Affinity l.194-197):
+```ws
+total = (float)(base) + ((float)(earned) * config.GetAffinityMultiplier());
+```
+* **Filar 1 — `base`:** fakty fabularne z questów (tabela w `GetBaseStoryAffinity` l.221). Baza jest stała i **nie** jest skalowana przez mnożnik.
+* **Filar 2 — `earned`:** fakty silnikowe zdobywane w trakcie rozgrywki (`FactsQuerySum("mcme_ar_" + npcName + "_affinity")`; +1 za udaną akcję, +3 za prezent).
+* **Filar 3 — `multiplier`:** `GetAffinityMultiplier` (suwak w menu MCM skaluje wyłącznie punkty zarobione `earned`).
+* **Tryb Sandbox:** `ForceRomance` → stałe 200 pkt (zawsze pełna zażyłość).
 
 | NPC | Fakty fabularne (suma pkt) |
 |---|---|
@@ -425,16 +452,26 @@ Grupa `MCM_AR` → `displayName="Mods.AutonomousRomance"`:
 | MCM_AR_AffinityMult | SLIDER 5–50 | 10 | mnożnik earned /10 (0.5–5.0×) |
 | MCM_AR_JealousyMode | TOGGLE | 1 | rivalry vs polyamory |
 | MCM_AR_ForceRomance | TOGGLE | 0 | sandbox: affinity=200, bez progów |
+| MCM_AR_TickInterval | SLIDER 20–160 | 30 | interwał ticku decyzyjnego (krok 10 s; `SLIDER;20;160;14` — 3. param to liczba podziałów) |
 | MCM_AR_RequireConsent | TOGGLE | 1 | prompt [C] dla T3 (T4 zawsze) |
 | MCM_AR_DebugHud | TOGGLE | 1 | komunikaty [AR] na HUD |
 
 Presety: 0 default, 1 active (300 s), 2 relaxed (1200 s, debug off), 3 sandbox
-(60 s, ×5, jealousy off, consent off), 4 disabled.
+(60 s, ×5, jealousy off, consent off), 4 disabled. Tick w presetach: 30/20/60/20 s.
+⚠️ Gra czyta XML z `bin\config\r4game\user_config_matrix\pc\` w katalogu gry —
+ten katalog **nie jest** junctionem; po zmianach w `repo\bin\...` trzeba skopiować
+plik ręcznie (albo `scripts\deploy_junctions.ps1`) i zrestartować grę.
 
 ## 14. Diagnostyka
 
-Log: `LogChannel('MCM_AR',…)` → `Documents\The Witcher 3\scriptslog.txt` — wymaga
-startu z `-net -debugscripts` (`scripts\run_game_debug.bat`); bez flag = no-op.
+Log — dwa kanały:
+- **TW3SE (dev):** `MCM_AR_Log` → `bin\x64_dx12\tw3se\out\ar_log.txt` + pipe
+  `\\.\pipe\tw3se` (kanał `events`). Zero flag startowych; live-follow:
+  `scripts\tw3se_pipe.ps1 -Follow`, jeden klik: `scripts\run_game_dev.bat`,
+  exec bez konsoli: `tw3se_pipe.ps1 -Cmd "exec ar_status()"`.
+- **Vanilla:** `LogChannel('MCM_AR',…)` → `Documents\The Witcher 3\scriptslog.txt`
+  — wymaga startu z `-debugscripts` (`scripts\run_game_debug.bat`); bez flagi
+  no-op. **Nigdy `-net`** — zabija zapis do pliku po spawnie gracza.
 `DebugScriptsForceFlush=true` w user.settings.
 
 | Exec | Funkcja |
@@ -535,8 +572,8 @@ Mitigacje (stan wdrożenia: pkt 1–2 zrobione w W0, kompilacja 0 błędów 07.1
 
 ### A. Z TODO.md (stan bieżący)
 
-1. **Stabilizacja bazy** — diagnoza „mod nie reaguje" przez `ar_status`/`ar_eval`/
-   `ar_trigger`/`ar_debug`; retest `triss_intimate` po fixie klawisza [C].
+1. ✅ **Stabilizacja bazy** — zamknięte po release (diagnoza przez `ar_status`/
+   `ar_eval`/`ar_trigger`/`ar_debug`; retest `triss_intimate` po fixie [C]).
 2. ✅ Done: consent [C]=`SwordSheathe`; auto-pick strukturalny; fixy consent/gating.
 3. **Do decyzji:** nocny wypełniacz T1 (dużo `blocked:` nocą = zamierzone filtrowanie);
    kolizje-duchy (design MCME — wrapować czy zostawić).
@@ -595,7 +632,7 @@ Follow-only (scena `*Follow` bez kiss/naughty — poza zakresem romansu, max T1)
 Sceny specjalne: `naughty\lake`, `naughty\yen_skel`, `naughty\triss_yen_trap`.
 
 **Etapy pokrycia:**
-- **Etap 0 (gotowe):** 7 NPC, 35 akcji.
+- **Etap 0 (gotowe):** 7 NPC, 35 akcji + 11 giftów (rejestr: 47, w tym gift-only NPC Salma/Philippa/Syanna/Ves).
 - **Etap 1 (= zakres gift C1 z TODO):** Salma, Philippa, Syanna, Ves → 11 NPC.
 - **Etap 2:** Ciri, Edna, Fringilla, Margarita, Orianna, Priscilla → 17 NPC.
   Razem: cała dostępna pula romance-capable.
@@ -653,8 +690,8 @@ w grze → pełne scenariusze → decyzje architektoniczne).
 | Etap | Zawartość | Weryfikacja | Zależności |
 |---|---|---|---|
 | **W0 — czysto skryptowe** (zero gry) | ✅ komentarze `[E]`→`[C]` w `.ws` (l.665/1085 zostawione — historycznie trafne); ✅ link TODO→ARCHITECTURE (TODO l.3); ✅ **§15.1 mitigacje:** `PlayBark` sprawdza zwrot `PlayVoiceset`→fallback `lineId`→log `voiceset missing`; ✅ helper `MCM_AR_ProbeAnim` (bool z `PlaySlotAnimationAsync`, retry na 2. slocie); ✅ exec `ar_probeanim <npc> <anim>` | `precheck_syntax.ps1` + `test_compile.ps1` — **zdane 07.10 (ExitCode 0)** | — |
-| **W1 — jedna sesja `-net -debugscripts`** (~15 min) | `ar_status` → core żyje? `ar_eval` → lista `blocked:`; `ar_trigger`+`ar_force` → wymuszona akcja na otwartym; `ar_logdump` po tickach → logi sond z W0; `ar_line` audycje kandydatów na lineId giftów; `ar_gift` smoke | HUD + `scriptslog.txt` | W0 (logi sond) |
-| **W2 — małe akcje, test = 1 kontekst** | consent remap na niezmapowaną akcję (recepta §6 + test: czy listener dostaje event przy `BlockAction(EIAB_SpecialAttackLight)`); C-N7 łódź; C-N12 interior; C-N9 afterglow; C-N6 koń; C-N19 campfire stay-seated; C-N17 preset barków w MCM; **C-N20/I1 idle-suspend** (detektor postoju + `StopFollowing`/`StartFollowing`) | wejść w kontekst → obserwacja; `ar_eval` pokazuje gate; idle = „stać i patrzeć" | W0 |
+| **W1 — jedna sesja `-debugscripts`** (~15 min) | `ar_status` → core żyje? `ar_eval` → lista `blocked:`; `ar_trigger`+`ar_force` → wymuszona akcja na otwartym; `ar_logdump` po tickach → logi sond z W0; `ar_line` audycje kandydatów na lineId giftów; `ar_gift` smoke | HUD + `scriptslog.txt` | W0 (logi sond) |
+| **W2 — małe akcje, test = 1 kontekst** | consent remap na niezmapowaną akcję (recepta §6 + test: czy listener dostaje event przy `BlockAction(EIAB_SpecialAttackLight)`); C-N7 łódź; C-N12 interior; C-N9 afterglow; C-N6 koń; C-N19 campfire stay-seated; C-N17 preset barków w MCM; ~~C-N20/I1 idle-suspend~~ ✅ wdrożone 14.10 (§16.F) | wejść w kontekst → obserwacja; `ar_eval` pokazuje gate; idle = „stać i patrzeć" | W0 |
 | **W3 — gift C1** (zatwierdzone TODO) | `PlayerCarriesGift()` + `MCM_AR_<npc>_GiftRequest` + preferencje per NPC; lineId prośby/podziękowania z audycji W1 | pełny cykl: prompt→accept (item−1, +aff, thanks) / reject / timeout / `no_gift` w `ar_eval` | W1 (lineIds) |
 | **W4 — roster Etap 1** (Salma, Philippa, Syanna, Ves) | checklist §16.C pkt 1–8; **sondy assetów per NPC na początku** (Salma=sukkubus → prawd. bez gestów T2) | `ar_eval` per NPC + live T1→T4 | W0+W1 (sondy) |
 | **W5 — nowe ścieżki reaktywne** | C-N4 medytacja-dołączka (kanał obok `IsSafeToInitiate` — Meditation≠Exploration); C-N2 sparring (`EnterFriendlyCombat` + wykrycie końca); C-N5 sen/łóżko; C-N8 picie w tawernie; **C-N20 I2/I3 + enklawy §16.G** (ambient animy własne / `assignWorker` przy AP/schedules) | scenariusz kontekstowy w grze | W1 (+W2 dla I1) |
@@ -674,6 +711,15 @@ W2 wciągać równolegle — każda pozycja to ~30–60 min implementacji.
 - Dispatch listenera przy zablokowanym EIAB (wymóg dla W2-consent-remap).
 
 ### F. Idle Autonomy — „companion żyje podczas postoju" (design wstępny)
+
+> **Stan (14.10): ✅ WDROŻONE.** Własny model `MCM_AR_IdleJob` (npc/spot/heading/
+> anim/phase/deadline/poseDelay) — nie opiera się na MCME `IdleAnimation`, tylko
+> gra slot-anims przez `PlayIdleSlotAnim` (fallback `low_sitting_ground_leaning_back_bored_idle`).
+> Detektor: 50 s bezruchu gracza → `StopFollowing(true)` + spacer do spota → poza.
+> Wake: ruch >1.5 m / unsafe. Joby tworzone na ticku decyzyjnym, fazy na ambient 10 s.
+> **Fix cyklu życia (14.10):** guard przy tworzeniu (wasInTalkInteraction/scena/busyNpc),
+> prune guarded-jobów po deadline, `RemoveIdleJobFor(npc)` z `EndSoft`/`EndInteraction`.
+> Bez fixa job utworzony w ticku startu stagingu wisiał wiecznie i blokował nowe.
 
 **Problem:** companion w follow stoi nieruchomo obok gracza w nieskończoność —
 `animsFinished` (SCMCC l.464) gra `IdleAnimation` tylko gdy `!IsFollowing()`.
@@ -780,6 +826,25 @@ wejście w enklawę = idle-mode aktywny (§16.F) AND
   getter `MCM_AR_GetNearestAP(pos,r)` albo iteracja (wrapy na private
   metodach są OK — dodajemy metodę, nie nadpisujemy),
 - proste enklawy bez AP (losowe obozowiska) → tylko I1/I2.
+
+### H. Backlog otwarty (przeniesione z TODO.md przy czyszczeniu 2026-10-15)
+
+**Naprawy / usprawnienia bieżącej bazy:**
+- **Combat-rescue heal** — towarzyszka leczy Geralta W TRAKCIE walki. Wymaga osobnego kanału: `IsSafeToInitiate` blokuje combat, `WaitForApproach` abortuje na `IsInCombat`. Wariant fire-and-forget (bez approach/staging/consentu): bark + `cast_sign_quen_idle` z miejsca + `GainStat`. Bramki: affinity ≥80, hp <30%, raz na walkę / ~20 min cd. Ryzyko: balans + NPC w combat jest „duchem" bez AI walki.
+- **Affinity-weighted wybór NPC** — wagi są per-NPC (`TryExecute` filtruje `targetNpc`), wybór między NPC = `ShuffleCompanions` + per-NPC cd 12 min. Warianty: (a) twardy sort po affinity — ODRZUCONY (dominacja ~80%, zabija autonomię); (b) ważony shuffle (szansa ~ affinity); (c) skrócenie initiative cooldown z affinity (najbezpieczniejsze).
+- **Prawdziwe siadanie przy ognisku** — seat-entity/prop snap albo ground-sit anim; model Keiry zostaje jako fallback. Idle-suspend już udowadnia `low_sitting_ground_*` w praktyce; wariant „stay seated" pokrywa C-N19.
+- **`triss_garden_kiss`** — brak bramki lokacyjnej, odpala wszędzie przy aff≥70. Opcja: `GetExtraBlockReason` na teren (ogród/Corvo) albo rename id.
+- **Płynny pocałunek v2.0** — animacja szkieletowa w świecie (`determined_gesture_passionate_kiss_f/_m`) zamiast `.w2scene`+autoPick. Pełna spec: `RESEARCH_SEAMLESS_ROMANCE_PLAYBACK.md`.
+- **Alternatywa auto-pick/auto-EXIT** — (a) brak autoEXIT — gracz kończy scenę sam; (b) przełącznik MCM; (c) hybryda. Uwaga: `.w2scene` to binarki — opcji nie da się dodać, tylko wybór istniejących w runtime.
+- **`_start/_end` w idle-suspend** — joby wchodzą od razu w idle-anim (skok w pozycję). Dodać opcjonalne pola `*_start` (wejście) / `_end` (wyjście) per NPC/spot jak vanilla sit-loopy + `animPhase` w `MCM_AR_IdleJob`. Wymaga audytu anim w w2anims (`ar_probeanim`).
+- **Nocny filler T1** — wszystkie `*_oneliner_flirt` blokowane nocą (`night`/`night_or_campfire`); `*_night_*` są T3. Decyzja z §16.A.
+- **Tavern banter dla pozostałych** (claim wycofany z opisu Nexus) — `yen_tavern_wine` jedyna akcja z `isInTavern`; dodać odpowiedniki Triss/Keira/Shani + DLC, żeby „tavern chatter" mógł wrócić do opisu.
+
+**Duże funkcje (dawniej „Roadmap v1.1"):**
+- **`MCM_AR_SceneExists(path): bool`** w `MCM_RomanceInteraction.ws` — `(CStoryScene)LoadResource(path,true)`. Runtime już degraduje się bezpiecznie (prechecki `LoadResource` z logiem NULL na l.1031/1205/1232); brakuje gate'u `GetExtraBlockReason` → `blocked: no_dlc_scene` dla scen leżących w opcjonalnym `dlc_spawn_control_girls` (Fringilla, Margarita, Priscilla, Orianna, Edna, Ciri-intimate).
+- **Roster Etap 2** (tabela §16.C): Fringilla (`fringilla_vigo`), Margarita (`margarita` → typo `margaritta`), Priscilla (`pryscilla`) — T1–T3 + gift w bazie, T4 warunkowe przez `SceneExists`. Display-name resolver już zna `margarita`/`fringilla`/`ciri` (Interaction l.1727+).
+- **Ciri dual-mode** — opcja MCM `option_MCM_AR_CiriMode` (enum: `Lore-Friendly (Family Bond)` [domyślna] / `MCME Adult`). Lore: T1 wiedźmiński banter, T2 duma po walce, T3 ognisko/wspominki Kaer Morhen, T4 = `ciriFollowWithHug` (istnieje w bazowym MCME!), prezenty: prowiant. Adult: `ciriFollowWithKiss` + `naughty\ciri` za `SceneExists`. Klasy: `MCM_AR_Ciri_OneLinerBanter`, `_PostCombatPride`, `_CampfireBond`, `_BondHug`, `_GiftRequest`; T4 rozgałęzione wg `GetCiriInteractionMode()`. ⚠️ `ciriFollowWithHug` jest domyślnym dialogiem MCME — auto-pick re-walidować (§16.C pkt 5).
+- **Bro-Tier** — koncept dla męskich companionów (§16.C traktuje ich jako follow-only, max T1): `MCM_AR_Bro_DrinkTogether_Base` — propozycja toastu w tawernie/ognisku → prompt `[C] Wypij z: <imię>` → konsumpcja mocnego alkoholu z EQ (Dwarven spirit / Temerska żytnia / Alcohest) + anim toastu (`ActionPlaySlotAnimationAsync`) + `thePlayer.AddEffectDefault(EET_Drunkenness, NULL, "Drunk")` (EnableDrunkFx, chwiejny krok) + bark toastu + +3 affinity. Postacie: Zoltan (`zoltan_chivay`) — krasnoludzki humor/pieśń bojowa; Regis (`regis`) — mandragora, opatrunek po walce; Jaskier (`dandelion`) — narzekanie na marsz, panika po walce, wino; Eskel (`eskel`) — wiedźmiński szacunek. T1 docinki w marszu; T2 szacunek po walce. Lokalizacja: prompty/linie/toasty w `en/pl.w3strings.csv` + re-encode.
 
 ## 17. Konwencje i jak rozszerzać
 

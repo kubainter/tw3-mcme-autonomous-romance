@@ -12,6 +12,7 @@ class MCM_AR_ConfigWrapper
 {
 	// Domyślne wartości (używane gdy MCM nie zwróci wartości)
 	private var defaultCooldown       : float; default defaultCooldown       = 720.0;  // 12 min
+	private var defaultTickInterval   : float; default defaultTickInterval   = 30.0;
 	private var defaultAffinityMult   : float; default defaultAffinityMult   = 1.0;
 	private var defaultJealousyMode   : bool;  default defaultJealousyMode   = true;
 	private var defaultForceRomance   : bool;  default defaultForceRomance   = false;
@@ -55,6 +56,18 @@ class MCM_AR_ConfigWrapper
 	public function GetInitiativeCooldown() : float
 	{
 		return GetFloat('MCM_AR', 'MCM_AR_CooldownSlider', defaultCooldown);
+	}
+
+	// Interwał timera decyzyjnego MCM_AR_AutonomousTick (sekundy).
+	// Suwak MCM 20-160s (krok 10s); wartość aplikowana przy starcie timera
+	// w MCM_AR_InitCore - zmiana w menu wymaga reloadu skryptów/sesji.
+	public function GetTickIntervalSeconds() : float
+	{
+		var val : float;
+		val = GetFloat('MCM_AR', 'MCM_AR_TickInterval', defaultTickInterval);
+		if (val < 20.0)  return 20.0;
+		if (val > 160.0) return 160.0;
+		return val;
 	}
 
 	// Mnożnik budowania zażyłości (suwak 5..50 odpowiada 0.5x .. 5.0x)
@@ -139,6 +152,10 @@ function MCM_AR_Log(msg : string, optional forceHUD : bool)
 		}
 	}
 
+	// DEV (TW3SE): tee calego strumienia do tw3se\out\ar_log.txt + pipe
+	// events. MCM_AR_DevLog to leaf bez rekursji; w release stub = noop.
+	MCM_AR_DevLog(msg);
+
 	if (forceHUD || (thePlayer && MCM_AR_GetConfig().IsDebugHudOn()))
 	{
 		if (thePlayer)
@@ -152,6 +169,45 @@ function MCM_AR_Log(msg : string, optional forceHUD : bool)
 function MCM_AR_IsDebugOn() : bool
 {
 	return FactsQuerySum('mcme_ar_debug') > 0;
+}
+
+// ---------------------------------------------------------------------------
+// Lokalizacja w3strings (teksty widoczne dla gracza na HUD)
+// ---------------------------------------------------------------------------
+
+// AR_T(key, fallback): tekst w jezyku gry z en/pl.w3strings; gdy klucza
+// brak (brak paczki jezykowej, starsza wersja pliku) -> hardcoded fallback.
+// Klucze: ar_line_* / ar_thanks_* (barki), ar_prompt_* (zgoda [C]),
+// ar_msg_* (komunikaty HUD). Przestrzen id: 211880xxxx.
+function AR_T(key : string, optional fallback : string) : string
+{
+	var txt : string;
+	if (StrLen(key) <= 0) return fallback;
+	txt = GetLocStringByKeyExt(key);
+	// Brak wpisu: silnik zwraca "" lub sam klucz zaleznie od wersji.
+	if (StrLen(txt) <= 0 || txt == key) return fallback;
+	return txt;
+}
+
+// Podmiana pojedynczego tokena "{N}" (brak StrReplace w WitcherScript NG).
+function AR_ReplToken(text : string, token : string, value : string) : string
+{
+	var idx : int;
+	idx = StrFindFirst(text, token);
+	if (idx < 0) return text;
+	return StrMid(text, 0, idx) + value + StrMid(text, idx + StrLen(token));
+}
+
+// AR_Fmt(text, a, b, c): podmienia {1},{2},{3} w zlokalizowanym tekscie
+// (np. "[C] Give {1} to {2}" -> "[C] Give Est Est to Yennefer").
+function AR_Fmt(text : string, arg1 : string, optional arg2 : string, optional arg3 : string) : string
+{
+	text = AR_ReplToken(text, "{1}", arg1);
+	if (StrLen(arg2) > 0 || StrFindFirst(text, "{2}") >= 0)
+		text = AR_ReplToken(text, "{2}", arg2);
+	if (StrLen(arg3) > 0 || StrFindFirst(text, "{3}") >= 0)
+		text = AR_ReplToken(text, "{3}", arg3);
+	return text;
 }
 
 
@@ -206,9 +262,9 @@ class MCM_RomanceAffinityResolver
 			case 'yennefer':
 				if (FactsQuerySum('sq202_yen_girlfriend') > 0)  score += 50;
 				if (FactsQuerySum('q208_yen_lover') > 0)        score += 30;
-				if (FactsQuerySum('prologue_yen_pleased') > 0)  score += 10;
+				if (FactsQuerySum('q002_talked_to_yennefer') > 0) score += 10;
 				if (FactsQuerySum('q201_undress_geralt_sex') > 0) score += 15;
-				if (FactsQuerySum('q401_yen_geralt_fight') > 0) score -= 20;
+				if (FactsQuerySum('q309_triss_lover') > 0)      score -= 20;
 				break;
 
 			// ----- Triss -----
@@ -216,39 +272,59 @@ class MCM_RomanceAffinityResolver
 				if (FactsQuerySum('q309_triss_stayed') > 0)         score += 50;
 				if (FactsQuerySum('q309_triss_lover') > 0)          score += 30;
 				if (FactsQuerySum('sq301_complimented') > 0)        score += 10;
-				if (FactsQuerySum('sq301_necklace_on') > 0)         score += 10;
+				if (FactsQuerySum('sq301_kissed_triss') > 0)        score += 10;
 				if (FactsQuerySum('import_geralt_rescued_triss') > 0) score += 10;
 				break;
 
 			// ----- Keira -----
 			case 'keira_metz':
-				if (FactsQuerySum('sq108_keira_romance') > 0) score += 50;
-				if (FactsQuerySum('sq108_keira_to_km') > 0)   score += 20;
+				if (FactsQuerySum('sq101_keira_had_sex') > 0) score += 50;
+				if (FactsQuerySum('q109_keira_to_km') > 0)    score += 20;
 				break;
 
 			// ----- Shani -----
 			case 'shani':
-				if (FactsQuerySum('q603_shani_romance') > 0)  score += 50;
-				if (FactsQuerySum('q603_shani_kiss') > 0)     score += 20;
+				if (FactsQuerySum('q602_shani_romance_completed') > 0) score += 50;
+				if (FactsQuerySum('q602_had_sex_with_shani') > 0)      score += 20;
 				break;
 
 			// ----- Anna Henrietta -----
 			case 'anna_henrietta':
-				if (FactsQuerySum('q704_anna_survived') > 0)           score += 30;
-				if (FactsQuerySum('q705_syanna_and_anna_survived') > 0) score += 20;
-				if (FactsQuerySum('q701_wine_festival_finished') > 0)   score += 15;
+				if (FactsQuerySum('q705_henrietta_alive') > 0)   score += 30;
+				if (FactsQuerySum('q705_syanna_correct') > 0)    score += 20;
+				if (FactsQuerySum('q701_wine_festival') > 0)     score += 15;
 				break;
 
 			// ----- Vivienne -----
 			case 'sq701_vivienne':
-				if (FactsQuerySum('sq701_ritual_success') > 0)         score += 40;
-				if (FactsQuerySum('sq701_feather_curse_lifted') > 0)   score += 30;
+				if (FactsQuerySum('sq701_guillaume_pond_epilogue') > 0) score += 40;
+				if (FactsQuerySum('sq701_guillaume_egg_epilogue') > 0)  score += 30;
 				break;
 
 			// ----- Cerys -----
 			case 'becca':
-				if (FactsQuerySum('sq202_cerys_queen') > 0)            score += 50;
-				if (FactsQuerySum('q206_berserker_solved') > 0)        score += 20;
+				if (FactsQuerySum('q206_cerys_queen') > 0)    score += 50;
+				if (FactsQuerySum('q206_csi_completed') > 0)  score += 20;
+				break;
+
+			// ----- Syanna -----
+			case 'syanna':
+				if (FactsQuerySum('q705_syanna_correct') > 0) score += 40;
+				break;
+
+			// ----- Filippa -----
+			case 'philippa_eilhart':
+				if (FactsQuerySum('sq302_philippa') > 0)      score += 30;
+				break;
+
+			// ----- Salma -----
+			case 'mh303_succbus_v2':
+				if (FactsQuerySum('mh303_succubus_spared') > 0) score += 30;
+				break;
+
+			// ----- Ves -----
+			case 'ves':
+				if (FactsQuerySum('sq312_fact_ves_alive') > 0) score += 40;
 				break;
 		}
 
@@ -278,7 +354,7 @@ class MCM_RomanceAffinityResolver
 		// FactsRemove z FactsAdd podmienia stary wpis.
 		FactsRemove(factName);
 		FactsAdd(factName, current + amount);
-		LogChannel('MCM_AR', "[AR] Affinity +" + amount + " dla " + npcName + " (łącznie: " + (current + amount) + ")");
+		LogChannel('MCM_AR', "[AR] Affinity +" + amount + " for " + npcName + " (total: " + (current + amount) + ")");
 	}
 
 	// -----------------------------------------------------------------------

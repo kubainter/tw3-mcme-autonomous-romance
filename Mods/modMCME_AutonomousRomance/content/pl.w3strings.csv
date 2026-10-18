@@ -15,13 +15,101 @@
 2118800013|        |option_MCM_AR_Enabled|Włącz Autonomiczny Romans
 2118800014|        |option_mcm_ar_opt_cooldown|Czas odnowienia inicjatyw (sekundy)
 2118800015|        |option_MCM_AR_CooldownSlider|Czas odnowienia inicjatyw (sekundy)
-2118800016|        |option_mcm_ar_opt_affinity|Mnożnik relacji (5=0.5x | 10=1.0x | 20=2.0x | 50=5.0x)
-2118800017|        |option_MCM_AR_AffinityMult|Mnożnik relacji (5=0.5x | 10=1.0x | 20=2.0x | 50=5.0x)
+2118800016|        |option_mcm_ar_opt_affinity|Mnożnik relacji (5=0.5x / 10=1.0x / 20=2.0x / 50=5.0x)
+2118800017|        |option_MCM_AR_AffinityMult|Mnożnik relacji (5=0.5x / 10=1.0x / 20=2.0x / 50=5.0x)
 2118800018|        |option_mcm_ar_opt_jealousy|Tryb zazdrości (Wł.=zazdrość / Wył.=poliamoria)
 2118800019|        |option_MCM_AR_JealousyMode|Tryb zazdrości (Wł.=zazdrość / Wył.=poliamoria)
 2118800020|        |option_mcm_ar_opt_force|Sandbox: Ignoruj wymagania relacji (Odblokuj wszystko)
 2118800021|        |option_MCM_AR_ForceRomance|Sandbox: Ignoruj wymagania relacji (Odblokuj wszystko)
-2118800022|        |option_mcm_ar_opt_consent|Wymagaj potwierdzenia gracza [E] przy scenach intymnych
-2118800023|        |option_MCM_AR_RequireConsent|Wymagaj potwierdzenia gracza [E] przy scenach intymnych
+2118800022|        |option_mcm_ar_opt_consent|Wymagaj potwierdzenia gracza [C] przy scenach intymnych
+2118800023|        |option_MCM_AR_RequireConsent|Wymagaj potwierdzenia gracza [C] przy scenach intymnych
 2118800024|        |option_mcm_ar_opt_debug|Debug: Wyświetlaj powiadomienia HUD na ekranie
 2118800025|        |option_MCM_AR_DebugHud|Debug: Wyświetlaj powiadomienia HUD na ekranie
+2118800026|        |option_mcm_ar_opt_tick|Interwał decyzji moda (sekundy)
+2118800027|        |option_MCM_AR_TickInterval|Interwał decyzji moda (sekundy)
+2118800028|        |ar_prompt_yen_closer|[C] Zbliż się do Yennefer
+2118800029|        |ar_prompt_yen_intimate|[C] Zostań z Yennefer na osobności
+2118800030|        |ar_prompt_triss_stay|[C] Zostań z Triss
+2118800031|        |ar_prompt_triss_kiss|[C] Pocałuj Triss
+2118800032|        |ar_prompt_triss_intimate|[C] Zostań z Triss na osobności
+2118800033|        |ar_prompt_keira_invite|[C] Przyjmij zaproszenie Keiry
+2118800034|        |ar_prompt_keira_intimate|[C] Zostań z Keirą na osobności
+2118800035|        |ar_prompt_shani_stay|[C] Zostań ze Shani
+2118800036|        |ar_prompt_shani_intimate|[C] Zostań ze Shani na osobności
+2118800037|        |ar_prompt_anarietta_escort|[C] Towarzysz Księżnej
+2118800038|        |ar_prompt_anarietta_intimate|[C] Zostań z Księżną na osobności
+2118800039|        |ar_prompt_vivienne_stay|[C] Zostań z Vivienne
+2118800040|        |ar_prompt_vivienne_intimate|[C] Zostań z Vivienne na osobności
+2118800041|        |ar_prompt_cerys_stay|[C] Zostań z Cerys
+2118800042|        |ar_prompt_cerys_intimate|[C] Zostań z Cerys na osobności
+2118800043|        |ar_prompt_consent_hint|(przytrzymaj [C] ~1s lub tapnij 2x)
+2118800044|        |ar_prompt_gift|[C] Podaruj {2}: {1}
+2118800045|        |ar_msg_healed|{1} uleczyła cię (+{2} PŻ)
+2118800046|        |ar_msg_item_gone|Trunek zniknął już z ekwipunku.
+2118800047|        |ar_msg_remove_fail|Nie udało się usunąć {1} z ekwipunku.
+2118800048|        |ar_msg_gift_given|Podarowano {1} dla {2} (+3 zażyłości)
+2118800049|        |ar_msg_naughty_near|Nastrój sprzyja bliskości...
+2118800050|        |ar_msg_companion|Towarzyszka
+2118800051|        |ar_menu_outfit|Ubiór: 
+2118800052|        |ar_outfit_normal|Normalny
+2118800053|        |ar_outfit_underwear|Bielizna
+2118800054|        |ar_outfit_nude|Nago
+2118800055|        |ar_line_yen_oneliner_flirt|Może to dziwne, ale lubię patrzeć, jak pracujesz.
+2118800056|        |ar_line_yen_postcombat_care|Następnym razem stań za mną, dobrze? Wolę cię bronić, niż potem opatrywać rany.
+2118800057|        |ar_line_yen_night_invitation|Chodź, Geralcie.
+2118800058|        |ar_line_yen_campfire_evening|Wspaniale. Wreszcie mamy okazję porozmawiać.
+2118800059|        |ar_line_yen_intimate_invite|Że żałuję, iż nie spróbowaliśmy tego wcześniej. Znacznie wcześniej.
+2118800060|        |ar_line_yen_jealousy_snark|No weź, Geralcie. Znam cię. Wystarczająco dobrze, by wiedzieć, co dzieje się między tobą a Triss.
+2118800061|        |ar_line_yen_jealousy_snark2|Jeśli sądzisz, że nie widzę, co dzieje się między tobą a tą rudowłosą czarodziejką... mylisz się, Geralcie.
+2118800062|        |ar_line_yen_tavern_wine|Geralcie?
+2118800063|        |ar_line_triss_oneliner_flirt|Dobrze, że jesteś blisko, Geralcie.
+2118800064|        |ar_line_triss_postcombat_hug|Tsa, o Geralcie. W co tym razem się wpakowałeś?
+2118800065|        |ar_line_triss_night_whisper|Hmmmm, Geraaalcie...
+2118800066|        |ar_line_triss_campfire_warmth|Pozostań przy ogniu jeszcze chwilę, Geralcie.
+2118800067|        |ar_line_triss_garden_kiss|Chodź tu, Geralcie.
+2118800068|        |ar_line_triss_intimate_invite|Hmmmm, Geraaalcie...
+2118800069|        |ar_line_triss_jealousy_snark|O, naprawdę chcesz o tym rozmawiać? Może powinnam zawołać Yennefer? Szkoda, żeby to przegapiła.
+2118800070|        |ar_line_keira_oneliner_flirt|Och, zdecydowanie nie jesteś chłopcem. Jesteś silnym, opanowanym wiedźminem, który z pewnością pomoże damie w potrzebie.
+2118800071|        |ar_line_keira_postcombat_heal|Nie ruszaj się, pozwól, że obejrzę tę ranę.
+2118800072|        |ar_line_keira_night_proposal|Założę się, że ten, raz uruchomiony, by cię zelektryzował... No cóż, jak zmienisz zdanie - odwiedź mnie.
+2118800073|        |ar_line_keira_campfire_witch|Może... może zostałbyś jeszcze chwilę? Jest taka drobna przysługa, którą mógłbyś mi wyświadczyć.
+2118800074|        |ar_line_keira_intimate_invite|Założę się, że ten, raz uruchomiony, by cię zelektryzował... No cóż, jak zmienisz zdanie - odwiedź mnie.
+2118800075|        |ar_line_shani_oneliner_flirt|Wyglądasz czarująco.
+2118800076|        |ar_line_shani_postcombat_medic|Potrzebujesz pomocy?
+2118800077|        |ar_line_shani_night_relax|Przydałoby ci się trochę wyluzowania od czasu do czasu.
+2118800078|        |ar_line_shani_intimate_invite|Przydałoby ci się trochę wyluzowania od czasu do czasu.
+2118800079|        |ar_line_yen_gift_request|Kielich dobrego wina byłby miły, Geralcie.
+2118800080|        |ar_line_triss_gift_request|Geralcie, masz może przy sobie trochę wina?
+2118800081|        |ar_line_keira_gift_request|Przydałby mi się teraz łyk dobrego wina.
+2118800082|        |ar_line_shani_gift_request|Długi dzień... Masz coś do picia?
+2118800083|        |ar_line_anarietta_oneliner_flirt|Wyśmienite wino. Masz dobry gust.
+2118800084|        |ar_line_anarietta_postcombat_pride|Chciałabym się czegoś dowiedzieć... Jak możesz być tak cholernie spokojny?
+2118800085|        |ar_line_anarietta_night_royal|Chodź, wiedźminie.
+2118800086|        |ar_line_anarietta_intimate_invite|Chodź, wiedźminie.
+2118800087|        |ar_line_vivienne_oneliner_flirt|Piękny dzień na przejażdżkę, nie sądzisz?
+2118800088|        |ar_line_vivienne_campfire_mystery|Chodź.
+2118800089|        |ar_line_vivienne_night_invitation|Przejdziesz się ze mną, Geralcie?
+2118800090|        |ar_line_vivienne_intimate_invite|Noc jest dla nas łaskawa, Geralcie.
+2118800091|        |ar_line_cerys_oneliner_flirt|Pokaż, co potrafisz, pogromco potworów!
+2118800092|        |ar_line_cerys_postcombat_skellige|Wciąż stoisz? Dobrze. Skellige nie potrzebuje wdów.
+2118800093|        |ar_line_cerys_night_invitation|Geralcie! Chodź! Chyba mam pomysł!
+2118800094|        |ar_line_cerys_intimate_invite|Geralcie! Chodź! Chyba mam pomysł!
+2118800095|        |ar_line_anarietta_gift_request|Wyśmienite wino. Masz dobry gust.
+2118800096|        |ar_line_vivienne_gift_request|Napijesz się ze mną, wiedźminie?
+2118800097|        |ar_line_cerys_gift_request|Masz coś mocnego w tym swoim plecaku, wiedźminie?
+2118800098|        |ar_line_philippa_gift_request|Nalej mi czegoś porządnego, Geralcie.
+2118800099|        |ar_line_syanna_gift_request|Znajdzie się dla mnie coś do picia, wiedźminie? Chodzenie budzi pragnienie.
+2118800100|        |ar_line_salma_gift_request|Masz przy sobie jakieś słodkie wino?
+2118800101|        |ar_line_ves_gift_request|Masz coś mocnego, żeby zmyć kurz z drogi?
+2118800102|        |ar_thanks_yen|Dziękuję, Geralcie.
+2118800103|        |ar_thanks_triss|Dziękuję, to wspaniałe.
+2118800104|        |ar_thanks_keira|Mmm, potrafisz obchodzić się z damą.
+2118800105|        |ar_thanks_shani|Właśnie tego potrzebowałam, dziękuję, Geralcie.
+2118800106|        |ar_thanks_anarietta|Masz moją szczerą wdzięczność, wiedźminie.
+2118800107|        |ar_thanks_vivienne|Jesteś bardzo miły, Geralcie.
+2118800108|        |ar_thanks_cerys|Ha, o to chodziło!
+2118800109|        |ar_thanks_philippa|Znośne. Nauczyłeś się manier.
+2118800110|        |ar_thanks_syanna|Dzięki. Potrzebowałam tego.
+2118800111|        |ar_thanks_salma|Mmm, przepyszne. Dziękuję.
+2118800112|        |ar_thanks_ves|Dobre. Wielkie dzięki, Geralcie.
+2118800113|        |ar_msg_travel_aff|Więź z {1} zacieśnia się podczas wspólnej drogi (+1)
