@@ -66,7 +66,7 @@
 2118800064|        |ar_line_triss_postcombat_hug|Tsk... Oh Geralt... What've you gotten yourself into now?
 2118800065|        |ar_line_triss_night_whisper|Hmmmm, Geraaalt...
 2118800066|        |ar_line_triss_campfire_warmth|Stay by the fire a while, Geralt.
-2118800067|        |ar_line_triss_garden_kiss|Come here, Geralt.
+2118800067|        |ar_line_triss_kiss_invite|Come here, Geralt.
 2118800068|        |ar_line_triss_intimate_invite|Hmmmm, Geraaalt...
 2118800069|        |ar_line_triss_jealousy_snark|Oh, you really want to talk about it? Maybe I should get Yennefer? Wouldn't want her to miss any of this.
 2118800070|        |ar_line_keira_oneliner_flirt|Oh, you're definitely no boy. You're a strong, poised witcher who will surely help a woman in need.
@@ -113,3 +113,124 @@
 2118800111|        |ar_thanks_salma|Mmm, delightful. Thank you.
 2118800112|        |ar_thanks_ves|Good stuff. Much appreciated, Geralt.
 2118800113|        |ar_msg_travel_aff|Your bond with {1} grows through journey (+1)
+2118800114|        |ar_line_triss_tavern_drink|Another round? This one's on me.
+2118800115|        |ar_line_keira_tavern_drink|A drink, Geralt? Even a sorceress needs to unwind.
+2118800116|        |ar_line_shani_tavern_drink|Sit down, drink. Doctor's orders.
+2118800117|        |ar_line_anarietta_tavern_drink|The Duchess allows herself this one indulgence.
+2118800118|        |ar_line_vivienne_tavern_drink|A moment's peace and good wine. Rare gifts.
+2118800119|        |ar_line_cerys_tavern_drink|Skellige mead beats this swill, but company helps.
+2118800120|        |ar_line_yen_night_filler|The night suits us, witcher.
+2118800121|        |ar_line_triss_night_filler|Quiet... I like the world better at this hour.
+2118800122|        |ar_line_keira_night_filler|Can't sleep either? Village nights are so dull.
+2118800123|        |ar_line_shani_night_filler|A medic's work doesn't end at sundown.
+2118800124|        |ar_line_anarietta_night_filler|Toussaint nights were made for walking.
+2118800125|        |ar_line_vivienne_night_filler|I used to fear the night. No longer.
+2118800126|        |ar_line_cerys_night_filler|Skellige nights are colder. This is nothing.
+2118800127|        |mcm_ar_opt_barkpreset|Companion chatter (1=Quiet, 2=Default, 3=Chatty)
+2118800128|        |ar_line_weather_bark|This weather... at least we're in it together.
+2118800129|        |ar_line_horse_bark|Riding with you beats walking alone.
+2118800130|        |ar_line_interior_bark|Nice to be out of the wind for a bit.
+2118800131|        |ar_line_boat_bark|Water, wind and you. Could be worse.
+2118800132|        |ar_line_afterglow|That was... nice. Don't be a stranger.
+2118800133|        |ar_line_jealousy_aftermath|I saw that. You could at least pretend to be discreet.
+2118800134|        |ar_line_rosa_oneliner_flirt|Careful, witcher. I bruise egos for sport.
+2118800135|        |ar_line_tomira_oneliner_flirt|The road suits you, Geralt. My door is open if you tire of it.
+2118800136|        |ar_line_rosa_gift_request|Surely a witcher of your standing keeps a decent vintage on him?
+2118800137|        |ar_thanks_rosa|Acceptable. For once.
+2118800138|        |ar_line_tomira_gift_request|I'm running low on spirits for my tinctures. Spare any?
+2118800139|        |ar_thanks_tomira|This will help more than you know. Thank you, Geralt.
+2118800140|        |option_mcm_ar_opt_barkpreset|Companion chatter (1=Quiet, 2=Default, 3=Chatty)
+2118800141|        |option_MCM_AR_BarkPreset|Companion chatter (1=Quiet, 2=Default, 3=Chatty)
+2118800142|        |preset_Mods_AutonomousRomance|Autonomous Romance v2.0.0
+2118800143|        |ar_prompt_rosa_kiss|[C] Kiss Rosa
+2118800144|        |ar_line_rosa_kiss|Geralt... Not so fast. Let me look at you.
+2118800145|        |ar_afterglow_rosa|Not bad. Though my fencing form is still sharper than yours.
+2118800146|        |ar_prompt_tomira_kiss|[C] Kiss Tomira
+2118800147|        |ar_line_tomira_kiss|Come here, Geralt. You've earned a moment of peace.
+2118800148|        |ar_afterglow_tomira|Sweeter than any herb in my garden. Take care on the road.
+2118800149|        |ar_prompt_ciri_hug|[C] Hug Ciri
+2118800150|        |ar_line_ciri_hug|Geralt... Good to have you beside me.
+2118800151|        |ar_afterglow_ciri|It's good to be together again, Geralt.
+2118800152|        |ar_afterglow_yen|Now that's a welcome distraction. Let's keep moving, Geralt.
+2118800153|        |ar_afterglow_triss|I've missed that... Stay close, all right?
+2118800154|        |ar_afterglow_keira|Mmm... You certainly haven't lost your touch, witcher.
+2118800155|        |ar_afterglow_shani|That made this journey so much better, Geralt.
+2118800156|        |ar_afterglow_anarietta|A delightful moment. Now, let us attend to our duties.
+2118800157|        |ar_afterglow_vivienne|Thank you, Geralt. You bring warmth to my heart.
+2118800158|        |ar_afterglow_cerys|Hah! Not bad, witcher, not bad at all.
+2118800159|        |ar_line_syanna_oneliner_flirt|You still staring, Geralt? Take a picture, it lasts longer.
+2118800160|        |ar_line_syanna_postcombat|Not bad with that silver sword. I almost felt safe for a second.
+2118800161|        |ar_prompt_syanna_kiss|[C] Kiss Syanna
+2118800162|        |ar_line_syanna_kiss|Come here, Geralt. Don't play shy now.
+2118800163|        |ar_prompt_syanna_intimate|[C] Stay alone with Syanna
+2118800164|        |ar_line_syanna_intimate_invite|I remember the clouds... and what we did above them. Want to remind me?
+2118800165|        |ar_afterglow_syanna|Didn't think you had it in you, witcher. Nice surprise.
+2118800166|        |ar_line_philippa_oneliner_flirt|Quiet, Geralt. Thinking never was your strong suit.
+2118800167|        |ar_line_philippa_care|Still breathing? Good. You're far more useful in one piece.
+2118800168|        |ar_prompt_philippa_kiss|[C] Kiss Philippa
+2118800169|        |ar_line_philippa_kiss|Geralt. Step closer... and don't make me repeat myself.
+2118800170|        |ar_afterglow_philippa|Satisfactory, Geralt. Let's not make a habit of lingering.
+2118800171|        |ar_line_ves_oneliner_flirt|Eyes front, witcher. Vernon's got enough scouts without you watching my back.
+2118800172|        |ar_line_ves_campfire|Nothing like fire and a sharp blade. Sit down, catch your breath.
+2118800173|        |ar_prompt_ves_kiss|[C] Kiss Ves
+2118800174|        |ar_line_ves_kiss|Quiet now. No commanders, no war... just us.
+2118800175|        |ar_afterglow_ves|Not soft, are you? Good. Back to the road.
+2118800176|        |ar_line_salma_oneliner_flirt|Your aura... it burns warmer than any mortal man's, witcher.
+2118800177|        |ar_line_salma_allure|Tired, white wolf? Let my scent soothe your troubled thoughts.
+2118800178|        |ar_prompt_salma_kiss|[C] Kiss Salma
+2118800179|        |ar_line_salma_kiss|Come, sweet hunter. One touch won't hurt you...
+2118800180|        |ar_afterglow_salma|Mmm... Delicious. You always know how to please.
+2118800181|        |ar_line_priscilla_oneliner_flirt|The road with you feels like a ballad that's yet to be written.
+2118800182|        |ar_line_priscilla_care|Rest a moment, Geralt. Even heroes must pause between stanzas.
+2118800183|        |ar_prompt_priscilla_kiss|[C] Kiss Priscilla
+2118800184|        |ar_line_priscilla_kiss|Geralt... Stay close. Let this moment linger.
+2118800185|        |ar_afterglow_priscilla|Like a verse from a forgotten ballad. Thank you, Geralt.
+2118800186|        |ar_line_priscilla_gift_request|My throat grows dry from the road. Do you carry any fine wine, Geralt?
+2118800187|        |ar_thanks_priscilla|Exquisite. My voice thanks you, Geralt.
+2118800188|        |ar_line_edna_oneliner_flirt|My sister thinks she's the only one who appreciates your rough charm.
+2118800189|        |ar_line_edna_care|You look weary, witcher. Nilfgaardian court etiquette is easier than your life.
+2118800190|        |ar_prompt_edna_kiss|[C] Kiss Edna
+2118800191|        |ar_line_edna_kiss|Let Rosa practice her parries. Come here, Geralt.
+2118800192|        |ar_afterglow_edna|Bold, witcher. Much bolder than my sister thinks.
+2118800193|        |ar_line_edna_gift_request|Do you happen to have a vintage worth tasting in that leather pouch?
+2118800194|        |ar_thanks_edna|Far better than I expected. Thank you, witcher.
+2118800195|        |ar_line_fringilla_oneliner_flirt|Still looking at me with that guarded Nilfgaardian gaze, Geralt?
+2118800196|        |ar_line_fringilla_care|Magic warms cold steel, witcher. Don't push yourself too hard.
+2118800197|        |ar_prompt_fringilla_kiss|[C] Kiss Fringilla
+2118800198|        |ar_line_fringilla_kiss|The Lodge isn't watching, Geralt. Come closer.
+2118800199|        |ar_afterglow_fringilla|A rare moment of tenderness. I will remember it.
+2118800200|        |ar_line_fringilla_gift_request|A drop of strong southern wine would clear my head. Got any?
+2118800201|        |ar_thanks_fringilla|Reminds me of home. Thank you, Geralt.
+2118800202|        |ar_line_margarita_oneliner_flirt|Aretuza taught me discipline, Geralt. You tempt me to forget it.
+2118800203|        |ar_line_margarita_care|You carry too many wounds, old friend. Let yourself breathe.
+2118800204|        |ar_prompt_margarita_kiss|[C] Kiss Margarita
+2118800205|        |ar_line_margarita_kiss|Come here, Geralt. We've both endured enough cold.
+2118800206|        |ar_afterglow_margarita|Warmth is precious in times like these. Thank you.
+2118800207|        |ar_line_margarita_gift_request|After Oxenfurt's dungeons, any warming spirit is a blessing. Spare some?
+2118800208|        |ar_thanks_margarita|Warmth... true warmth. Thank you, Geralt.
+2118800209|        |ar_line_orianna_oneliner_flirt|Your blood smells rich, witcher... but I prefer you alive and talking.
+2118800210|        |ar_line_orianna_care|Rest, Geralt. Even a witcher's heart must weary under such strain.
+2118800211|        |ar_prompt_orianna_kiss|[C] Kiss Orianna
+2118800212|        |ar_line_orianna_kiss|Step closer, witcher. Let me savor this quiet moment with you.
+2118800213|        |ar_afterglow_orianna|Exquisite... A taste I could easily grow fond of.
+2118800214|        |ar_line_orianna_gift_request|Do you possess a vintage with enough depth to intrigue my palate?
+2118800215|        |ar_thanks_orianna|Exquisite. You continue to exceed my expectations.
+2118800216|        |ar_afterglow_walk_yen|Still thinking about that, Geralt? Keep your eyes on the road.
+2118800217|        |ar_afterglow_walk_triss|My heart's still racing a bit... It's good to be with you.
+2118800218|        |ar_afterglow_walk_keira|Mmm, that certainly put some color in my cheeks.
+2118800219|        |ar_afterglow_walk_shani|A moment like that makes the whole journey lighter.
+2118800220|        |ar_afterglow_walk_anarietta|A delightful interlude, Geralt. Let us not neglect what lies ahead.
+2118800221|        |ar_afterglow_walk_vivienne|My thoughts are lighter now... Thank you, Geralt.
+2118800222|        |ar_afterglow_walk_cerys|Ha! Not losing your step, are you, Geralt?
+2118800223|        |ar_afterglow_walk_rosa|Careful not to trip, witcher. Your head seems elsewhere.
+2118800224|        |ar_afterglow_walk_tomira|The wild doesn't seem quite so harsh with you beside me.
+2118800225|        |ar_afterglow_walk_syanna|Surprised you're still walking straight, witcher.
+2118800226|        |ar_afterglow_walk_philippa|Satisfactory distraction. Now keep your guard up.
+2118800227|        |ar_afterglow_walk_ves|Don't lose your focus now. Miles to go.
+2118800228|        |ar_afterglow_walk_salma|Your warmth stays with me, witcher... Delicious.
+2118800229|        |ar_afterglow_walk_priscilla|A melody in the middle of nowhere. Thank you, Geralt.
+2118800230|        |ar_afterglow_walk_edna|Still smiling, witcher? It was just a taste.
+2118800231|        |ar_afterglow_walk_fringilla|A brief peace in a bitter war. Let's keep moving.
+2118800232|        |ar_afterglow_walk_margarita|A rare touch of comfort on an endless road.
+2118800233|        |ar_afterglow_walk_orianna|That taste lingers delightfully. Let's see what else the road brings.
+2118800234|        |ar_afterglow_walk_ciri|Good to walk beside you, Geralt. Like old times.
