@@ -6,7 +6,7 @@
 > oraz procedurze rozszerzania moda bez tworzenia regresji.
 >
 > 📖 **Dokumentacja powiązana i badania architektury:**
-> - [`RESEARCH_SEAMLESS_ROMANCE_PLAYBACK.md`](file:///g:/GOG%20Galaxy/Games/The%20Witcher%203%20Wild%20Hunt%20GOTY/_ModDev/MCME_AutonomousRomance/repo/RESEARCH_SEAMLESS_ROMANCE_PLAYBACK.md) - Analiza silnikowego odtwarzania cutscen (TGL Scene Selector vs MCM AR), ominięcie menu dialogu i roadmapa animacji pocałunku na v2.0.
+> - `..\archive\research\RESEARCH_SEAMLESS_ROMANCE_PLAYBACK.md` (archiwum, poza repo) - Analiza silnikowego odtwarzania cutscen (TGL Scene Selector vs MCM AR) i odrzucona ścieżka Lua/TW3SE dla pocałunku. **Uwaga: ścieżka z researchu NIE jest obecną architekturą** - v2.0 używa natywnych scen `ar_*.w2scene` bez PChoice (§7 ARCHITECTURE).
 
 ---
 
@@ -19,13 +19,13 @@ Folder w grze `Mods\modMCME_AutonomousRomance` to **NTFS Junction** wskazujący 
 
 ```text
 modMCME_AutonomousRomance/
-├── MCM_RomanceCore.ws         - Boot, pętle ticków, Idle-Suspend, Auto-Pick, filtry i execy
+├── MCM_RomanceCore.ws         - Boot, pętle ticków, Idle-Suspend, kanał ambient (priorytet isTimeCritical), filtry i execy
 ├── MCM_RomanceInteraction.ws  - Klasa bazowa akcji, GiftRequest_Base, staging lokomocji, Consent Engine v3, Rejestr
 ├── MCM_RomanceAffinity.ws     - Config wrapper MCM, resolver zażyłości 3 filarów, ring-bufor MCM_AR_Log
-├── MCM_RomanceActions_Main.ws - Repertuar 44 klas: Yen, Triss, Keira, Shani + generyczne T1
-│    (pogoda/koń/łódź/interior, afterglow, zazdrość, night-fillery) + Rosa var Attre, Tomira, Ciri [w tym Gifty C1 i pocałunki/uściski]
-├── MCM_RomanceActions_DLC.ws  - Repertuar 57 klas: Anarietta, Vivienne, Cerys, Syanna (pełny T1-T4 Core CDPR cloud sex),
-│    Philippa, Ves, Salma, Priscilla, Edna, Fringilla, Margarita, Orianna (T1-T3 + Gifty)
+├── MCM_RomanceActions_Main.ws - Repertuar 50 klas: Yen, Triss, Keira, Shani + generyczne T1
+│    (pogoda/koń/łódź/interior, afterglow, zazdrość, night-fillery) + Rosa var Attre, Tomira, Ciri (hug + dual-mode kiss/intimate) [w tym Gifty C1 i pocałunki/uściski]
+├── MCM_RomanceActions_DLC.ws  - Repertuar 63 klas: Anarietta, Vivienne, Cerys, Syanna (pełny T1-T4 Core CDPR cloud sex),
+│    Philippa, Ves, Salma, Priscilla, Edna, Fringilla, Margarita (T1-T3 + Gifty), Orianna (T1-T2 + Gift)
 ├── MCM_RomanceQoL.ws          - Flash UI menu ubioru w MCME, pamięć strojów, ar_gift
 ├── MCM_RomanceTw3seDev.ws     - Warstwa TW3SE (importy natywne, pipe IPC, odczyt VK, hot-reload)
 └── MCM_RomanceTw3seDev.stub.ws             - Pusty zamiennik bez TW3SE dla wersji release
@@ -48,22 +48,19 @@ modMCME_AutonomousRomance/
   * `UpdateIdleSuspend(safe : bool)`: bada bezruch gracza w promieniu 1.5m przez >50s (`arIdleAnchor`). Zawiesza follow przez `StopFollowing(true)` (z zachowaniem tagu `mod_scm_IsFollowing`), kieruje NPC na pozycję obok i uruchamia animację slotową (np. `woman_stand_hand_on_hip_idle` dla Yen, `stand_weight_shift` dla Triss).
   * **Podział zegarów:** tworzenie jobów i próg bezruchu >50s zostają w `ProcessTick` (tick decyzyjny z MCM), natomiast progresja faz jobów (`moving` -> `posed`) oraz pętla wybudzania działają na kanale ambient ~10s (`UpdateIdleAmbient()` + `WakeIdleJobs()`). Dzięki temu pozy towarzyszek pozostają responsywne niezależnie od ustawienia `MCM_AR_TickInterval`.
   * Wybudzenie i wznowienie follow: natychmiast po ruszeniu gracza >1.5m lub wejściu w stan unsafe (walka, menu, dialog).
-* **Auto-Pick Wyborów w Scenach Dialogowych (L513-867):**
-  * `MCM_AR_OnDialogChoices(choices)`: strukturalna detekcja opcji w scenie `*FollowWithKiss`.
-  * Faza 0: wybiera opcję o indeksie 1, jeśli ostatnia opcja to `DialogAction_EXIT`, a choices[1] nie jest wyjściem (niezależne od języka, z fallbackiem słów kluczowych).
-  * Faza 1: po pocałunku automatycznie wybiera opcję EXIT, zamykając menu.
 * **Filtry Bezpieczeństwa i Budowa Kontekstu (L868-1358):**
   * `MCM_AR_IsSafeToInitiate(out reason)`: blokuje akcje w walce, dialogach, pływaniu, łodzi, otwartym menu i stanach innych niż `Exploration`.
   * `MCM_AR_IsSafeForAmbient(out reason)`: łagodniejszy gate dla barków T1 - dopuszcza jazdę konną (`HorseRiding`/`Horse`) i łódź (`Sailing`/`BoatPassenger`/`Boat`), nadal blokuje pływanie, walkę i dialogi/cutsceny.
   * `lastSceneOkNpc`/`lastSceneOkTime` + `sceneExistsCache` (`path→bool`): stempelek ostatniej udanej sceny T3/T4 (fuel dla afterglow/zazdrości) i cache `MCM_AR_SceneExists`.
-  * `BuildContext(companions)`: agreguje czas gry (`isNight`, `isDawn`), stan zdrowia, ognisko (<6m; encja z tagiem `campfire` lub `CarriesOpenFire`/TAG_OPEN_FIRE - obejmuje palone paleniska, bez aktorów), karczmę (`MCM_AR_IsInTavern`: fact `player_in_inn` LUB fallback `IsInInterior` + encja karczmarza ≤15m - tagi `innkeep`/`barkeep`/`barmaid`/`bartender`/`tavern_keeper` albo ścieżka szablonu `innkeep|barkeep|inn\`/`inn/`), Corvo Bianco, odległość NaughtyPoint oraz obecność rywalek (`rivalCount`).
+  * `BuildContext(companions)`: agreguje czas gry (`isNight`, `isDawn`), stan zdrowia, ognisko (<6m; encja z tagiem `campfire` lub `CarriesOpenFire`/TAG_OPEN_FIRE z wykluczeniem świec/lampek/pochodni po ścieżce - `candle|lantern|torch|chandelier|sconce|candelabr|lamp`), karczmę (`MCM_AR_IsInTavern`: fact `player_in_inn` LUB fallback `IsInInterior` + skan encji ≤18m/cap 200 - tagi `innkeep`/`barkeep`/`barmaid`/`bartender`/`tavern_keeper` albo ścieżka warstwy/szablonu `innkeep|barkeep|barmaid|inn\|inn_|inn.|tavern|drinking_bench`; wysoki cap wymagany, bo geste wnetrza zwracaja 100+ encji w kolejnosci silnikowej), Corvo Bianco, odległość NaughtyPoint oraz obecność rywalek (`rivalCount`).
   * `missingVoicesetNpcs` (`MCM_AR_IsVoicesetMissing`/`MCM_AR_MarkVoicesetMissing`): cache per-NPC po 1. nieudanym `PlayVoiceset` - kolejne barki idą od razu ścieżką lineId/napis bez spamu warningów (Rosa/Tomira nie mają `greeting_geralt`).
 * **Maszyny Stanów STAGED i AMBIENT (L1359-1785):**
   * `MCM_AutonomousRomanceCore`: stan `Idle` oraz `ProcessingTick` (interwał `MCM_AR_TickInterval`, domyślnie 30s; pętla STAGED z lockiem `interactionBusy`, watchdogiem 300s i post-staged cooldownem 90s).
   * `MCM_AmbientRomanceChannel`: stan `Idle` oraz `AmbientTick` (co 10s; pętla AMBIENT dla powitań po rozłące >60s oraz jednolinijkowców T1).
   * Akcje z flagą `isTimeCritical` (`ar_afterglow`, `ar_jealousy_aftermath`) mają pierwszeństwo w kanale ambient: `ProcessAmbient` pomija los presetu gadatliwości, gdy którakolwiek jest eligible (`HasTimeCriticalEligible`), a `TryExecuteTimeCritical` wybiera eligible o najwyższym `weight` i strzela przed ważonym losem (`[AR] ambient(prio) -> ...`). Globalny cooldown barku ~90s i bramki per-NPC nadal obowiązują.
-* **Komendy Diagnostyczne Konsoli (L1790-2628 oraz ar_test L63):**
-  * `ar_test`, `ar_status`, `ar_reset`, `ar_force`, `ar_devreset`, `ar_idlenow`, `ar_consent`, `ar_affinity`, `ar_trigger`, `ar_logdump`, `ar_bootlog`, `ar_diag`, `ar_line`, `ar_probeanim`, `ar_debug`, `ar_eval`, `ar_kiss`, `ar_hug`.
+* **Komendy Diagnostyczne Konsoli (L1790-2628 oraz ar_test L63, ar_test_e2e w dev):**
+  * `ar_test`, `ar_status`, `ar_reset`, `ar_force`, `ar_devreset`, `ar_idlenow`, `ar_consent`, `ar_affinity`, `ar_trigger`, `ar_logdump`, `ar_bootlog`, `ar_diag`, `ar_line`, `ar_probeanim`, `ar_probeanim2`, `ar_probeinject`, `ar_debug`, `ar_eval`, `ar_neartags`, `ar_kiss`, `ar_hug`, `ar_dress`, `ar_undress`, `ar_naked`, `ar_gift`, `ar_devinfo`, `ar_reload`, `ar_test_e2e`, `ar_tour_scenes` (29 łącznie; release-stub = 27).
+  * `ar_test_e2e`: zestaw asercji automatycznych E2E w dev-layerze TW3SE, sterowany zewnętrznym runnerem `scripts\test_e2e.ps1` (nie trafia do paczki release).
 
 ### 2. `MCM_RomanceInteraction.ws`
 
@@ -87,11 +84,12 @@ modMCME_AutonomousRomance/
     * Pokrycie kontekstów input: `MCM_AR_Consent` zbindowany nie tylko w 5 bazowych kontekstach gameplay (Exploration/Combat/Horse/Boat/Swimming), lecz też w overlay-contextach, które mogą siedzieć na stosie wejścia podczas promptu (`Scene` tylko klawiatura - D-pad nawiguje tam dialogi, `ScriptedAction`, `SCENE_IS_STARTING_HACK`, `JumpClimb`, `Diving`, `ThrowHold`, `ThrowHoldChain`, `LootPopup`, `BoatPassenger`, replacery Ciri). Bez tego binding w aktywnym kontekście nie istnieje → zero zbocz akcji i eventów listenera.
     * Diagnostyka dev (`ar_log.txt`): `consent: ctx=` przy starcie promptu (aktywny `theInput.GetContext()`), sonda `consent probe:` co ~1s (ctx + VK + `GetActionValue` obu akcji + licznik faktu), `consent ev:` na samej górze listenera (każde wywołanie, zanim odpadnie na bramkach - odróżnia "brak eventu" od "event bez press-edge").
   * Odtwarzanie Scen i Integracja MCME (L800-1650):
-    * `PlayDialogueScene(npc, path, autoPick)`: zatrzymanie joba MCME (`worker.forceStop()`), nadanie tymczasowego tagu `npc.AddTag('mcme_companion')`, start czystej sceny bez koła wyboru (`theGame.GetStorySceneSystem().PlayScene(scene, "Input")`), latentne oczekiwanie i zdjęcie tagu (`RemoveTag`).
-    * `WaitForSceneEnd(npc, timeout)`: latentne oczekiwanie na zakończenie sceny, wczesne zwolnienie ruchu gracza (`UnblockAction(EIAB_Movement)`) po wyjściu z sekwencji animacji.
+    * `PlayKissScene(npc)` / `PlayHugScene(npc)`: rozwiązują ścieżkę przez `AutonomousScenePath(npc, isHug)` i grają naszą scenę `ar_*.w2scene` (per-NPC strip PChoice: Input→sekcja gestu→Output) przez `PlayScene`. Brak mapowania = `false`. **NIGDY nie kieruj akcji kiss/hug na sceny `*FollowWithKiss.w2scene`** - te pliki należą do MCME (zawierają `PChoice` i menu dialogowe) i służą wyłącznie własnemu pipeline MCME.
+    * `AutonomousScenePath(npc, isHug)`: mapa `nam`→`dlc\mod_mcme_autonomous_romance\dialogue\ar_*.w2scene` — bundle zawiera 20 scen (19 kiss + `ar_cirilla_hug`), z czego mapa zwraca ścieżki dla 16 kiss + hug; `ar_anna/vivienne/orianna_kiss` istnieją w bundle, ale celowo NIE są mapowane → `""` → `no_scene` (ciri kiss dodatkowo gated przez `MCM_AR_CiriMode`: w Lore-Friendly zwraca "" → `no_scene`). **Anna/Vivienne/Orianna celowo zwracają "" i nie mają akcji kiss w rejestrze** — ich `noble_woman_base` rig nie ładuje banku `woman_dialog` i nie istnieje dla niego animacja kiss (w przeciwnym razie T-pose; autor upstream dokumentuje tę samą wadę). Ich `*_intimate_invite` działa, bo `naughty\*` to cutscene-playery, nie scene-anim binding. Zasoby generuje `scripts\build_ar_bundle.ps1` (per-job `Bundle` → ekstrakcja → enum-fix `medium`→`Medium` → strip w JSON → pakowanie własnego `content\blob0.bundle`); sceny dla 12 NPC pochodzą z paczek MCME (Spawn Control Girls, Anarietta & Vivienne plus2, Even More Companions). Aliasy nam: `edna_var_attre`, `prologue_village_herbalist` (Tomira), `mh303_succbus_v2` (Salma), `pryscilla`/`priscilla`, `becca`/`cerys`.
+    * `WaitForSceneEnd(npc, timeout)`: latentne oczekiwanie na zakończenie sceny, wczesne zwolnienie ruchu gracza (`UnblockAction(EIAB_Movement)`) po wyjściu z sekwencji animacji. Używane przez pipeline T3 (`PlayScene` pośrednio) i T4 (`PlayIntimateScene`).
     * `PlayIntimateScene(npc)`: pipeline intymny z NaughtyPoints (punkt <=16m w `IsOnNaughtyPoint()`). Obsługuje ścieżkę zarejestrowaną (`PreNaughtyWith`) oraz manualną (`dlc\mod_spawn_companions\naughty\<npc>\anywhere.w2scene`).
     * `MCM_AR_SceneExists(path)`: `LoadResource(path,true)`→`CStoryScene` z cache `path→bool` w core (gate `no_dlc_scene` w klasach T4 - sceny z `dlc_spawn_control_girls` nie zawieszają ewaluacji).
-    * `ResolveIntimateScenePath(npc)`: wspólny resolver ścieżki sceny (priorytet `specialData.naughtyScene`, fallback `NaughtyScenePath`).
+    * `ResolveIntimateScenePath(npc)`: wspólny resolver ścieżki sceny (priorytet `specialData.naughtyScene` — paczki MCME mogą rejestrować własne ścieżki — fallback `NaughtyScenePath`). `NaughtyScenePath` mapuje `cirilla`/`ciri` → `naughty\ciri` TYLKO w `MCM_AR_CiriMode`=Adult; dodatkowy gate `lore_mode` siedzi w `ciri_intimate_invite` (bo `specialData` omija mapowanie).
 * **Rejestr Akcji `MCM_RomanceActionRegistry` (L1651-1970):**
   * Centralna tablica `actions: array<MCM_RomanceInteraction>`.
   * `TryExecute(npc, player, ctx, out eligCount, optional ambientOnly)`: filtrowanie wg NPC, kanału, sprawdzanie bramek, losowanie ważone (`weight`) i wywołanie `Execute()`.
@@ -108,7 +106,7 @@ modMCME_AutonomousRomance/
 
 * **`MCM_AR_ConfigWrapper` (L11-150):**
   * Dostęp do `user.settings` (`CInGameConfigWrapper`, sekcja `MCM_AR`).
-  * Gettery: `IsEnabled()`, `GetInitiativeCooldown()`, `GetTickIntervalSeconds()` (clamp 20-160s, default 30), `GetAffinityMultiplier()`, `IsJealousyModeOn()`, `IsForceRomanceOn()`, `RequiresPlayerConsent()`, `IsDebugHudOn()`, `GetBarkPreset()` (1=cichy→30% / 2=domyślny→65% / 3=gadatliwy→100% szansy barku ambient).
+  * Gettery: `IsEnabled()`, `GetInitiativeCooldown()`, `GetTickIntervalSeconds()` (clamp 20-160s, default 30), `GetAffinityMultiplier()`, `IsJealousyModeOn()`, `IsForceRomanceOn()`, `RequiresPlayerConsent()`, `IsDebugHudOn()`, `GetBarkPreset()` (1=cichy→30% / 2=domyślny→65% / 3=gadatliwy→100% szansy barku ambient), `IsCiriAdultMode()` (`MCM_AR_CiriMode`, domyślnie 0 = Lore-Friendly: tylko hug; 1 = Adult: kiss + intimate dla Ciri).
   * `EnsureMCMDefaults()` (wołane przy tworzeniu `MCM_AR_GetConfig()`): zasiewa `MCM_AR_BarkPreset=2` gdy var nieobecny w `user.settings` - MCM UI pokazuje `0` dla vara nieobecnego w sekcji i ignoruje `defaultValue` z XML dopóki gracz nie dotknie suwaka.
   * UWAGA: XML menu (`bin\config\r4game\user_config_matrix\pc\modMCME_AutonomousRomance.xml`) NIE jest junction-em jak `Mods\` - po każdej zmianie opcji kopiuj go ręcznie do `<gra>\bin\config\...` i zrestartuj grę (menu czyta XML przy starcie).
 * **Centralne Logowanie `MCM_AR_Log` (L152-200):**
@@ -126,26 +124,26 @@ modMCME_AutonomousRomance/
 
 ### 4. `MCM_RomanceActions_Main.ws` i `MCM_RomanceActions_DLC.ws`
 
-* Łącznie 106 klas akcji wieloetapowych (48 w Main + 58 w DLC: T1 ambient, T2 gest/opieka, T3 uniwersalny pocałunek/uścisk, T4 scena intymna) + dedykowane klasy `*_GiftRequest` (bazowa `MCM_AR_GiftRequest_Base` w Interaction.ws) dziedziczących po `MCM_RomanceInteraction` rejestrowanych w `InitDefaultActions()`:
+* Łącznie 113 klas akcji wieloetapowych (50 w Main + 63 w DLC: T1 ambient, T2 gest/opieka, T3 uniwersalny pocałunek/uścisk, T4 scena intymna) + dedykowane klasy `*_GiftRequest` (bazowa `MCM_AR_GiftRequest_Base` w Interaction.ws) dziedziczących po `MCM_RomanceInteraction` rejestrowanych w `InitDefaultActions()`:
   * **Yennefer (9):** `yen_oneliner_flirt`, `yen_postcombat_care`, `yen_night_invitation`, `yen_campfire_evening`, `yen_intimate_invite`, `yen_jealousy_snark`, `yen_tavern_wine`, `yen_night_filler` (+gift).
   * **Triss (9):** `triss_oneliner_flirt`, `triss_postcombat_hug`, `triss_night_whisper`, `triss_campfire_warmth`, `triss_kiss_invite`, `triss_intimate_invite`, `triss_jealousy_snark`, `triss_tavern_drink`, `triss_night_filler` (+gift).
   * **Keira (7):** `keira_oneliner_flirt`, `keira_postcombat_heal`, `keira_night_proposal`, `keira_campfire_witch`, `keira_intimate_invite`, `keira_tavern_drink`, `keira_night_filler` (+gift).
   * **Shani (6):** `shani_oneliner_flirt`, `shani_postcombat_medic`, `shani_night_relax`, `shani_intimate_invite`, `shani_tavern_drink`, `shani_night_filler` (+gift).
-  * **Anna Henrietta (6):** `anarietta_oneliner_flirt`, `anarietta_postcombat_pride`, `anarietta_night_royal`, `anarietta_intimate_invite`, `anarietta_tavern_drink`, `anarietta_night_filler` (+gift).
-  * **Vivienne (6):** `vivienne_oneliner_flirt`, `vivienne_campfire_mystery`, `vivienne_night_invitation`, `vivienne_intimate_invite`, `vivienne_tavern_drink`, `vivienne_night_filler` (+gift).
+  * **Anna Henrietta (5):** `anarietta_oneliner_flirt`, `anarietta_postcombat_pride`, `anarietta_intimate_invite`, `anarietta_tavern_drink`, `anarietta_night_filler` (+gift). Brak akcji kiss (noble rig).
+  * **Vivienne (5):** `vivienne_oneliner_flirt`, `vivienne_campfire_mystery`, `vivienne_intimate_invite`, `vivienne_tavern_drink`, `vivienne_night_filler` (+gift). Brak akcji kiss (noble rig).
   * **Cerys (6):** `cerys_oneliner_flirt`, `cerys_postcombat_skellige`, `cerys_night_invitation`, `cerys_intimate_invite`, `cerys_tavern_drink`, `cerys_night_filler` (+gift).
   * **Rosa var Attre (3):** `rosa_oneliner_flirt`, `rosa_kiss` (T3 Universal Kiss), `rosa_gift_request`.
   * **Tomira (3):** `tomira_oneliner_flirt`, `tomira_kiss` (T3 Universal Kiss), `tomira_gift_request`.
-  * **Ciri (1):** `ciri_hug` (T3 Universal Hug - ciepły uścisk rodzinny).
+  * **Ciri (3):** `ciri_hug` (T3 Universal Hug - ciepły uścisk rodzinny, zawsze aktywny), `ciri_kiss` (aff 60, `ar_cirilla_kiss`, tylko Adult Mode), `ciri_intimate_invite` (aff 80, `naughty\ciri`, tylko Adult Mode — gate `lore_mode`).
   * **Syanna (5):** `syanna_oneliner_flirt`, `syanna_postcombat`, `syanna_kiss`, `syanna_intimate_invite` (pełne T4 cloud sex w NaughtyPoints z natywnym meshem CDPR `syanna_naked`), `syanna_gift_request`.
-  * **Philippa (4):** `philippa_oneliner_flirt`, `philippa_care`, `philippa_kiss` (T3 Universal Kiss), `philippa_gift_request`.
-  * **Ves (4):** `ves_oneliner_flirt`, `ves_campfire`, `ves_kiss` (T3 Universal Kiss), `ves_gift_request`.
-  * **Salma (4):** `salma_oneliner_flirt`, `salma_allure`, `salma_kiss` (T3 Universal Kiss), `salma_gift_request`.
-  * **Priscilla (4):** `priscilla_oneliner_flirt`, `priscilla_care`, `priscilla_kiss` (T3 Universal Kiss), `priscilla_gift_request`.
-  * **Edna var Attre (4):** `edna_oneliner_flirt`, `edna_care`, `edna_kiss` (T3 Universal Kiss), `edna_gift_request`.
-  * **Fringilla Vigo (4):** `fringilla_oneliner_flirt`, `fringilla_care`, `fringilla_kiss` (T3 Universal Kiss), `fringilla_gift_request`.
-  * **Margarita Laux-Antille (4):** `margarita_oneliner_flirt`, `margarita_care`, `margarita_kiss` (T3 Universal Kiss), `margarita_gift_request`.
-  * **Orianna (4):** `orianna_oneliner_flirt`, `orianna_care`, `orianna_kiss` (T3 Universal Kiss), `orianna_gift_request`.
+  * **Philippa (5):** `philippa_oneliner_flirt`, `philippa_care`, `philippa_kiss` (T3 Universal Kiss), `philippa_intimate_invite` (`naughty\philippa`), `philippa_gift_request`.
+  * **Ves (5):** `ves_oneliner_flirt`, `ves_campfire`, `ves_kiss` (T3 Universal Kiss), `ves_intimate_invite` (`naughty\ves`), `ves_gift_request`.
+  * **Salma (5):** `salma_oneliner_flirt`, `salma_allure`, `salma_kiss` (T3 Universal Kiss), `salma_intimate_invite` (`naughty\salma`), `salma_gift_request`.
+  * **Priscilla (5):** `priscilla_oneliner_flirt`, `priscilla_care`, `priscilla_kiss` (T3 Universal Kiss), `priscilla_intimate_invite` (`naughty\priscilla`), `priscilla_gift_request`.
+  * **Edna var Attre (5):** `edna_oneliner_flirt`, `edna_care`, `edna_kiss` (T3 Universal Kiss), `edna_intimate_invite` (`naughty\edna`), `edna_gift_request`.
+  * **Fringilla Vigo (5):** `fringilla_oneliner_flirt`, `fringilla_care`, `fringilla_kiss` (T3 Universal Kiss), `fringilla_intimate_invite` (`naughty\fringilla`), `fringilla_gift_request`.
+  * **Margarita Laux-Antille (5):** `margarita_oneliner_flirt`, `margarita_care`, `margarita_kiss` (T3 Universal Kiss), `margarita_intimate_invite` (`naughty\margaritta` — pisownia upstream z podwójnym t), `margarita_gift_request`.
+  * **Orianna (4):** `orianna_oneliner_flirt`, `orianna_care`, `orianna_intimate_invite` (aff 80, `naughty\oriana` cutscene — top tier jak w upstream paczce), `orianna_gift_request`. Brak akcji kiss — rig `noble_woman_base` nie posiada żadnej animacji kiss (patrz ARCHITECTURE §sceny).
   * **Generyczne T1 (`targetNpc=''`):** `ar_weather_bark`, `ar_horse_bark`, `ar_interior_bark`, `ar_boat_bark`, `ar_afterglow` (spersonalizowany Afterglow w marszu dla 19 towarzyszek z dedykowanymi kluczami `ar_afterglow_walk_*`), `ar_jealousy_aftermath`.
   * **Tawerna i Noc (T1 ambient):** animowane drinki karczemne (`PlayDrinkingAnimation`) i nocne kwestie dla towarzyszek.
 
@@ -172,41 +170,47 @@ Sceny intymne Tier 4 (`RTT_Scene`) korzystają z NaughtyPoints zarejestrowanych 
 
 | Promień | Funkcja / Miejsce w kodzie | Rola |
 | --- | --- | --- |
-| **16.0m** | `MCM_RomanceInteraction.ws#L1288` (`IsOnNaughtyPoint`) | **Twarda bramka kwalifikacji:** akcja T4 kwalifikuje się do odpalenia tylko w tej odległości od punktu intymnego. |
-| **20.0m** | `MCM_RomanceInteraction.ws#L1317` (`PlayIntimateScene`) | **Check defensywny:** weryfikacja tuż przed startem sceny, czy gracz nie odszedł za daleko. |
-| **30.0m** | `MCM_RomanceCore.ws#L1006` | **Strefa wejścia:** jednorazowe powiadomienie na HUD o dostępności intymnego miejsca. |
-| **40.0m** | `MCM_RomanceCore.ws#L1459` | **Reset histerezy:** odejście na ten dystans resetuje flagę powiadomienia HUD. |
+| **16.0m** | `MCM_RomanceInteraction.ws#L1417` (`IsOnNaughtyPoint`) | **Twarda bramka kwalifikacji:** akcja T4 kwalifikuje się do odpalenia tylko w tej odległości od punktu intymnego. |
+| **20.0m** | `MCM_RomanceInteraction.ws#L1446` (`PlayIntimateScene`) | **Check defensywny:** weryfikacja tuż przed startem sceny, czy gracz nie odszedł za daleko. |
+| **30.0m** | `MCM_RomanceCore.ws#L858` | **Strefa wejścia:** jednorazowe powiadomienie na HUD o dostępności intymnego miejsca. |
+| **40.0m** | `MCM_RomanceCore.ws#L1303` | **Reset histerezy:** odejście na ten dystans resetuje flagę powiadomienia HUD. |
 
 ---
 
-## 3. Kompletny Indeks Konsoli Debugującej (24 Komendy `exec`)
+## 3. Kompletny Indeks Konsoli Debugującej (30 Komend `exec`; release-stub ukrywa 4 dev-only → 26 w paczce)
 
 | Komenda konsoli | Plik źródłowy | Działanie |
 | --- | --- | --- |
-| `ar_test()` | `Core.ws:L63` | Szybki test działania moda na `thePlayer` |
-| `ar_status()` | `Core.ws:L1790` | Wypisuje status: tryby, bezpieczny stan gry, cooldowny, zażyłość postaci |
-| `ar_reset()` | `Core.ws:L1885` | Czyści cooldowny wszystkich akcji |
-| `ar_force()` | `Core.ws:L1896` | Włącza/wyłącza tryb Sandbox (`ForceRomance`) |
-| `ar_devreset()` | `Core.ws:L1918` | Czyści osierocone flagi stanu zgody gracza |
-| `ar_idlenow()` | `Core.ws:L1937` | Wymusza przejście towarzyszek w Idle-Suspend |
-| `ar_consent()` | `Core.ws:L1948` | Symuluje naciśnięcie klawisza zgody [C] z konsoli |
-| `ar_affinity(npc, n)` | `Core.ws:L1969` | Dodaje `n` punktów zażyłości dla wskazanego NPC |
-| `ar_trigger()` | `Core.ws:L1983` | Resetuje cooldowny i natychmiast odpala tick decyzyjny |
-| `ar_logdump(optional n)` | `Core.ws:L2002` | Wypisuje na HUD ostatnie `n` linii z bufora logów |
-| `ar_bootlog()` | `Core.ws:L2031` | Wyświetla logi z fazy ładowania silnika |
-| `ar_diag()` | `Core.ws:L2049` | Zrzut markerów diagnostycznych z `user.settings` |
-| `ar_line(npc, lineId)` | `Core.ws:L2114` | Odtwarza wybraną kwestię dialogową na żywo (test audio) |
-| `ar_probeanim(npc, anim)` | `Core.ws:L2141` | Sprawdza obecność animacji slotowej w modelu postaci |
-| `ar_debug(optional mode)` | `Core.ws:L2326` | Włącza/wyłącza powiadomienia o tickach na ekranie HUD |
-| `ar_eval()` | `Core.ws:L2357` | **Dry-run:** sprawdza bramki wszystkich akcji i wypisuje powody ewentualnych blokad |
-| `ar_dress(optional npc)` | `QoL.ws:L188` | Zmienia strój towarzyszki na normalny |
-| `ar_undress(optional npc)` | `QoL.ws:L197` | Zmienia strój towarzyszki na bieliznę |
-| `ar_naked(optional npc)` | `QoL.ws:L211` | Zmienia strój towarzyszki na nagość |
-| `ar_gift(optional npc)` | `QoL.ws:L230` | Wręcza butelkę alkoholu z ekwipunku (+3 affinity) |
-| `ar_kiss(optional npc)` | `Core.ws:L2506` | Natychmiastowy bezpośredni pocałunek ze wskazaną towarzyszką (v2.0) |
-| `ar_hug()` | `Core.ws:L2615` | Natychmiastowy bezpośredni uścisk z Ciri (v2.0) |
+| `ar_test()` | `Core.ws:L61` | Szybki test działania moda na `thePlayer` |
+| `ar_status()` | `Core.ws:L1642` | Wypisuje status: tryby, bezpieczny stan gry, cooldowny, zażyłość postaci |
+| `ar_reset()` | `Core.ws:L1737` | Czyści cooldowny wszystkich akcji |
+| `ar_force()` | `Core.ws:L1748` | Włącza/wyłącza tryb Sandbox (`ForceRomance`) |
+| `ar_devreset()` | `Core.ws:L1770` | Czyści osierocone flagi stanu zgody gracza |
+| `ar_idlenow()` | `Core.ws:L1789` | Wymusza przejście towarzyszek w Idle-Suspend |
+| `ar_consent()` | `Core.ws:L1800` | Toggle `MCM_AR_RequireConsent` (wymóg promptu [C] dla Tier3+4) z konsoli |
+| `ar_affinity(npc, n)` | `Core.ws:L1821` | Dodaje `n` punktów zażyłości dla wskazanego NPC |
+| `ar_trigger()` | `Core.ws:L1835` | Resetuje cooldowny i natychmiast odpala tick decyzyjny |
+| `ar_logdump(optional n)` | `Core.ws:L1854` | Wypisuje na HUD ostatnie `n` linii z bufora logów |
+| `ar_bootlog()` | `Core.ws:L1883` | Wyświetla logi z fazy ładowania silnika |
+| `ar_diag()` | `Core.ws:L1900` | Zrzut markerów diagnostycznych z `user.settings` |
+| `ar_line(npc, lineId)` | `Core.ws:L1956` | Odtwarza wybraną kwestię dialogową na żywo (test audio) |
+| `ar_probeanim(npc, anim)` | `Core.ws:L1983` | Sprawdza obecność animacji slotowej w modelu postaci |
+| `ar_probeanim2(target, anim)` | `Core.ws:L2009` | Wariant proba animacji na dowolnym celu |
+| `ar_probeinject(target, animset, anim)` | `Core.ws:L2097` | Test wstrzyknięcia animacji z animsetu |
+| `ar_debug(optional mode)` | `Core.ws:L2181` | Włącza/wyłącza powiadomienia o tickach na ekranie HUD |
+| `ar_eval()` | `Core.ws:L2215` | **Dry-run:** sprawdza bramki wszystkich akcji i wypisuje powody ewentualnych blokad (m.in. `no_scene`) |
+| `ar_neartags()` | `Core.ws:L2309` | Listuje tagi/encje w pobliżu gracza |
+| `ar_taverndebug()` | `Core.ws:L2324` | Diagnostyka bramki tawernowej: fakt `player_in_inn`, `IsInInterior`, `isInTavern` + encje inn/tavern w promieniu 18m |
+| `ar_kiss(optional npc)` | `Core.ws:L2364` | Natychmiastowy bezpośredni pocałunek ze wskazaną towarzyszką (v2.0) |
+| `ar_hug()` | `Core.ws:L2473` | Natychmiastowy bezpośredni uścisk z Ciri (v2.0) |
+| `ar_dress(optional npc)` | `QoL.ws:L219` | Zmienia strój towarzyszki na normalny |
+| `ar_undress(optional npc)` | `QoL.ws:L228` | Zmienia strój towarzyszki na bieliznę |
+| `ar_naked(optional npc)` | `QoL.ws:L242` | Zmienia strój towarzyszki na nagość |
+| `ar_gift(optional npc)` | `QoL.ws:L260` | Wręcza butelkę alkoholu z ekwipunku (+3 affinity) |
 | `ar_devinfo()` | `Tw3seDev.ws:L169` | Wypisuje status połączenia z TW3SE |
 | `ar_reload()` | `Tw3seDev.ws:L193` | Wymusza hot-reload skryptów przez TW3SE |
+| `ar_test_e2e()` | `Tw3seDev.ws:L481` | Dev: automatyczny test integracyjny 28 asercji |
+| `ar_tour_scenes(optional npc)` | `Tw3seDev.ws:L676` | Dev: tour po scenach danej postaci (gift→kiss/hug→T4) |
 
 ---
 
@@ -245,18 +249,52 @@ Każdy agent modyfikujący kod **musi bezwzględnie** przestrzegać poniższych 
 
 Procedura dodawania nowej postaci (np. Salma, Philippa, Syanna, Ves):
 
-1. **Rejestracja Nazwy:** W `MCM_RomanceCore.ws#L1298` dopisz voicetag postaci do `MCM_AR_IsRomanceNPC`.
-2. **Nazwa dla HUD:** W `MCM_RomanceInteraction.ws#L1991` dopisz mapowanie `nam` na nazwę czytelną w `MCM_AR_GetCompanionDisplayName`.
-3. **Baza Zażyłości:** W `MCM_RomanceAffinity.ws#L277` dodaj fakty questowe w `GetBaseStoryAffinity`.
-4. **Ścieżka Sceny Naughty:** W `MCM_RomanceInteraction.ws#L1302` dopisz ścieżkę `.w2scene` do `NaughtyScenePath`.
-5. **Weryfikacja Zasobów Scen:** Upewnij się, że ścieżka `.w2scene` znajduje się w `scripts\known_scenes.txt`.
-6. **Implementacja Klas Akcji:** Utwórz nową klasę dziedziczącą po `MCM_RomanceInteraction`:
+1. **Rejestracja Nazwy:** W `MCM_RomanceCore.ws#L1146` dopisz voicetag postaci do `MCM_AR_IsRomanceNPC`.
+2. **Nazwa dla HUD:** W `MCM_RomanceInteraction.ws#L2117` dopisz mapowanie `nam` na nazwę czytelną w `MCM_AR_GetCompanionDisplayName`.
+3. **Baza Zażyłości:** W `MCM_RomanceAffinity.ws#L263` dodaj fakty questowe w `GetBaseStoryAffinity`.
+4. **Pocałunek (T3 Kiss):** Wszelkie akcje pocałunku wołają `PlayKissScene(npc)` → `AutonomousScenePath` → `PlayScene(ar_*.w2scene)`. Nowa postać wymaga wygenerowania sceny `scripts\build_ar_bundle.ps1` (dopisz job) i wpisu w `AutonomousScenePath`. **NIGDY nie kieruj akcji kiss/hug na sceny MCME `*FollowWithKiss.w2scene`** - zawierają `PChoice`/menu dialogowe i należą do pipeline MCME. Szczegóły: §5.1 poniżej.
+5. **Ścieżka Sceny Naughty (T4):** Jeśli postać posiada dedykowaną scenę łóżkową MCME bez menu, dopisz jej ścieżkę do `NaughtyScenePath(npcName)` w `MCM_RomanceInteraction.ws`.
+6. **Weryfikacja Zasobów Scen:** Upewnij się, że ścieżka `.w2scene` znajduje się w `scripts\known_scenes.txt`.
+7. **Implementacja Klas Akcji:** Utwórz nową klasę dziedziczącą po `MCM_RomanceInteraction`:
    * Zdefiniuj parametry w konstruktorze (`id`, `targetNpc`, `minAffinity`, `cooldownSeconds`, `triggerType`, `weight`).
    * Wszelkie warunki umieszczaj w `GetExtraBlockReason()`.
    * Zaimplementuj latentną metodę `Execute(npc, player, ctx)` pamiętając, aby na każdej ścieżce wyjścia wywołać `EndSoft()` lub `EndInteraction()`.
 7. **Lokalizacja tekstów:** każdy nowy tekst renderowany graczowi dostaje `lineKey`/`thanksLineKey`/`AR_T("ar_*", "fallback EN")` oraz wpisy w `en.w3strings.csv` i `pl.w3strings.csv` (kolejne id 211880xxxx) + re-encode obu plików `w3stringsr`.
 8. **Rejestracja w Rejestrze:** Zarejestruj nową akcję przez `RegisterAction(new MCM_AR_<npc>_<akcja> in this)` wewnątrz `@wrapMethod(MCM_RomanceActionRegistry) InitDefaultActions()`.
 9. **Weryfikacja Kompilatorem:** Uruchom `precheck_syntax.ps1` oraz `test_compile.ps1`.
+
+### 5.1 Pipeline scen `ar_*` — jak dodać kiss/hug dla nowej postaci (synteza v2.0)
+
+Sceny `ar_*` to **adaptacje, nie autorstwo**: źródłem są oryginalne `*FollowWithKiss.w2scene` z paczek MCME. Struktura we wszystkich paczkach jest identyczna (~8.4 KB CR2W, `CStorySceneInput #6` → `section_kissscene #53` → `CStorySceneOutput`, `voicetag` + numeryczne vanilla `dialogLine`, wspólny bank animacji szkieletu kobiet). Licencjonowanie: substancja = assety vanilla + cienka warstwa wiringu paczek — wystarczy linia credits na Nexusie.
+
+**Źródła ekstrakcji (bundle → sceny):**
+
+| Paczka (zainstalowana) | `*FollowWithKiss` dla |
+|---|---|
+| `dlc\dlc_spawn_control_girls\content\blob0.bundle` | edna, fringilla, margarita, oriana, priscilla (+amrynn, ciri) |
+| `dlc\dlc_anarietta_vivienne\content\blob0.bundle` | anarietta, vivienne (+`NoKiss`), philippa, salma, ves |
+| `!Downloads\EvenMoreCompanions\DLCmod_spawn_companions\content\blob0.bundle` (niezainstalowana, tylko pobrana) | rosa, tomira (+alternatywy powyższych) |
+
+**Kroki:**
+1. `$SceneJobs` w `scripts\build_ar_bundle.ps1` — dopisz job (ścieżka źródła w bundle + docelowa `ar_<npc>_kiss.w2scene`). Skrypt robi per-job `Bundle` → ekstrakcję WolvenKit → enum-fix `medium`→`Medium` → `cr2w2json` → `strip_scene.py` → `json2cr2w` → własny `blob0.bundle` + `metadata.store`.
+2. `AutonomousScenePath(npc, isHug)` (Interaction ~L1165) — dopisz `case` dla `nam`.
+3. `scripts\known_scenes.txt` — dopisz ścieżkę `dlc\mod_mcme_autonomous_romance\dialogue\ar_*.w2scene` (precheck to weryfikuje).
+4. Akcja scenowa: flaga `usesAutonomousKiss`/`usesAutonomousHug` → `GetBlockReason` oddaje `no_scene` zanim dojdzie do promptu (NPC bez sceny = cichy gate, nie martwy prompt).
+5. **Zweryfikuj runtime `nam`** przez `ar_status`/log PRZED wydaniem — dev-name ≠ display-name (precedens: Cerys ma `nam='becca'`; aliasy: `keira_metz`/`keira`, `pryscilla`/`priscilla`, `becca`/`cerys`, `mh303_succbus_v2`, `prologue_village_herbalist`).
+
+**Kontrakt bindingu (warunki konieczne — bez nich scena ładuje się, ale nie gra):**
+- `actorTags` aktora kompana → `[mcme_companion]` **+ `dontSearchByVoicetag=true`** (bez flagi silnik binduje po voicetag i tag jest ignorowany).
+- `PlayScene` robi `npc.AddTag('mcme_companion')` przed `mod_scm_delayedDialogue` i `RemoveTag` po pętli — binding rozwiązuje się raz, przy starcie sceny.
+- `metadata.store` jest **WYMAGANY** dla bundle'ów w `Mods\` — bez niego `LoadResource` zwraca NULL (scena "nie gra wizualnie" mimo `ok=true`). WolvenKit `Metadata_Store.Write` to stub → writer `_work\write_metadata_store.py` (FNV-1a-64 jako signed int64).
+
+**Pułapki ekstrakcji:**
+- Naiwny parsing TOC bundle'u daje bloki **POTATO70** (magia CR2W siedzi pod koniec chunka) — ekstrahuj wyłącznie `WolvenKit.Bundles.Bundle.Items[path].Extract`, jak robi `build_ar_bundle.ps1` / `_work\probe_extract.ps1`.
+- `scripts\_extract_scenes.ps1` jest **blokowany przez AV** (false positive) — do pojedynczej sceny użyj `_work\probe_extract.ps1`.
+- Strip przepina `nextLinkElement`: `Input → sekcja gestu → Output #7` (Output #8 = ścieżki `doNaughty`/`normal_dialog` — celowo odcięte). `id`/`voicetag`/linie/animy zostają — brak głosu sceny by design (gest + post-kiss bark).
+- Deploy po rebuildzie: pełny `blob0.bundle` + `metadata.store` — zabity `Bundle.Write` zostawia obcięty bundle z 1 itemem.
+- `IsInGameplayScene` po scenie może zostać `true` (quirk MCME + idle-pose) — wait-loop `PlayScene` ma bail po ciszy/twardy cap; `EndInteraction` self-heal >6 s.
+
+**Ślad audytu (raw):** raporty BoteX `..\.botex\memory\mem_task_4968601d_report.md` (ryzyka strip), `mem_task_c875aaa0_report.md` (diff scen — OverridePlacement odparty), `mem_task_a2af519a_report.md` (wait-loop), `mem_task_136d9211_report.md` (mapowania/becca), notatki `mem_df1b45c9` (źródła ekstrakcji), `mem_f120fbbd`/`mem_e860bf35` (pilot); research silnikowy `..\archive\research\`. Narzędzia `_work\`: `strip_scene.py`, `write_metadata_store.py`, `probe_extract.ps1`, `ar_src\`, `strip_*.json`, `src_*FollowWithKiss.json`.
 
 ---
 

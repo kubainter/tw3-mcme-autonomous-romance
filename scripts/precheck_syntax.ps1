@@ -171,6 +171,16 @@ foreach ($file in $files) {
 
     # --- deklaracje typow + sanacja pliku ---
     $codeText = ($codeLines -join "`n")
+
+    # --- sciana TW3SE: natywy dozwolone TYLKO w MCM_RomanceTw3seDev.ws ---
+    # Kazdy inny plik z 'TW3SE_' zlamalby kompilacje u gracza bez TW3SE.
+    if ($file.Name -ne 'MCM_RomanceTw3seDev.ws' -and $codeText -match 'TW3SE_') {
+        Report $rel 0 'ERROR' "odwolanie do TW3SE_* poza MCM_RomanceTw3seDev.ws - natywy tylko przez wrappery MCM_AR_Dev*"
+    }
+    if ($file.Name -like '*.stub.ws') {
+        Report $rel 0 'ERROR' "plik *.stub.ws w drzewie skryptow - stub nalezy do repo\scripts\tw3se, tutaj dubluje symbole"
+    }
+
     $declRe = [regex]'(?m)^\s*(?:@[A-Za-z]+\s*\([^)]*\)\s*)*(class|struct|enum|exec|statemachine|state|function|quest|reward)\b'
     if (-not $declRe.IsMatch($codeText)) {
         Report $rel 0 'WARN' 'plik nie zawiera zadnej deklaracji (class/function/state/...) - celowy?'
@@ -201,11 +211,51 @@ foreach ($file in $files) {
     # --- sciezki scen vs known_scenes.txt ---
     if ($knownScenes) {
         foreach ($sf in $scenesFound) {
-            $norm = $sf.Path -replace '\\\\', '\'
+            if ($sf.Path -match '\\\\') {
+                Report $rel $sf.Line 'ERROR' "podwojny backslash '\\\\' w sciezce sceny (WitcherScript nie escapuje '\', LoadResource zwroci NULL): $($sf.Path)"
+            }
+            $norm = ($sf.Path -replace '/', '\') -replace '\\\\', '\'
             if (-not $knownScenes.ContainsKey($norm.ToLowerInvariant())) {
                 Report $rel $sf.Line 'ERROR' "scena nie istnieje w bundle'ach DLC: $norm"
             }
         }
+    }
+}
+
+# --- parzystosc sygnatur: warstwa dev TW3SE <-> release stub ---------------
+# Stub podmienia dev-plik w paczce - kazda publiczna sygnatura musi sie
+# zgadzac (nazwa + typy parametrow + typ zwrotny), inaczej release nie
+# skompiluje sie u gracza (CR: botex F2 / agy).
+$devFile  = Join-Path $scriptRoot '..\repo\scripts\tw3se\MCM_RomanceTw3seDev.dev.ws'
+$stubFile = Join-Path $scriptRoot '..\repo\scripts\tw3se\MCM_RomanceTw3seDev.stub.ws'
+if ((Test-Path $devFile) -or (Test-Path $stubFile)) {
+    $sigRe = [regex]'(?m)^\s*(?:exec\s+)?function\s+([A-Za-z_]\w*)\s*\(([^)]*)\)\s*(?::\s*([A-Za-z_]\w*))?'
+    $getSigs = {
+        param($path)
+        $set = @{}
+        $t = [System.IO.File]::ReadAllText($path)
+        foreach ($m in $sigRe.Matches($t)) {
+            $name = $m.Groups[1].Value
+            # parametry -> lista samych typow (nazwy parametrow sa kosmetyczne)
+            $types = @()
+            foreach ($p in ($m.Groups[2].Value -split ',')) {
+                $toks = ($p.Trim() -split '\s+') | Where-Object { $_ -and $_ -ne ':' }
+                if ($toks.Count -gt 0) { $types += $toks[-1] }
+            }
+            $set["$name($($types -join ',')):$($m.Groups[3].Value)"] = $true
+        }
+        return $set
+    }
+    if (-not (Test-Path $devFile))  { Report 'MCM_RomanceTw3seDev.ws' 0 'ERROR' 'brak pliku dev przy istniejacym stubie' }
+    if (-not (Test-Path $stubFile)) { Report 'MCM_RomanceTw3seDev.stub.ws' 0 'ERROR' 'brak stuba w repo\scripts\tw3se - release nie ma czym podmienic' }
+    if ((Test-Path $devFile) -and (Test-Path $stubFile)) {
+        if ([System.IO.File]::ReadAllText($stubFile) -match '(?m)^\s*import\s+function') {
+            Report 'MCM_RomanceTw3seDev.stub.ws' 0 'ERROR' 'stub zawiera import function - zepsulaby kompilacje u gracza'
+        }
+        $devSigs  = & $getSigs $devFile
+        $stubSigs = & $getSigs $stubFile
+        foreach ($k in $devSigs.Keys)  { if (-not $stubSigs.ContainsKey($k)) { Report 'dev<->stub' 0 'ERROR' "stub nie ma sygnatury dev: $k" } }
+        foreach ($k in $stubSigs.Keys) { if (-not $devSigs.ContainsKey($k))  { Report 'dev<->stub' 0 'ERROR' "stub ma sygnature ktorej nie ma dev: $k" } }
     }
 }
 

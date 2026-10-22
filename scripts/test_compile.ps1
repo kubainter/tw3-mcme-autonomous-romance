@@ -1,7 +1,8 @@
 param(
     [string]$GameDir = "G:\GOG Galaxy\Games\The Witcher 3 Wild Hunt GOTY",
     [int]$TimeoutSeconds = 45,
-    [switch]$SkipPrecheck
+    [switch]$SkipPrecheck,
+    [switch]$ForceColdRestart
 )
 
 $ErrorActionPreference = "Stop"
@@ -34,9 +35,75 @@ Write-Host "   TEST KOMPILACJI SKRYPTOW WIEDZMINA 3 (HEADLESS VERIFY)  " -Foregr
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host "Target: $exePath"
 
-# Zamknij istniejace procesy gry
-Get-Process -Name "witcher3" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-Start-Sleep -Milliseconds 600
+# Detekcja uruchomionego procesu gry
+$runningProcesses = Get-Process -Name "witcher3" -ErrorAction SilentlyContinue
+
+if ($runningProcesses -and -not $ForceColdRestart) {
+    $pids = ($runningProcesses | ForEach-Object { $_.Id }) -join ", "
+    Write-Host "[*] Wykryto aktywny proces gry witcher3.exe (PID: $pids)." -ForegroundColor Yellow
+
+    # Sprawdz czy pipe TW3SE jest dostepny
+    $tw3sePipeScript = Join-Path $PSScriptRoot "tw3se_pipe.ps1"
+    $pipeAvailable = $false
+
+    if (Test-Path $tw3sePipeScript) {
+        try {
+            $pingResult = & powershell -NoProfile -ExecutionPolicy Bypass -File $tw3sePipeScript -Cmd "ping" -ConnectTimeoutMs 1500 2>$null
+            if ($pingResult -match "pong") {
+                $pipeAvailable = $true
+            }
+        } catch { }
+    }
+
+    if ($pipeAvailable) {
+        Write-Host "[LIVE] Named Pipe TW3SE (\\.\pipe\tw3se) jest AKTYWNY." -ForegroundColor Green
+        Write-Host "[LIVE] Wykonuje bezpieczny Hot-Reload w locie (bez restartowania gry)..." -ForegroundColor Cyan
+
+        $swLive = [System.Diagnostics.Stopwatch]::StartNew()
+        $reloadOutput = & powershell -NoProfile -ExecutionPolicy Bypass -File $tw3sePipeScript -Cmd "reloadscripts force" -IdleTimeoutMs 30000 2>&1
+        $reloadDuration = [math]::Round($swLive.Elapsed.TotalSeconds, 2)
+        $outText = ($reloadOutput | Out-String).Trim()
+
+        if ($outText -match "reloadscripts:\s*ok") {
+            Write-Host "`n==========================================================" -ForegroundColor Green
+            Write-Host "[OK] KOMPILACJA I HOT-RELOAD ZAKONCZONE SUKCESEM w ${reloadDuration}s!" -ForegroundColor Green
+            Write-Host "$outText" -ForegroundColor Gray
+            Write-Host "Skrypty zostaly przeladowane w dzialajacej grze bez restartu." -ForegroundColor Green
+            Write-Host "==========================================================`n" -ForegroundColor Green
+
+            # Zresetuj bezpiecznie stan sesji AR po reloadzie
+            try {
+                & powershell -NoProfile -ExecutionPolicy Bypass -File $tw3sePipeScript -Cmd "exec ar_devreset()" -IdleTimeoutMs 2000 2>$null | Out-Null
+            } catch { }
+
+            exit 0
+        }
+        elseif ($outText -match "reloadscripts:\s*failed") {
+            Write-Host "`n==========================================================" -ForegroundColor Red
+            Write-Host "[!] BLAD KOMPILACJI PODCZAS LIVE HOT-RELOAD:" -ForegroundColor Red
+            Write-Host "$outText" -ForegroundColor Red
+            Write-Host "TW3SE automatycznie przywrocilo ostatni stabilny stan skryptow (gra nie ulegla awarii)." -ForegroundColor Yellow
+            Write-Host "==========================================================`n" -ForegroundColor Red
+            exit 1
+        }
+        else {
+            Write-Warning "Nietypowa odpowiedz z pipe TW3SE: $outText"
+            exit 1
+        }
+    }
+    else {
+        Write-Host "[!] Wykryto uruchomiona gre (PID: $pids), ale pipe TW3SE nie odpowiada." -ForegroundColor Yellow
+        Write-Host "    Aby chronic Twoja sesje gry przed utrata postepu, test_compile NIE zamknie gry automatycznie." -ForegroundColor Yellow
+        Write-Host "    Jesli chcesz wymusic restart i pelny test cold-start, uzyj flagi -ForceColdRestart." -ForegroundColor Yellow
+        exit 2
+    }
+}
+
+if ($ForceColdRestart) {
+    Write-Host "Wymuszono zamkniecie istniejacych procesow gry (-ForceColdRestart)..." -ForegroundColor Yellow
+    Get-Process -Name "witcher3" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+    Start-Sleep -Milliseconds 600
+}
 
 $csharpCode = @'
 using System;
@@ -156,9 +223,22 @@ if (-not ([System.Management.Automation.PSTypeName]'WinWatcherEngine').Type) {
     Add-Type -TypeDefinition $csharpCode
 }
 
+#$psi = New-Object System.Diagnostics.ProcessStartInfo
+#$psi.FileName = $exePath
+#$psi.WorkingDirectory = (Split-Path $exePath -Parent)
+#$psi.UseShellExecute = $true
+# Ścieżka do pliku wynikowego kompilatora REDengine
+$cacheScriptFile = Join-Path $GameDir "content\content0\x64.final.redscripts"
+if (Test-Path $cacheScriptFile) {
+    Remove-Item -LiteralPath $cacheScriptFile -Force -ErrorAction SilentlyContinue
+}
+$startTimestamp = (Get-Date).ToUniversalTime()
+
 $psi = New-Object System.Diagnostics.ProcessStartInfo
 $psi.FileName = $exePath
 $psi.WorkingDirectory = (Split-Path $exePath -Parent)
+$psi.Arguments = "-nosound -nohwcursor -window -res=320x200"
+$psi.WindowStyle = [System.Diagnostics.ProcessWindowStyle]::Minimized
 $psi.UseShellExecute = $true
 
 $proc = [System.Diagnostics.Process]::Start($psi)
@@ -169,17 +249,20 @@ $sw = [System.Diagnostics.Stopwatch]::StartNew()
 $resultCode = -1
 
 try {
-    while ($sw.Elapsed.TotalSeconds -lt $TimeoutSeconds) {
-        Start-Sleep -Milliseconds 400
+    while ($sw.Elapsed.TotalSeconds -lt$TimeoutSeconds) {
+        Start-Sleep -Milliseconds 150
 
         if ($proc.HasExited) {
             Write-Host "Proces gry zakonczyl dzialanie przedwczesnie (ExitCode: $($proc.ExitCode))."
             break
         }
 
-        # 1. Sprawdz czy jest okno bledu kompilacji
+        # 1. Sprawdz czy jest okno bledu kompilacji (WinAPI)
         $errWin = [WinWatcherEngine]::FindErrorWindow($targetPid)
         if ($errWin) {
+            # Daj 100ms na pelne wyrenderowanie tekstu w kontrolkach potomnych
+            Start-Sleep -Milliseconds 100
+            $errWin = [WinWatcherEngine]::FindErrorWindow($targetPid)
             Write-Host "`n========================================================" -ForegroundColor Red
             Write-Host "[!] WYKRYTO BLAD KOMPILACJI SKRYPTOW W SILNIKU GRY:" -ForegroundColor Red
             Write-Host "Tytul okna: $($errWin.Title)" -ForegroundColor Yellow
@@ -190,10 +273,46 @@ try {
             break
         }
 
-        # 2. Sprawdz czy gra weszla do viewportu (W2ViewportClass) - oznacza to pelny sukces kompilacji
+        # 2. SZYBKI SUKCES (HEADLESS): Silnik zapisal skompilowany x64.final.redscripts
+        # Następuje to ZANIM gra zdąży otworzyć okno DirectX 12 (W2ViewportClass)!
+        # UWAGA: plik jest zapisywany inkrementalnie — deklarujemy sukces dopiero gdy
+        # rozmiar przestanie rosnąć I silnik zwolni uchwyt (inaczej zostawiamy obcięty
+        # cache, który crashuje grę 0xc0000005 przy starcie!).
+        if (Test-Path $cacheScriptFile) {
+            $fileItem = Get-Item -LiteralPath $cacheScriptFile -ErrorAction SilentlyContinue
+            if ($fileItem -and $fileItem.Length -gt 0 -and $fileItem.LastWriteTimeUtc -ge $startTimestamp) {
+                if (-not $cachePrevSize -or $fileItem.Length -ne $cachePrevSize) {
+                    $cachePrevSize = $fileItem.Length
+                    $cacheStablePolls = 0
+                } else {
+                    $cacheStablePolls++
+                }
+                if ($cacheStablePolls -ge 6) {
+                    # Rozmiar stabilny przez ~900ms — sprawdz czy silnik zwolnil uchwyt
+                    $handleFree = $false
+                    try {
+                        $fs = [System.IO.File]::Open($cacheScriptFile, 'Open', 'ReadWrite', 'None')
+                        $fs.Close()
+                        $handleFree = $true
+                    } catch { }
+                    if ($handleFree) {
+                        $elapsedSec = [math]::Round($sw.Elapsed.TotalSeconds, 2)
+                        Write-Host "`n========================================================" -ForegroundColor Green
+                        Write-Host "[OK] KOMPILACJA ZAKONCZONA SUKCESEM w ${elapsedSec}s (HEADLESS)!" -ForegroundColor Green
+                        Write-Host "Wygenerowano bytecode: x64.final.redscripts ($($fileItem.Length) B) przed startem GPU." -ForegroundColor Green
+                        Write-Host "========================================================`n" -ForegroundColor Green
+                        $resultCode = 0
+                        break
+                    }
+                }
+            }
+        }
+
+        # 3. Fallback: Sprawdz czy gra weszla do viewportu (gdyby cache nie wymusil zapisu)
         if ([WinWatcherEngine]::HasGameViewportStarted($targetPid)) {
+            $elapsedSec = [math]::Round($sw.Elapsed.TotalSeconds, 2)
             Write-Host "`n========================================================" -ForegroundColor Green
-            Write-Host "[OK] KOMPILACJA ZAKONCZONA W 100% SUKCESEM (0 BLEDOW)!" -ForegroundColor Green
+            Write-Host "[OK] KOMPILACJA ZAKONCZONA W 100% SUKCESEM w ${elapsedSec}s (0 BLEDOW)!" -ForegroundColor Green
             Write-Host "Silnik gry pomyslnie skompilowal wszystkie skrypty i zainicjalizowal W2ViewportClass." -ForegroundColor Green
             Write-Host "========================================================`n" -ForegroundColor Green
             $resultCode = 0
