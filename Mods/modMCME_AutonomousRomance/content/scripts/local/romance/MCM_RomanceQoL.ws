@@ -4,10 +4,8 @@
 /* Wymaga: modMCME_Remastered 5.00+                                          */
 /*****************************************************************************/
 
-// ---------------------------------------------------------------------------
 // Czy NPC ma sensowne warianty ubioru? (puste lub identyczne z default
 // = nic do przełączania – np. Cerys ma wszędzie '__q208_crown')
-// ---------------------------------------------------------------------------
 function MCM_AR_NPCHasAltLooks(npc : CNewNPC) : bool
 {
 	var sd : MCM_NPCEntry;
@@ -21,10 +19,8 @@ function MCM_AR_NPCHasAltLooks(npc : CNewNPC) : bool
 	return false;
 }
 
-// Zastosuj ubiór wg indeksu enuma (0 normalny / 1 bielizna / 2 nago),
-// z fallbackiem na normalny gdy wariantu brak. Zapisuje też wybor
-// w data.appearance (pole trwale MCME) – ubior przetrwa respawn
-// i preselekcja enuma w menu bedzie prawdziwa.
+// Ubior wg indeksu (0 normal / 1 bielizna / 2 nago), fallback na normal.
+// data.appearance + fakt = preselekcja w menu i przetrwanie respawnu.
 function MCM_AR_ApplyOutfit(npc : CNewNPC, idx : int)
 {
 	var sd : MCM_NPCEntry;
@@ -56,9 +52,7 @@ function MCM_AR_ApplyOutfit(npc : CNewNPC, idx : int)
 	FactsAdd("mcme_ar_outfit_" + NameToString(npc.scmcc.data.nam), factVal);
 }
 
-// ---------------------------------------------------------------------------
-// Automatyczne przywracanie zapisanego stroju przy respawnie / reloadzie gry
-// ---------------------------------------------------------------------------
+// Przywracanie zapisanego stroju przy respawnie / reloadzie gry
 
 @wrapMethod(SCMCompanionControls)
 function onSpawned()
@@ -87,10 +81,8 @@ function onSpawned()
 	}
 }
 
-// ---------------------------------------------------------------------------
-// Rozszerzenie menu towarzysza MCME (SCMMenuEditCompanion2) o enum ubioru.
-// Bez własnego SWF – doklejamy się do istniejącego flashowego menu.
-// ---------------------------------------------------------------------------
+// Enum ubioru w menu towarzysza MCME (bez własnego SWF - doklejka do
+// istniejacego flashowego menu SCMMenuEditCompanion2).
 
 @wrapMethod(SCMMenuEditCompanion2)
 function OnMenuCreated()
@@ -141,10 +133,34 @@ function OnChange(element : SCMMenu_BaseElement)
 	wrappedMethod(element);
 }
 
-// ---------------------------------------------------------------------------
-// Execy pomocnicze (działają na towarzyszce o podanej nazwie; bez argumentu
-// biorą najbliższą romansową towarzyszkę w zasiegu 5m).
-// ---------------------------------------------------------------------------
+// Execy pomocnicze: z nazwa albo najblizsza towarzyszka w zasiegu 5m.
+
+// Normalizacja aliasow komend na wewnetrzne scmcc.data.nam.
+function MCM_AR_NormalizeCompanionName(input : string) : string
+{
+	var s : string;
+	s = StrLower(input);
+	if (s == "yen" || s == "yennefer")                                return "yennefer";
+	if (s == "triss")                                                 return "triss";
+	if (s == "ciri" || s == "cirilla")                                return "cirilla";
+	if (s == "keira" || s == "keira_metz")                            return "keira_metz";
+	if (s == "shani")                                                 return "shani";
+	if (s == "anarietta" || s == "anna" || s == "anna_henrietta")     return "anna_henrietta";
+	if (s == "vivienne" || s == "sq701_vivienne")                     return "sq701_vivienne";
+	if (s == "cerys" || s == "becca")                                 return "becca";
+	if (s == "syanna")                                                return "syanna";
+	if (s == "philippa" || s == "filippa" || s == "philippa_eilhart") return "philippa_eilhart";
+	if (s == "ves")                                                   return "ves";
+	if (s == "salma" || s == "mh303_succbus_v2")                      return "mh303_succbus_v2";
+	if (s == "priscilla" || s == "pryscilla")                         return "priscilla";
+	if (s == "edna" || s == "edna_var_attre")                         return "edna_var_attre";
+	if (s == "fringilla" || s == "fringilla_vigo")                    return "fringilla_vigo";
+	if (s == "margarita" || s == "margaritta")                        return "margarita";
+	if (s == "orianna" || s == "oriana" || s == "vampire_diva")       return "vampire_diva";
+	if (s == "rosa" || s == "rosa_var_attre")                         return "rosa_var_attre";
+	if (s == "tomira" || s == "prologue_village_herbalist")           return "prologue_village_herbalist";
+	return s;
+}
 
 function MCM_AR_FindCompanion(npcStr : string) : CNewNPC
 {
@@ -154,17 +170,24 @@ function MCM_AR_FindCompanion(npcStr : string) : CNewNPC
 	var bestDist   : float;
 	var dist       : float;
 	var i          : int;
+	var targetNorm : string;
+	var candNorm   : string;
 
 	theGame.GetNPCsByTag('GeraltsBFF', companions);
 
-	// W3Script nie ma StringToName – porownujemy tekstowo (name -> string)
+	// W3Script nie ma StringToName - porownanie tekstowe po aliasach
 	if (StrLen(npcStr) > 0)
 	{
+		targetNorm = MCM_AR_NormalizeCompanionName(npcStr);
 		for (i = 0; i < companions.Size(); i += 1)
 		{
 			npc = companions[i];
-			if (!npc || !npc.scmcc) continue;
-			if (StrLower(NameToString(npc.scmcc.data.nam)) == StrLower(npcStr)) return npc;
+			if (!npc || !npc.scmcc || !npc.scmcc.data) continue;
+			candNorm = MCM_AR_NormalizeCompanionName(NameToString(npc.scmcc.data.nam));
+			if (candNorm == targetNorm || StrLower(NameToString(npc.scmcc.data.nam)) == StrLower(npcStr))
+			{
+				return npc;
+			}
 		}
 		return NULL;
 	}
@@ -222,18 +245,17 @@ exec function ar_naked(optional npcStr : string)
 	thePlayer.DisplayHudMessage("[AR] " + NameToString(npc.scmcc.data.nam) + ": nude.");
 }
 
-// ---------------------------------------------------------------------------
-// Prezent: ar_gift(<npc>) – konsumuje pierwszą znalezioną butelkę wina
-// z ekwipunku Geralta, +3 affinity, reakcja towarzyszki.
-// ---------------------------------------------------------------------------
+// ar_gift(<npc>): konsumuje pierwsza butelke wina z ekwipunku, +3 affinity.
 
 exec function ar_gift(optional npcStr : string)
 {
-	var npc      : CNewNPC;
-	var npcName  : name;
-	var wines    : array<name>;
-	var w        : name;
-	var i        : int;
+	var npc         : CNewNPC;
+	var npcName     : name;
+	var core        : MCM_AutonomousRomanceCore;
+	var act         : MCM_RomanceInteraction;
+	var gift        : MCM_AR_GiftRequest_Base;
+	var best        : name;
+	var displayName : string;
 
 	npc = MCM_AR_FindCompanion(npcStr);
 	if (!npc)
@@ -241,39 +263,46 @@ exec function ar_gift(optional npcStr : string)
 		thePlayer.DisplayHudMessage("[AR] No companion in range (5m) or invalid name.");
 		return;
 	}
-	npcName = npc.scmcc.data.nam;
-
-	// Kandydaci prezentowi – wina/alkohole z inventory gry
-	wines.PushBack('Est Est');
-	wines.PushBack('Erveluce');
-	wines.PushBack('Beauclair White');
-	wines.PushBack('Mettina Rose');
-	wines.PushBack('Alcohest');
-	wines.PushBack('Dwarven spirit');
-
-	w = '';
-	for (i = 0; i < wines.Size(); i += 1)
+	if (!npc.scmcc || !npc.scmcc.data)
 	{
-		if (thePlayer.inv.GetItemQuantityByName(wines[i]) > 0)
-		{
-			w = wines[i];
-			break;
-		}
+		thePlayer.DisplayHudMessage("[AR] Companion data not initialized.");
+		return;
+	}
+	npcName     = npc.scmcc.data.nam;
+	displayName = MCM_AR_GetCompanionDisplayName(npc);
+
+	core = MCM_AR_GetCore();
+	if (!core || !core.registry)
+	{
+		thePlayer.DisplayHudMessage("[AR] Core not ready.");
+		return;
+	}
+	if (core.IsStagedBusy())
+	{
+		thePlayer.DisplayHudMessage("[AR] Another interaction is in progress - try again in a moment.");
+		return;
 	}
 
-	if (!IsNameValid(w))
+	// Akcja gift_request tej postaci z rejestru (klucz: scmcc.data.nam)
+	act  = core.registry.FindActionForNpc(npcName, "gift_request");
+	gift = (MCM_AR_GiftRequest_Base)act;
+	if (!gift)
+	{
+		thePlayer.DisplayHudMessage("[AR] " + displayName + " has no gift interaction.");
+		return;
+	}
+
+	// Butelke wybiera akcja (ta sama lista co w grze)
+	best = gift.FindBestAvailableGift();
+	if (!IsNameValid(best))
 	{
 		thePlayer.DisplayHudMessage("[AR] No gift in inventory (wine/alcohol).");
 		return;
 	}
 
-	// Zdejmij item DOPIERO po potwierdzeniu, że istnieje
-	thePlayer.inv.RemoveItemByName(w, 1);
-	MCM_AR_GetAffinity().AddAffinityPoints(npcName, 3);
-
-	// Reakcja: head look-at + mimika + napis
-	npc.EnableDynamicLookAt(thePlayer, 6.0);
-	npc.PlayVoiceset(100, 'greeting_geralt');
-	thePlayer.DisplayHudMessage("[AR] Gave " + NameToString(w) + " to " + NameToString(npcName) + " (+3 affinity)");
-	MCM_AR_Log("[AR] Gift: " + NameToString(w) + " -> " + NameToString(npcName));
+	// TryExecuteSpecificAction = pelna sekwencja bez CanExecute (cooldowny nietkniete).
+	core.debugForceAction = gift.id;
+	core.debugForceTarget = npcName;
+	core.GotoState('ProcessingTick');
+	thePlayer.DisplayHudMessage("[AR] " + displayName + " comes over for a drink (" + NameToString(best) + ").");
 }

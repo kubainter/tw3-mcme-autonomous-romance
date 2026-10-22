@@ -1,12 +1,10 @@
 /*****************************************************************************/
 /* MCME Autonomous Romance - Core Module                                     */
 /* Główna pętla, timery i context tracker                                    */
-/* Wersja: 1.0.0  |  Wymaga: modMCME_Remastered 5.00+                       */
+/* Wersja: 2.0.0  |  Wymaga: modMCME_Remastered 5.00+                       */
 /*****************************************************************************/
 
-// ---------------------------------------------------------------------------
 // Singleton dostępny globalnie, inicjowany przy spawnie gracza
-// ---------------------------------------------------------------------------
 
 @addField(CR4Player)
 public var mcm_ar_core : MCM_AutonomousRomanceCore;
@@ -36,10 +34,8 @@ function MCM_AR_GetCore() : MCM_AutonomousRomanceCore
 @addMethod(CR4Player)
 function MCM_AR_OnPlayerReady()
 {
-	// Inicjalizacja modułów Autonomous Romance
 	MCM_AR_InitCore();
 
-	// Konfiguracja (Filar 3 - user.settings)
 	if (!mcm_ar_config)
 	{
 		mcm_ar_config = new MCM_AR_ConfigWrapper in this;
@@ -143,12 +139,12 @@ timer function MCM_AR_AutonomousTick(dt : float, id : int)
 	}
 }
 
-// Kanał ambient (barki/zazdrość) – osobny timer i osobna maszyna stanów,
-// więc latent staged tick nigdy nie blokuje harmonogramu barków.
+// Kanał ambient: osobny timer i maszyna stanow - latent staged tick
+// nigdy nie blokuje harmonogramu barkow.
 @addMethod(CR4Player)
 timer function MCM_AR_AmbientTick(dt : float, id : int)
 {
-	// Szybki timer ambientu (~10s) do aktualizacji póz postoju.
+	// Szybki timer (~10s) aktualizuje tez fazy poz postoju.
 	if (mcm_ar_core)
 	{
 		mcm_ar_core.UpdateIdleAmbient();
@@ -159,9 +155,7 @@ timer function MCM_AR_AmbientTick(dt : float, id : int)
 	}
 }
 
-// ---------------------------------------------------------------------------
 // Klasa główna – silnik decyzyjny
-// ---------------------------------------------------------------------------
 
 // Zadanie postoju: faza 0=ruch ku pozycji, faza 1=animacja postoju w slocie.
 class MCM_AR_IdleJob
@@ -172,8 +166,7 @@ class MCM_AR_IdleJob
 	var anim      : name;
 	var phase     : int;
 	var deadline  : float;
-	// Losowe opoznienie pozy (0-10s) - rozrzuca moment "siadania"
-	// miedzy NPC, unikajac efektu "flash mob".
+	// Losowe opoznienie pozy (0-10s) - rozrzuca "siadanie" miedzy NPC.
 	var poseDelay : float;
 }
 
@@ -181,7 +174,6 @@ statemachine class MCM_AutonomousRomanceCore
 {
 	default autoState = 'Idle';
 
-	// Singleton rejestru akcji
 	public var registry : MCM_RomanceActionRegistry;
 
 	// Czas ostatniej inicjatywy w sekundach silnika (per NPC)
@@ -191,6 +183,7 @@ statemachine class MCM_AutonomousRomanceCore
 	// Wewnętrzny licznik: ile sekund upłynęło od ostatniej walki
 	private var timeOfLastCombatEnd : float;
 	default timeOfLastCombatEnd = -9999.0;
+	private var wasInCombat : bool;
 
 	// Anty-chaos: tylko jedna staged interakcja naraz (propozycja/scena);
 	// ambient barki działają równolegle przez osobny kanał (MCM_AmbientRomanceChannel).
@@ -232,9 +225,8 @@ statemachine class MCM_AutonomousRomanceCore
 	private var arLastTravelTime : float;
 	default arLastTravelTime     = -9999.0;
 
-	// W2/I1 idle-suspend: companion "zyje" gdy gracz stoi w miejscu.
-	// Detektor postoju (kotwica + czas ostatniego ruchu) i lista NPC
-	// zawieszonych przez nas (StopFollowing(true) - tag/flaga zostaja).
+	// Idle-suspend: detektor postoju (kotwica + czas ruchu) i lista NPC
+	// zawieszonych przez StopFollowing(true) - tag/flaga zostaja.
 	private var arIdleAnchor : Vector;
 	private var arIdleSince  : float;
 	private var arIdleJobs   : array<MCM_AR_IdleJob>;
@@ -403,8 +395,8 @@ statemachine class MCM_AutonomousRomanceCore
 		nowT      = theGame.GetEngineTimeAsSeconds();
 		playerPos = thePlayer.GetWorldPosition();
 
-		// Koniec postoju: gracz ruszyl z kotwicy albo kontekst niebezpieczny.
-		// (Bezpiecznik - ten sam check robi UpdateIdleAmbient co ~10s.)
+		// Koniec postoju: gracz ruszyl z kotwicy albo unsafe
+		// (bezpiecznik - UpdateIdleAmbient sprawdza to samo co ~10s).
 		if (!safe || VecDistance(playerPos, arIdleAnchor) > 1.5)
 		{
 			arIdleAnchor = playerPos;
@@ -422,8 +414,8 @@ statemachine class MCM_AutonomousRomanceCore
 		if (IsStagedBusy()) return;
 
 		theGame.GetNPCsByTag('GeraltsBFF', companions);
-		// Per-NPC logi skip zastapione licznikami - przy ~40 companions
-		// seria skipow (gl. no-follow) zalewala log co tick (spam).
+		// Liczniki skip zamiast per-NPC logow - przy ~40 companions
+		// seria skipow zalewala log co tick.
 		suspendedThisTick = 0;
 		for (i = 0; i < companions.Size(); i += 1)
 		{
@@ -487,8 +479,8 @@ statemachine class MCM_AutonomousRomanceCore
 			job.spot    = npc.GetWorldPosition() + VecNormalize(away) * 1.6;
 			job.heading = VecHeading(playerPos - job.spot);
 			job.phase   = 0;
-			// Losowy deadline (spacer 6-12s) i poseDelay (0-10s) - rozrzut
-			// czasowy miedzy towarzyszami unikajac synchronicznego "siadania".
+			// Losowy deadline (6-12s) i poseDelay (0-10s) - rozrzut
+			// miedzy towarzyszami, bez synchronicznego "siadania".
 			job.deadline  = nowT + 6.0 + RandRange(60, 0) / 10.0;
 			job.poseDelay = nowT + RandRange(100, 0) / 10.0;
 			// Juz daleko od gracza - bez spaceru, prosto w poze (ale z delay).
@@ -510,12 +502,8 @@ statemachine class MCM_AutonomousRomanceCore
 		           ",delay=" + skipDelay + ",null=" + skipNull + "}");
 	}
 
-	// -----------------------------------------------------------------------
-	// Pasywny przyrost Affinity z czasu podróży:
-	// Towarzyszki podążające za Geraltem (mod_scm_IsFollowing, dist <= 25m)
-	// zyskują +1 Affinity za każde 600s (~10 min) aktywnego marszu/biegu.
-	// Ignoruje postoje (idle-suspend) oraz skoki czasu (load/medytacja).
-	// -----------------------------------------------------------------------
+	// Pasywny Affinity z podrozy: +1 za 600s aktywnego followa (<=25m).
+	// Ignoruje postoje (idle-suspend) i skoki czasu (load/medytacja).
 	public function UpdatePassiveTravelAffinity(companions : array<CNewNPC>)
 	{
 		var i, j, idx : int;
@@ -638,27 +626,16 @@ statemachine class MCM_AutonomousRomanceCore
 		return pool;
 	}
 
-	// Guard w wake-loop: NPC w stagingu/scenie zostaje w arIdleJobs i jest pomijana,
-	// co zabezpiecza przed przerwaniem stanu przez latent-abort.
+	// NPC w stagingu/scenie zostaje w arIdleJobs i jest pomijana w wake-loop
+	// (guard przed przerwaniem stanu przez latent-abort).
 
 	// Wymusza suspend przy nastepnym ticku (debug - bez czekania 50s).
-	// Respektuje safe/dystans/tagi; do sondy w parze z ar_diag.
 	public function ForceIdleSuspendNow()
 	{
 		arIdleAnchor = thePlayer.GetWorldPosition();
 		arIdleSince = theGame.GetEngineTimeAsSeconds() - 60.0;
 		MCM_AR_Log("[AR] idle: threshold forced (ar_idlenow) - suspend on next tick");
 	}
-
-	// Automatyczny wybór opcji w scenach FollowWithKiss (faza 0=kiss, faza 1=exit).
-	public var arAutoPick       : bool;
-	public var arPickPhase      : int;
-	public var arPendingPickIdx : int;
-	public var arPendingPickAt  : float;
-	default arAutoPick       = false;
-	default arPickPhase      = 0;
-	default arPendingPickIdx = -1;
-	default arPendingPickAt  = 0.0;
 
 	public var debugForceAction : name;
 	public var debugForceTarget : name;
@@ -683,120 +660,6 @@ statemachine class MCM_AutonomousRomanceCore
 		}
 	}
 
-	// Oblicza indeks opcji do natychmiastowego auto-picku (faza 0=kiss, faza 1=exit).
-	public function MCM_AR_ResolveAutoPickIdx(choices : array<SSceneChoice>) : int
-	{
-		var i, idx : int;
-		var desc : string;
-
-		idx = -1;
-		if (arPickPhase == 0)
-		{
-			// Wybór opcji romansu (indeks 1 w szablonie menu).
-			if (choices.Size() >= 3 &&
-			    choices[choices.Size() - 1].dialogAction == DialogAction_EXIT &&
-			    choices[1].dialogAction != DialogAction_EXIT && !choices[1].disabled)
-			{
-				idx = 1;
-			}
-			// Fallback dopasowania opcji po słowach kluczowych dialogu.
-			if (idx < 0)
-			{
-				for (i = 0; i < choices.Size(); i += 1)
-				{
-					if (choices[i].disabled) continue;
-					desc = StrLower(choices[i].description);
-					if (StrContains(desc, "kiss") || StrContains(desc, "poca") ||
-					    StrContains(desc, "caluj") || StrContains(desc, "hug") ||
-					    StrContains(desc, "przytul") || StrContains(desc, "embrace") ||
-					    StrContains(desc, "kuss") || StrContains(desc, "beso") ||
-					    StrContains(desc, "baiser") || StrContains(desc, "kocham") ||
-					    StrContains(desc, "love") || StrContains(desc, "liebe") ||
-					    StrContains(desc, "'aime") || StrContains(desc, " amo") ||
-					    StrContains(desc, "quiero") || StrContains(desc, "miluj") ||
-					    StrContains(desc, "adore"))
-					{
-						idx = i;
-						break;
-					}
-				}
-			}
-			if (idx >= 0)
-			{
-				arPickPhase = 1;
-			}
-			else
-			{
-				MCM_AR_Log("[AR] autoPick: no kiss/romance option - choice stays manual");
-				arAutoPick = false;
-			}
-		}
-		else
-		{
-			// Po kiss scena wraca do hub-menu – wybierz wyjscie, zeby sie skonczyla.
-			for (i = 0; i < choices.Size(); i += 1)
-			{
-				if (choices[i].dialogAction == DialogAction_EXIT && !choices[i].disabled)
-				{
-					idx = i;
-					break;
-				}
-			}
-			if (idx < 0)
-			{
-				for (i = 0; i < choices.Size(); i += 1)
-				{
-					if (choices[i].disabled) continue;
-					desc = StrLower(choices[i].description);
-					if (StrContains(desc, "leave") || StrContains(desc, "wyjd") ||
-					    StrContains(desc, "zegnaj") || StrContains(desc, "farewell") ||
-					    StrContains(desc, "nevermind") || StrContains(desc, "never mind"))
-					{
-						idx = i;
-						break;
-					}
-				}
-			}
-			if (idx >= 0)
-			{
-				arAutoPick = false;
-				arPickPhase = 0;
-			}
-			else
-			{
-				MCM_AR_Log("[AR] autoPick: no exit option after kiss - choice stays manual");
-				arAutoPick = false;
-			}
-		}
-		return idx;
-	}
-
-	// Rejestruje oczekujący wybór dialogowy podczas uzbrojonej sceny (arAutoPick).
-	public function MCM_AR_OnDialogChoices(choices : array<SSceneChoice>)
-	{
-		var i, idx : int;
-
-		MCM_AR_Log("[AR] OnDialogChoices entry: n=" + choices.Size() +
-		           " autoPick=" + arAutoPick + " phase=" + arPickPhase);
-		if (!arAutoPick || arPendingPickIdx >= 0) return;
-
-		for (i = 0; i < choices.Size(); i += 1)
-		{
-			MCM_AR_Log("[AR] dlg choice[" + i + "] '" + choices[i].description +
-			           "' act=" + (int)choices[i].dialogAction +
-			           " emph=" + choices[i].emphasised +
-			           " seen=" + choices[i].previouslyChoosen);
-		}
-
-		idx = MCM_AR_ResolveAutoPickIdx(choices);
-		if (idx >= 0)
-		{
-			arPendingPickIdx = idx;
-			arPendingPickAt  = theGame.GetEngineTimeAsSeconds();
-			MCM_AR_Log("[AR] autoPick -> opcja " + idx + " '" + choices[idx].description + "'");
-		}
-	}
-
 	public function Init()
 	{
 		MCM_AR_Log("Init entered, isInit=" + isInit);
@@ -815,11 +678,12 @@ statemachine class MCM_AutonomousRomanceCore
 	{
 		if (thePlayer.IsInCombat())
 		{
-			timeOfLastCombatEnd = -9999.0;
+			wasInCombat = true;
 		}
-		else if (timeOfLastCombatEnd == -9999.0)
+		else if (wasInCombat)
 		{
-			// Combat just finished
+			// Prawdziwe combat->peace: stempluj raz (inaczej fantomowe 0 przez ~5 min po spawnie).
+			wasInCombat = false;
 			timeOfLastCombatEnd = theGame.GetEngineTimeAsSeconds();
 		}
 	}
@@ -846,9 +710,6 @@ statemachine class MCM_AutonomousRomanceCore
 		busyNpc = NULL;
 		busyStartTime = -9999.0;
 		naughtySpotNotified = false;
-		arAutoPick = false;
-		arPickPhase = 0;
-		arPendingPickIdx = -1;
 		arTravelNpcNames.Clear();
 		arTravelSeconds.Clear();
 		arLastTravelTime = -9999.0;
@@ -865,37 +726,30 @@ statemachine class MCM_AutonomousRomanceCore
 		}
 	}
 
-	// -----------------------------------------------------------------------
-	// Warunki bezpieczeństwa – żadna akcja nie zostanie wywołana, jeśli:
-	// -----------------------------------------------------------------------
+	// Warunki bezpieczenstwa - zadna akcja nie odpali, gdy:
 	public function MCM_AR_IsSafeToInitiate(optional out reason : string) : bool
 	{
-		// Gracz musi być w trybie eksploracji
 		if (thePlayer.GetCurrentStateName() != 'Exploration')
 		{
 			reason = "player state=" + thePlayer.GetCurrentStateName() + " (req. Exploration)";
 			return false;
 		}
-		// Blokada w menu oraz radial menu (wymagany kontekst Exploration).
 		if (theInput.GetContext() != 'Exploration')
 		{
 			reason = "inputContext=" + NameToString(theInput.GetContext());
 			return false;
 		}
-		// Brak aktywnej walki
 		if (thePlayer.IsInCombat())
 		{
 			reason = "IsInCombat";
 			return false;
 		}
-		// Brak aktywnego dialogu lub cutsceny
 		if (theGame.IsDialogOrCutscenePlaying())
 		{
 			reason = "DialogOrCutscenePlaying";
 			return false;
 		}
-		// DialogueManager.IsBusy jest sprawdzany dedykowanie w PlayScene.
-		// Gracz nie może pływać ani być na łodzi
+		// DialogueManager.IsBusy sprawdzany dedykowanie w PlayScene
 		if (thePlayer.IsSwimming())
 		{
 			reason = "IsSwimming";
@@ -943,15 +797,18 @@ statemachine class MCM_AutonomousRomanceCore
 			reason = "IsSwimming";
 			return false;
 		}
+		if (FactsQuerySum('mcme_ar_awaiting_consent') > 0)
+		{
+			reason = "awaiting_consent";
+			return false;
+		}
 		reason = "";
 		return true;
 	}
 
 	private var cachedContext : MCM_RomanceContext;
 
-	// -----------------------------------------------------------------------
 	// Budowanie kontekstu otoczenia
-	// -----------------------------------------------------------------------
 	public function BuildContext(companions : array<CNewNPC>) : MCM_RomanceContext
 	{
 		var gt           : GameTime;
@@ -966,30 +823,18 @@ statemachine class MCM_AutonomousRomanceCore
 			cachedContext = new MCM_RomanceContext in this;
 		}
 
-		// Pora dnia (0-23)
 		gt = theGame.GetGameTime();
 		hourOfDay = GameTimeHours(gt) % 24;
 		cachedContext.hourOfDay = hourOfDay;
-
-		// Typy pory dnia
 		cachedContext.isNight = (hourOfDay >= 22 || hourOfDay < 4);
 		cachedContext.isDawn  = (hourOfDay >= 6  && hourOfDay < 9);
-
-		// Zdrowie Geralta (0.0 - 1.0)
 		cachedContext.playerHealthRatio = thePlayer.GetStat(BCS_Vitality) / thePlayer.GetStatMax(BCS_Vitality);
-
-		// Obszar gry
 		cachedContext.areaName = MCM_GetAreaName();
-
-		// Czy gracz jest w Corvo Bianco? (Toussaint, obszar 11)
+		// Corvo Bianco = Toussaint (obszar 11)
 		cachedContext.isInCorvo = (cachedContext.areaName == (EAreaName)11);
 
 		cachedContext.companionsInParty.Clear();
-
-		// Czy Geralt jest przy ognisku? (prosty promień)
 		cachedContext.isNearCampfire = MCM_AR_IsNearCampfire();
-
-		// Czy gracz jest w tawernie/karczmie?
 		cachedContext.isInTavern = MCM_AR_IsInTavern();
 
 		// Kontekstowe T1: pogoda silnikowa + pojazd + wnętrze
@@ -1010,10 +855,8 @@ statemachine class MCM_AutonomousRomanceCore
 			}
 		}
 
-		// Romansowalne towarzyszki AKTYWNIE podazajace (mod_scm_IsFollowing):
-		// zaparkowana lub spawnana ale nie-followujaca NPC (np. Ves) jest
-		// skipowana przy wykonywaniu akcji (tick), wiec nie moze tez brac
-		// udzialu w zazdrosci ani odpalac notifiera naughty.
+		// Tylko AKTYWNIE podazajace: nie-followujaca NPC (np. Ves) nie bierze
+		// udzialu w zazdrosci ani nie odpala notifiera naughty.
 		rivalCount = 0;
 		for (i = 0; i < companions.Size(); i += 1)
 		{
@@ -1034,9 +877,7 @@ statemachine class MCM_AutonomousRomanceCore
 		return cachedContext;
 	}
 
-	// -----------------------------------------------------------------------
 	// Sprawdzenie cooldownu dla danego NPC
-	// -----------------------------------------------------------------------
 	public function IsCooldownElapsed(npcName : name, ctx : MCM_RomanceContext) : bool
 	{
 		var i         : int;
@@ -1100,41 +941,14 @@ statemachine class MCM_AutonomousRomanceCore
 		lastInitiativeTime.PushBack(now);
 	}
 
-	// -----------------------------------------------------------------------
 	// Anty-chaos: globalny lock staged interakcji + post-staged cooldown (~90s)
 	// Wołane przez registry.TryExecute wokół Execute akcji staged.
-	// -----------------------------------------------------------------------
 	public function BeginStagedInteraction(npc : CNewNPC) : bool
 	{
-		var now : float;
-
-		now = theGame.GetEngineTimeAsSeconds();
-
-		// Watchdog: uwalnia przedawniony lock interakcji (>300s).
-		if (interactionBusy && now - busyStartTime > 300.0)
-		{
-			if (busyNpc && busyNpc.scmcc)
-			{
-				MCM_AR_Log("[AR] Watchdog: interactionBusy martwy (" + IntToString(RoundMath(now - busyStartTime)) +
-				           "s, npc=" + NameToString(busyNpc.scmcc.data.nam) + ") - forced release");
-			}
-			else
-			{
-				MCM_AR_Log("[AR] Watchdog: interactionBusy martwy (" + IntToString(RoundMath(now - busyStartTime)) +
-				           "s) - forced release");
-			}
-			interactionBusy = false;
-			busyNpc = NULL;
-			// Martwy lock oznacza latent-abort – auto-pick tez nie zyje.
-			arAutoPick = false;
-			arPickPhase = 0;
-			arPendingPickIdx = -1;
-		}
-
 		if (interactionBusy) return false;
 		interactionBusy = true;
 		busyNpc = npc;
-		busyStartTime = now;
+		busyStartTime = theGame.GetEngineTimeAsSeconds();
 		return true;
 	}
 
@@ -1144,15 +958,34 @@ statemachine class MCM_AutonomousRomanceCore
 		busyNpc = NULL;
 		busyStartTime = -9999.0;
 		lastStagedTime = theGame.GetEngineTimeAsSeconds();
-		// Bezpiecznik: gdy scena z auto-pick przerwie sie w polowie,
-		// flaga nie moze przeciec do kolejnych, nie naszych dialogow.
-		arAutoPick = false;
-		arPickPhase = 0;
-		arPendingPickIdx = -1;
 	}
 
 	public function IsStagedBusy() : bool
 	{
+		var now : float;
+
+		// Watchdog: lock >300s = latent-abort mid-Execute (cleanup nigdy nie
+		// strzelil). Miejsce: getter czytany co tick - jedyny punkt osiagalny
+		// przy wiszacym locku.
+		if (interactionBusy)
+		{
+			now = theGame.GetEngineTimeAsSeconds();
+			if (now - busyStartTime > 300.0)
+			{
+				if (busyNpc && busyNpc.scmcc && busyNpc.scmcc.data)
+				{
+					MCM_AR_Log("[AR] Watchdog: interactionBusy martwy (" + IntToString(RoundMath(now - busyStartTime)) +
+					           "s, npc=" + NameToString(busyNpc.scmcc.data.nam) + ") - forced release");
+				}
+				else
+				{
+					MCM_AR_Log("[AR] Watchdog: interactionBusy martwy (" + IntToString(RoundMath(now - busyStartTime)) +
+					           "s) - forced release");
+				}
+				interactionBusy = false;
+				busyNpc = NULL;
+			}
+		}
 		return interactionBusy;
 	}
 
@@ -1161,9 +994,8 @@ statemachine class MCM_AutonomousRomanceCore
 		return interactionBusy && busyNpc == npc;
 	}
 
-	// Awaryjny reset stanu RUNTIME (nie cooldownow/affinity): po
-	// TW3SE_ReloadScripts (latent-loope umieraja bez cleanupu) lub gdy
-	// latent-abort zostawil osierocony lock / zawieszonego NPC.
+	// Awaryjny reset stanu RUNTIME (nie cooldownow/affinity): po ReloadScripts
+	// lub gdy latent-abort zostawil osierocony lock / zawieszonego NPC.
 	public function ForceResetRuntimeState()
 	{
 		var i   : int;
@@ -1180,10 +1012,8 @@ statemachine class MCM_AutonomousRomanceCore
 				npc.scmcc.StartFollowing(true);
 			}
 		}
-		// Zwolnij NPC po przerwanej interakcji (lustro EndInteraction).
-		// busyNpc to towarzyszka w stagingu -> scena mogla zdjac follow
-		// calkowicie (toggle_follow) - restore dwutorowo jak w
-		// EndInteraction, inaczej zostalaby zaparkowana.
+		// Zwolnij NPC po przerwanej interakcji (lustro EndInteraction);
+		// scena mogla zdjac follow calkowicie - restore dwutorowo.
 		if (busyNpc)
 		{
 			busyNpc.DisableLookAt();
@@ -1209,9 +1039,6 @@ statemachine class MCM_AutonomousRomanceCore
 		interactionBusy = false;
 		busyNpc = NULL;
 		busyStartTime = -9999.0;
-		arAutoPick = false;
-		arPickPhase = 0;
-		arPendingPickIdx = -1;
 		GotoState('Idle');
 	}
 
@@ -1224,12 +1051,11 @@ statemachine class MCM_AutonomousRomanceCore
 		return left;
 	}
 
-	// -----------------------------------------------------------------------
 	// Pomocnicze sprawdzenia środowiskowe
-	// -----------------------------------------------------------------------
 	public function MCM_AR_IsNearCampfire() : bool
 	{
 		var entities : array<CEntity>;
+		var entStr   : string;
 		var i        : int;
 		var dist     : float;
 
@@ -1246,6 +1072,12 @@ statemachine class MCM_AutonomousRomanceCore
 		for (i = 0; i < entities.Size(); i += 1)
 		{
 			if ((CActor)entities[i]) continue;
+			// Swiece/lampy/pochodnie w wnetrzach nosza CarriesOpenFire - to nie ognisko
+			entStr = StrLower("" + entities[i]);
+			if (StrContains(entStr, "candle") || StrContains(entStr, "lantern")
+				|| StrContains(entStr, "torch") || StrContains(entStr, "chandelier")
+				|| StrContains(entStr, "sconce") || StrContains(entStr, "candelabr")
+				|| StrContains(entStr, "lamp")) continue;
 			dist = VecDistance(thePlayer.GetWorldPosition(), entities[i].GetWorldPosition());
 			if (dist < 6.0) return true;
 		}
@@ -1254,17 +1086,15 @@ statemachine class MCM_AutonomousRomanceCore
 
 	public function MCM_AR_IsInTavern() : bool
 	{
-		// 1. Vanilla fact 'player_in_inn' - ustawiany przez trigger-area gospod,
-		//    ale NIE pokrywa wszystkich tawern (np. Kameleon Jaskra, czesc lokacji questowych).
+		// 1. Vanilla fact 'player_in_inn' - nie pokrywa wszystkich tawern.
 		if (FactsQuerySum('player_in_inn') > 0) return true;
-		// 2. Fallback: wnetrze + encja karczmarza/barmaidki w poblizu.
-		//    Karczmarze istnieja tylko w tawernach, wiec interior+innkeeper ~zero false-positive.
+		// 2. Fallback: wnetrze + karczmarz w poblizu (~zero false-positive).
 		if (!thePlayer.IsInInterior()) return false;
 		return MCM_AR_IsInnkeeperNearby();
 	}
 
-	// Skan encji w promieniu 15m: tagi karczmarza lub sciezka szablonu w2ent
-	// (np. gameplay/community/shops_and_craftsmen/.../fat_catch_inn/..., *_innkeeper.w2ent).
+	// Skan encji 18m: tagi karczmarza lub sciezka warstwy/szablonu.
+	// Wysoki cap: geste wnetrza (~100+ encji/10m) nie zwracaja po dystansie.
 	private function MCM_AR_IsInnkeeperNearby() : bool
 	{
 		var entities : array<CGameplayEntity>;
@@ -1272,7 +1102,7 @@ statemachine class MCM_AutonomousRomanceCore
 		var entStr   : string;
 		var i        : int;
 
-		FindGameplayEntitiesInRange(entities, thePlayer, 15.0, 60);
+		FindGameplayEntitiesInRange(entities, thePlayer, 18.0, 200);
 		for (i = 0; i < entities.Size(); i += 1)
 		{
 			ent = entities[i];
@@ -1286,8 +1116,12 @@ statemachine class MCM_AutonomousRomanceCore
 			entStr = StrLower("" + ent);
 			if (StrContains(entStr, "innkeep") || StrContains(entStr, "innkeeper")
 				|| StrContains(entStr, "barkeep") || StrContains(entStr, "barmaid")
+				|| StrContains(entStr, "bartender") || StrContains(entStr, "tapster")
 				|| StrContains(entStr, "inn\\") || StrContains(entStr, "inn/")
-				|| StrContains(entStr, "inns\\") || StrContains(entStr, "inns/"))
+				|| StrContains(entStr, "inns\\") || StrContains(entStr, "inns/")
+				|| StrContains(entStr, "inn_") || StrContains(entStr, "inn.")
+				|| StrContains(entStr, "tavern")
+				|| StrContains(entStr, "drinking_bench") || StrContains(entStr, "sit_drinking"))
 			{
 				return true;
 			}
@@ -1372,9 +1206,7 @@ state ProcessingTick in MCM_AutonomousRomanceCore
 		ProcessTick();
 	}
 
-	// -----------------------------------------------------------------------
 	// Główny tick (wywoływany cyklicznie przez timer CR4Player za pomocą stanu)
-	// -----------------------------------------------------------------------
 	latent function ProcessTick()
 	{
 		var companions : array<CNewNPC>;
@@ -1396,7 +1228,6 @@ state ProcessingTick in MCM_AutonomousRomanceCore
 		parent.UpdateCombatStatus();
 		dbg = MCM_AR_IsDebugOn();
 
-		// Zabezpieczenie: nie rób nic poza eksploracją
 		if (!parent.MCM_AR_IsSafeToInitiate(safeReason))
 		{
 			if (dbg) MCM_AR_Log("[AR tick] blokada bezpieczenstwa: " + safeReason);
@@ -1405,7 +1236,6 @@ state ProcessingTick in MCM_AutonomousRomanceCore
 			return;
 		}
 
-		// Pobierz listę aktywnych towarzyszy MCME
 		theGame.GetNPCsByTag('GeraltsBFF', companions);
 		if (companions.Size() == 0)
 		{
@@ -1423,7 +1253,7 @@ state ProcessingTick in MCM_AutonomousRomanceCore
 			for (i = 0; i < companions.Size(); i += 1)
 			{
 				npc = companions[i];
-				if (npc && npc.scmcc && npc.scmcc.data && npc.scmcc.data.nam == parent.debugForceTarget)
+				if (npc && npc.scmcc && npc.scmcc.data && (npc.scmcc.data.nam == parent.debugForceTarget || (parent.debugForceTarget == 'priscilla' && npc.scmcc.data.nam == 'pryscilla') || (parent.debugForceTarget == 'pryscilla' && npc.scmcc.data.nam == 'priscilla')))
 				{
 					parent.registry.TryExecuteSpecificAction(parent.debugForceAction, npc, thePlayer, ctx);
 					break;
@@ -1435,12 +1265,10 @@ state ProcessingTick in MCM_AutonomousRomanceCore
 			return;
 		}
 
-		// W2/I1 idle-suspend: przy postoju gracza ~50s followerzy
-		// przestaja chodzic za Geralta i graja swoja idle-anim;
+		// Idle-suspend: postoj gracza ~50s -> followerzy w idle-anim;
 		// wznowienie przy ruchu gracza albo unsafe.
 		parent.UpdateIdleSuspend(true);
 
-		// Pasywny przyrost Affinity za czas wspólnej aktywnej podróży
 		parent.UpdatePassiveTravelAffinity(companions);
 
 		// Notifier "sweet spot": jednorazowy HUD przy wejściu w zasięg punktu
@@ -1478,16 +1306,13 @@ state ProcessingTick in MCM_AutonomousRomanceCore
 			}
 		}
 
-		// Anty-chaos: staged channel wzajemnie się wyklucza –
-		// jedna interakcja naraz + globalny post-staged cooldown (~90s).
-		// Ambient barki lecą równolegle przez MCM_AmbientRomanceChannel.
-		// (Dopisujemy do digestu zamiast logować – deduplikacja na końcu.)
+		// Anty-chaos: staged wyklucza sie wzajemnie (1 interakcja + ~90s cd);
+		// ambient leci rownolegle. Markery ida do digestu (deduplikacja).
 		if (parent.IsStagedBusy() || parent.GetStagedCooldownRemaining() > 0.0)
 		{
 			if (dbg)
 			{
-				// Statyczny marker (bez odliczanego czasu) – inaczej digest
-				// zmienialby sie co tick i deduplikacja by nie zadzialala.
+				// Statyczny marker - zmienny czas rozbilby deduplikacje digestu.
 				digest += " | staged{busy=" + parent.IsStagedBusy() + "}";
 				if (digest != parent.lastDebugDigest)
 				{
@@ -1509,16 +1334,14 @@ state ProcessingTick in MCM_AutonomousRomanceCore
 				continue;
 			}
 
-			// Staged cooldown także W PĘTLI: odmowa/fail poprzedniej akcji
-			// stempluje lastStagedTime – następna towarzyszka nie może
-			// strzelić swoim promptem w tym samym ticku.
+			// Staged cooldown takze W PETLI: fail poprzedniej akcji stempluje
+			// lastStagedTime - kolejna towarzyszka nie strzeli w tym ticku.
 			if (parent.IsStagedBusy() || parent.GetStagedCooldownRemaining() > 0.0)
 			{
 				if (dbg) digest += " | " + NameToString(npc.scmcc.data.nam) + "{staged-cd}";
 				break;
 			}
 
-			// Sprawdź cooldown per NPC
 			if (!parent.IsCooldownElapsed(npc.scmcc.data.nam, ctx))
 			{
 				if (dbg) digest += " | " + NameToString(npc.scmcc.data.nam) + "{cd}";
@@ -1546,10 +1369,8 @@ state ProcessingTick in MCM_AutonomousRomanceCore
 	}
 }
 
-// ===========================================================================
 // Kanał ambient – barki RTT_OneLiner (w tym zazdrość Yen<->Triss) lecą
 // równolegle do staged channel przez osobną maszynę stanów i timer.
-// ===========================================================================
 
 statemachine class MCM_AmbientRomanceChannel
 {
@@ -1648,9 +1469,8 @@ state AmbientTick in MCM_AmbientRomanceChannel
 		ctx = core.BuildContext(companions);
 		core.ShuffleCompanions(companions);
 
-		// Akcje okienkowe (isTimeCritical): wyprzedzaja zwykle barki i omijaja
-		// los presetu gadatliwosci – bez tego ich okno czasowe wygasa bez strzalu.
-		// Filtry te same co petla barkow nizej (busy/follow/scene/speaking).
+		// Akcje okienkowe (isTimeCritical): wyprzedzaja barki i omijaja los
+		// presetu - ich okno czasowe wygasa. Filtry jak w petli nizej.
 		hasTimeCritical = false;
 		for (i = 0; i < companions.Size(); i += 1)
 		{
@@ -1671,13 +1491,8 @@ state AmbientTick in MCM_AmbientRomanceChannel
 		// Globalny cooldown barków (~90s) bramkuje odtworzenie kwestii (omijany dla time-critical).
 		canBark = (parent.GetBarkCooldownRemaining() <= 0.0) || hasTimeCritical;
 
-		// ---------------------------------------------------------------
-		// Powitanie po absencji: NPC wypadl z tagu 'GeraltsBFF' (despawn/
-		// teleport) na >60s i wrocil w <10m -> greeting voiceset (w jej
-		// glosie). Powitanie ZJADA turke barku (canBark=false+lastBarkTime),
-		// ale petla DOKONCZUJE stemplowanie pozostalych (brak return).
-		// Pierwsze zauwazenie w sesji nie strzela (baseline).
-		// ---------------------------------------------------------------
+		// Powitanie po absencji: NPC poza 'GeraltsBFF' >60s, powrot w <10m
+		// -> greeting voiceset. Zjada ture barku; baseline nie strzela.
 		for (i = 0; i < companions.Size(); i += 1)
 		{
 			npc = companions[i];
@@ -1694,10 +1509,15 @@ state AmbientTick in MCM_AmbientRomanceChannel
 			}
 
 			gap = now - parent.greetSeenTime[idx];
-			parent.greetSeenTime[idx] = now;
 
+			// Stemplek "ostatnio widziana" TYLKO gdy powitanie mozliwe -
+			// gate-fail nie konsumuje okna (gap przetrwa do eligible-ticku).
 			if (!canBark || hasTimeCritical) continue;
-			if (gap <= 60.0) continue;
+			if (gap <= 60.0)
+			{
+				parent.greetSeenTime[idx] = now;
+				continue;
+			}
 			if (!npc.HasTag('mod_scm_IsFollowing')) continue;
 			if (core.IsNpcBusy(npc)) continue;
 			if (npc.IsInGameplayScene() || npc.IsSpeaking()) continue;
@@ -1707,8 +1527,13 @@ state AmbientTick in MCM_AmbientRomanceChannel
 
 			// Cooldown powitania 300s per NPC
 			g = parent.greetDoneNpc.FindFirst(nam);
-			if (g != -1 && (now - parent.greetDoneTime[g]) < 300.0) continue;
+			if (g != -1 && (now - parent.greetDoneTime[g]) < 300.0)
+			{
+				parent.greetSeenTime[idx] = now;
+				continue;
+			}
 
+			parent.greetSeenTime[idx] = now;
 			npc.EnableDynamicLookAt(thePlayer, 6.0);
 			npc.PlayVoiceset(100, 'greeting_geralt');
 			MCM_AR_Log("[AR] Greeting after " + RoundMath(gap) + "s absence: " + NameToString(nam));
@@ -1783,9 +1608,7 @@ state AmbientTick in MCM_AmbientRomanceChannel
 	}
 }
 
-// ===========================================================================
 //  Komendy Konsoli Deweloperskiej (Debug & Testing)
-// ===========================================================================
 
 exec function ar_status()
 {
@@ -1806,8 +1629,7 @@ exec function ar_status()
 	var followN    : int;
 	var worldAff   : string;
 
-	// Markery diagnostyczne - jesli exec spowoduje CTD, scriptslog.txt
-	// pokaze dokladnie ktory krok zabil gre (LogChannel flushuje na biezaco)
+	// Markery krokow: przy CTD scriptslog.txt pokaze, ktory krok zabil gre.
 	LogChannel('MCM_AR', "[AR status] step1: get core");
 	core = MCM_AR_GetCore();
 	if (!thePlayer || !core)
@@ -1845,9 +1667,8 @@ exec function ar_status()
 	theGame.GetNPCsByTag('GeraltsBFF', companions);
 	LogChannel('MCM_AR', "[AR status] step9: loop, n=" + companions.Size());
 
-	// Tag 'GeraltsBFF' nosi kazdy NPC zarzadzany przez MCME, w tym
-	// swiatowe spawny stojace w miastach (nie podazaja za graczem).
-	// Realnego followera rozroznia dopiero 'mod_scm_IsFollowing'.
+	// 'GeraltsBFF' = kazdy NPC pod MCME (tez swiatowe spawny);
+	// realnego followera rozroznia 'mod_scm_IsFollowing'.
 	followN = 0;
 	for (i = 0; i < companions.Size(); i += 1)
 	{
@@ -1932,8 +1753,7 @@ exec function ar_devreset()
 	}
 }
 
-// Sonda I1: wymusza prog postoju - nastepny tick (<=4s) zawiesi
-// towarzyszki bez czekania 50s. Wynik w ar_diag / ar_logdump.
+// Wymusza prog postoju - suspend bez czekania 50s (wynik: ar_diag/ar_logdump).
 exec function ar_idlenow()
 {
 	var core : MCM_AutonomousRomanceCore;
@@ -2043,9 +1863,8 @@ exec function ar_bootlog()
 	}
 }
 
-// Zapis markerow diagnostycznych do user.settings - kanal czytelny
-// z dysku, gdy scriptslog.txt nie zapisuje po starcie. Po wykonaniu
-// sprawdzamy sekcje [AR_Diag] i [MCM_AR] w user.settings.
+// Dump diagnostyki do user.settings ([AR_Diag]) - kanal czytelny z
+// dysku, gdy scriptslog.txt nie zapisuje po starcie.
 exec function ar_diag()
 {
 	var wrapper : CInGameConfigWrapper;
@@ -2055,13 +1874,6 @@ exec function ar_diag()
 
 	MCM_AR_DiagMark(10);
 	wrapper = theGame.GetInGameConfigWrapper();
-	if (wrapper)
-	{
-		// Kanal gwarantowany: SetVarValue na istniejacym varze MCM na pewno
-		// zapisuje sie do user.settings. Jednorazowo (tylko z ar_diag) -
-		// przywracamy CooldownSlider recznie po sesji diagnostycznej.
-		wrapper.SetVarValue('MCM_AR', 'MCM_AR_CooldownSlider', "70");
-	}
 	if (wrapper && thePlayer)
 	{
 		wrapper.SetRawConfigValueByStr("AR_Diag", "bootlog_size", "" + thePlayer.mcm_ar_bootlog.Size());
@@ -2087,12 +1899,10 @@ exec function ar_diag()
 	}
 	if (wrapper)
 	{
-		// Jeden flush na koncu - DiagMark/SetVarValue/SetRawConfigValue
-		// tylko ustawiaja wartosci, zapis na dysk robimy raz.
+		// Jeden flush na koncu - SetRawConfigValue tylko ustawia wartosci.
 		theGame.SaveUserSettings();
 	}
-	// DEV (TW3SE): pelny ring do tw3se\out\ar_diag.txt - czytelny plik
-	// zamiast parsowania user.settings. Release stub = noop.
+	// DEV (TW3SE): pelny ring do tw3se\out\ar_diag.txt; release stub = noop.
 	core = thePlayer.mcm_ar_core;
 	if (core)
 	{
@@ -2109,8 +1919,8 @@ exec function ar_diag()
 	}
 }
 
-// Audycja linii dialogowej na żywej towarzyszce: ar_line(yennefer, 420362)
-// (konsola W3 nie parsuje parametru 'name' – przyjmujemy string i rzutujemy)
+// Audycja linii na towarzyszce: ar_line(yennefer, 420362) — npcStr jako string
+// (konsola W3 nie parsuje 'name').
 exec function ar_line(npcStr : string, lineID : int)
 {
 	var npc : CNewNPC;
@@ -2134,10 +1944,8 @@ exec function ar_line(npcStr : string, lineID : int)
 	thePlayer.DisplayHudMessage("[AR] " + npcStr + ": \"" + txt + "\"");
 }
 
-// Sonda dostępności animacji na żywej towarzyszce: ar_probeanim(triss, woman_sit_stump_idle)
-// true = animacja przyjęta przez slot; false = brak w animsecie NPC LUB slot
-// zajęty (sondować, gdy NPC stoi w idle). Do audycji roostera, np. Salma
-// (sukkubus) może nie mieć animów woman_* – patrz ARCHITECTURE §15.1.
+// Sonda animacji: ar_probeanim(triss, woman_sit_stump_idle) — sondowac w idle
+// (false = brak w animsecie LUB slot zajety; Salma moze nie miec woman_*).
 exec function ar_probeanim(npcStr : string, animName : name)
 {
 	var npc    : CNewNPC;
@@ -2160,11 +1968,8 @@ exec function ar_probeanim(npcStr : string, animName : name)
 	MCM_AR_Log("[AR] ProbeAnim '" + NameToString(animName) + "' on " + NameToString(npc.scmcc.data.nam) + " -> " + played, true);
 }
 
-// Macierzowa sonda animacji na towarzyszce LUB graczu (cel: seamless kiss v2.0).
-// Kazdy bool = silnik przyjal anim przez dane API; ostatnia przyjeta zostaje
-// na aktorze (wizualne potwierdzenie). Przyklad:
-//   ar_probeanim2(triss, determined_gesture_passionate_kiss_f)
-//   ar_probeanim2(player, determined_gesture_passionate_kiss_m)
+// Macierzowa sonda animacji na towarzyszce lub graczu; ostatnia przyjeta
+// zostaje na aktorze. Np.: ar_probeanim2(triss, determined_gesture_passionate_kiss_f)
 exec function ar_probeanim2(targetStr : string, animName : name)
 {
 	var actor    : CActor;
@@ -2214,6 +2019,18 @@ exec function ar_probeanim2(targetStr : string, animName : name)
 		ok = mac.PlaySlotAnimationAsync(animName, 'PLAYER_SLOT', settings);
 		report += "playerslot=" + ok + " ";
 		anyOk = anyOk || ok;
+		ok = mac.PlaySlotAnimationAsync(animName, 'GESTURE_BOTH_HANDS_SLOT', settings);
+		report += "gestureboth=" + ok + " ";
+		anyOk = anyOk || ok;
+		ok = mac.PlaySlotAnimationAsync(animName, 'GESTURE_NO_HANDS_SLOT', settings);
+		report += "gesturenone=" + ok + " ";
+		anyOk = anyOk || ok;
+		ok = mac.PlaySlotAnimationAsync(animName, 'MANUAL_DIALOG_SLOT', settings);
+		report += "manualdlg=" + ok + " ";
+		anyOk = anyOk || ok;
+		ok = mac.PlaySlotAnimationAsync(animName, 'NPC_ANIM_STATIONARY_SLOT', settings);
+		report += "npcstat=" + ok + " ";
+		anyOk = anyOk || ok;
 	}
 	else report += "mac=NULL ";
 
@@ -2236,12 +2053,9 @@ exec function ar_probeanim2(targetStr : string, animName : name)
 	}
 }
 
-// Sonda injekcji animsetu na ZYWEJ encji (czysty WS - zero TW3SE):
-// doklada zaladowany CSkeletalAnimationSet do comp.animationSets i probuje
-// PlaySkeletalAnimationAsync. Odpowiada na pytanie, czy tracki cutscen
-// (cs704, sex_pre/do/after) odpala na istniejacej towarzyszce/graczu.
-// Przyklad (z paczka TGL w Mods jako zrodlem animsetow):
-//   ar_probeinject triss "gameplay/tgl_replay/catalog/cs704_sex_with_syanna.w2cutscene" "syanna:Root:cs704_sex_with_syanna"
+// Sonda injekcji animsetu na zywej encji: doklada CSkeletalAnimationSet
+// do comp.animationSets i probuje tracki cutscen (cs704, sex_pre/do/after).
+//   ar_probeinject triss "gameplay/.../cs704_sex_with_syanna.w2cutscene" "syanna:Root:cs704_sex_with_syanna"
 exec function ar_probeinject(targetStr : string, animsetPath : string, animName : name)
 {
 	var actor       : CActor;
@@ -2323,26 +2137,31 @@ exec function ar_probeinject(targetStr : string, animsetPath : string, animName 
 	}
 }
 
+// ar_debug = toggle; ar_debug(1) = wymus ON, ar_debug(-1) = wymus OFF
+// (bare call nieodroznialny od ar_debug(0) - optional int domyslnie 0).
 exec function ar_debug(optional mode : int)
 {
 	var on : bool;
 
 	on = (FactsQuerySum('mcme_ar_debug') > 0);
-	if (mode < 0 || mode > 1)
+	if (mode == 1)
 	{
-		// ar_debug bez argumentu = toggle
-		on = !on;
+		on = true;
+	}
+	else if (mode == -1)
+	{
+		on = false;
 	}
 	else
 	{
-		on = (mode == 1);
+		on = !on;
 	}
 
 	if (on)
 	{
 		FactsRemove('mcme_ar_debug');
 		FactsAdd('mcme_ar_debug', 1);
-		thePlayer.DisplayHudMessage("[AR] Debug ON - tick digest on HUD. Disable: ar_debug(0). Analysis: ar_eval()");
+		thePlayer.DisplayHudMessage("[AR] Debug ON - tick digest on HUD. Disable: ar_debug (toggle) or ar_debug(-1). Analysis: ar_eval()");
 	}
 	else
 	{
@@ -2502,6 +2321,41 @@ exec function ar_neartags()
 	MCM_AR_Log("encje z tagiem 'campfire': " + campfires);
 }
 
+exec function ar_taverndebug()
+{
+	var entities : array<CGameplayEntity>;
+	var entStr   : string;
+	var i, hits  : int;
+	var core     : MCM_AutonomousRomanceCore;
+
+	if (!thePlayer) return;
+	core = MCM_AR_GetCore();
+	if (!core) return;
+
+	MCM_AR_Log("=== TAVERNDEBUG === fact(player_in_inn)=" + FactsQuerySum('player_in_inn')
+		+ " interior=" + thePlayer.IsInInterior() + " => isInTavern=" + core.MCM_AR_IsInTavern());
+
+	FindGameplayEntitiesInRange(entities, thePlayer, 18.0, 200);
+	hits = 0;
+	for (i = 0; i < entities.Size(); i += 1)
+	{
+		if (!entities[i]) continue;
+		entStr = StrLower("" + entities[i]);
+		if (StrContains(entStr, "inn") || StrContains(entStr, "tavern")
+			|| StrContains(entStr, "drink") || StrContains(entStr, "barma"))
+		{
+			MCM_AR_Log("[tavdbg] " + entities[i]);
+			hits += 1;
+			if (hits >= 15)
+			{
+				MCM_AR_Log("[tavdbg] capped at 15 hits");
+				break;
+			}
+		}
+	}
+	MCM_AR_Log("[tavdbg] entities=" + entities.Size() + " hits=" + hits);
+}
+
 // Natychmiastowy test bezokienkowego pocałunku z dowolną towarzyszką
 exec function ar_kiss(optional npcStr : string)
 {
@@ -2527,13 +2381,13 @@ exec function ar_kiss(optional npcStr : string)
 		}
 		else if (npcStr == "anarietta" || npcStr == "anna" || npcStr == "anna_henrietta")
 		{
-			core.debugForceAction = 'anarietta_night_royal';
-			core.debugForceTarget = 'anna_henrietta';
+			thePlayer.DisplayHudMessage("[AR] anna_henrietta: no kiss tier - noble rig limit, by design");
+			return;
 		}
 		else if (npcStr == "vivienne" || npcStr == "sq701_vivienne")
 		{
-			core.debugForceAction = 'vivienne_night_invitation';
-			core.debugForceTarget = 'sq701_vivienne';
+			thePlayer.DisplayHudMessage("[AR] vivienne: no kiss tier - noble rig limit, by design");
+			return;
 		}
 		else if (npcStr == "cerys" || npcStr == "becca")
 		{
@@ -2563,7 +2417,7 @@ exec function ar_kiss(optional npcStr : string)
 		else if (npcStr == "priscilla" || npcStr == "pryscilla")
 		{
 			core.debugForceAction = 'priscilla_kiss';
-			core.debugForceTarget = 'pryscilla';
+			core.debugForceTarget = 'priscilla';
 		}
 		else if (npcStr == "edna" || npcStr == "edna_var_attre")
 		{
@@ -2582,8 +2436,8 @@ exec function ar_kiss(optional npcStr : string)
 		}
 		else if (npcStr == "orianna" || npcStr == "oriana" || npcStr == "vampire_diva")
 		{
-			core.debugForceAction = 'orianna_kiss';
-			core.debugForceTarget = 'vampire_diva';
+			thePlayer.DisplayHudMessage("[AR] orianna: no kiss tier - noble rig limit, by design");
+			return;
 		}
 		else if (npcStr == "rosa" || npcStr == "rosa_var_attre")
 		{
@@ -2597,7 +2451,14 @@ exec function ar_kiss(optional npcStr : string)
 		}
 		else if (npcStr == "ciri" || npcStr == "cirilla")
 		{
-			core.debugForceAction = 'ciri_hug';
+			if (thePlayer.MCM_AR_GetConfig().IsCiriAdultMode())
+			{
+				core.debugForceAction = 'ciri_kiss';
+			}
+			else
+			{
+				core.debugForceAction = 'ciri_hug';
+			}
 			core.debugForceTarget = 'cirilla';
 		}
 		else

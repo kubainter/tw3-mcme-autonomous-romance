@@ -210,8 +210,8 @@
 2118800208|        |ar_thanks_margarita|Calor... verdadero calor. Gracias, Geralt.
 2118800209|        |ar_line_orianna_oneliner_flirt|Tu sangre huele rica, brujo... pero te prefiero vivo y conversando.
 2118800210|        |ar_line_orianna_care|Descansa, Geralt. Incluso el corazón de un brujo debe cansarse bajo tal tensión.
-2118800211|        |ar_prompt_orianna_kiss|[C] Besar a Orianna
-2118800212|        |ar_line_orianna_kiss|Acércate, brujo. Déjame saborear este momento tranquilo contigo.
+2118800211|        |ar_prompt_orianna_intimate|[C] Quédate a solas con Orianna
+2118800212|        |ar_line_orianna_intimate_invite|He cultivado apetitos más antiguos que tú, brujo. Sáciame en un lugar privado.
 2118800213|        |ar_afterglow_orianna|Exquisito... Un sabor al que fácilmente podría acostumbrarme.
 2118800214|        |ar_line_orianna_gift_request|¿Posees una cosecha con suficiente profundidad para intrigar a mi paladar?
 2118800215|        |ar_thanks_orianna|Exquisito. Sigues superando mis expectativas.
@@ -234,3 +234,23 @@
 2118800232|        |ar_afterglow_walk_margarita|Un consuelo poco común en un camino que no termina.
 2118800233|        |ar_afterglow_walk_orianna|Ese sabor permanece con gracia. Veamos qué más nos depara la ruta.
 2118800234|        |ar_afterglow_walk_ciri|Es bueno caminar a tu lado, Geralt. Como en los viejos tiempos.
+2118800235|        |option_mcm_ar_opt_cirimode|Ciri: modo adulto MCME (Desact. = vínculo familiar fiel al lore)
+2118800236|        |option_MCM_AR_CiriMode|Ciri: modo adulto MCME (Desact. = vínculo familiar fiel al lore)
+2118800237|        |ar_prompt_ciri_kiss|[C] Besar a Ciri
+2118800238|        |ar_line_ciri_kiss|¿Por fin te armaste de valor, brujo?
+2118800239|        |ar_prompt_ciri_intimate|[C] Quédate a solas con Ciri
+2118800240|        |ar_line_ciri_intimate_invite|El mundo puede esperar, Geralt. Solo esta vez.
+2118800241|        |ar_prompt_philippa_intimate|[C] Quédate a solas con Philippa
+2118800242|        |ar_line_philippa_intimate_invite|No hago ofertas dos veces, brujo.
+2118800243|        |ar_prompt_ves_intimate|[C] Quédate a solas con Ves
+2118800244|        |ar_line_ves_intimate_invite|Por fin fuera de servicio. No hagas esperar a un soldado.
+2118800245|        |ar_prompt_salma_intimate|[C] Quédate a solas con Salma
+2118800246|        |ar_line_salma_intimate_invite|Mmm... Oigo tu pulso desde aquí. Ven.
+2118800247|        |ar_prompt_priscilla_intimate|[C] Quédate a solas con Priscilla
+2118800248|        |ar_line_priscilla_intimate_invite|El verso de esta noche no necesita público. Solo nosotros.
+2118800249|        |ar_prompt_edna_intimate|[C] Quédate a solas con Edna
+2118800250|        |ar_line_edna_intimate_invite|Mi hermana moriría de envidia. Ven, brujo.
+2118800251|        |ar_prompt_fringilla_intimate|[C] Quédate a solas con Fringilla
+2118800252|        |ar_line_fringilla_intimate_invite|Hasta una nilfgaardiana necesita calor. En algún sitio privado, Geralt.
+2118800253|        |ar_prompt_margarita_intimate|[C] Quédate a solas con Margarita
+2118800254|        |ar_line_margarita_intimate_invite|Aretuza enseñó disciplina, no abstinencia. Ven.

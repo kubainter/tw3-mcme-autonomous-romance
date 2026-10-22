@@ -3,9 +3,7 @@
 /* Struktura kontekstu, klasy bazowe akcji, rejestr i procedury wykonawcze  */
 /*****************************************************************************/
 
-// ---------------------------------------------------------------------------
 // Typ wyzwalacza interakcji (4 tiery z planu)
-// ---------------------------------------------------------------------------
 
 enum ERomanceTriggerType
 {
@@ -15,9 +13,7 @@ enum ERomanceTriggerType
 	RTT_Scene,      // Tier 4: pełna scena CStoryScene (tylko w strefach relaksu)
 }
 
-// ---------------------------------------------------------------------------
 // Kontekst otoczenia przekazywany do każdej akcji
-// ---------------------------------------------------------------------------
 
 class MCM_RomanceContext
 {
@@ -42,9 +38,7 @@ class MCM_RomanceContext
 	public var isInInterior    : bool;
 }
 
-// ---------------------------------------------------------------------------
 // Klasa bazowa pojedynczej interakcji romantycznej
-// ---------------------------------------------------------------------------
 
 class MCM_RomanceInteraction
 {
@@ -65,6 +59,13 @@ class MCM_RomanceInteraction
 	public var barkVoiceset    : name;   // voiceset NPC zamiast lineId (np. 'greeting_geralt')
 	default lineId = 0;
 
+	// Akcje oparte o sceny ar_*: brak wpisu w AutonomousScenePath dla NPC
+	// = nigdy eligible (blocked: no_scene), zamiast promptu i cichego faila.
+	public var usesAutonomousKiss : bool;
+	public var usesAutonomousHug  : bool;
+	default usesAutonomousKiss = false;
+	default usesAutonomousHug  = false;
+
 	// Czas ostatniego wykonania (czas silnika, tylko RAM – nie zaśmieca save)
 	private var lastExecTime   : float;
 	default lastExecTime = -9999.0;
@@ -75,9 +76,7 @@ class MCM_RomanceInteraction
 	default rejectedUntil = -1.0;
 	default rejectCount = 0;
 
-	// Zmienna robocza na wyniki latent (W3Script: wywolanie latent nie moze
-	// byc w warunku 'if' ani w deklaracji 'var' w srodku funkcji – Execute
-	// gestow nie maja bloku var, wiec trzymamy scratch na klasie)
+	// Scratch na wyniki latent (latent nie moze byc w 'if'/'var' - W3Script).
 	protected var approachOk : bool;
 
 	// Stan podążania przed rozpoczęciem interakcji.
@@ -117,7 +116,6 @@ class MCM_RomanceInteraction
 		rejectCount = 0;
 	}
 
-	// Sprawdź, czy interakcja może zostać uruchomiona
 	public function CanExecute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
 	{
 		return GetBlockReason(npc, player, ctx) == "";
@@ -130,37 +128,35 @@ class MCM_RomanceInteraction
 
 		now = theGame.GetEngineTimeAsSeconds();
 
-		// Cooldown własny akcji
 		if ((now - lastExecTime) < cooldownSeconds) return "cooldown";
-
-		// Backoff po odmowie propozycji
 		if (rejectedUntil > 0.0 && now < rejectedUntil) return "rejected_backoff";
 
-		// Sprawdź zażyłość (pomijane w trybie Sandbox / ForceRomance)
+		// ForceRomance omija prog affinity
 		if (minAffinity > 0 && !MCM_AR_GetConfig().IsForceRomanceOn())
 		{
 			if (!MCM_AR_GetAffinity().MeetsMinAffinity(npc.scmcc.data.nam, minAffinity))
 				return "affinity";
 		}
 
-		// Tryb zazdrości: akcje Tier2+ wymagają braku rywalek
+		// Zazdrosc: Tier2+ wymagaja braku rywalek
 		if (ctx.hasRivals && MCM_AR_GetConfig().IsJealousyModeOn())
 		{
 			if (triggerType == RTT_Gesture || triggerType == RTT_Prompt || triggerType == RTT_Scene)
 				return "jealousy";
 		}
 
-		// Sprawdź odległość NPC od gracza
 		if (VecDistance(player.GetWorldPosition(), npc.GetWorldPosition()) > 15.0)
 			return "distance";
 
-		// Warunki dodatkowe podklas (kontekst: noc/ogień/HP/zazdrość/...)
+		if (usesAutonomousKiss && StrLen(AutonomousScenePath(npc, false)) == 0) return "no_scene";
+		if (usesAutonomousHug  && StrLen(AutonomousScenePath(npc, true))  == 0) return "no_scene";
+
+		// Warunki podklas (noc/ogien/HP/kontekst)
 		return GetExtraBlockReason(npc, player, ctx);
 	}
 
-	// Powody blokad z warunkow wlasnych podklas ("" = brak). Subklasy
-	// nadpisuja TYLKO to zamiast CanExecute – jedno zrodlo prawdy gatingu,
-	// a ar_eval potrafi wypisac realny powod zamiast pustego "nazwa:".
+	// Powody blokad podklas ("" = eligible). Podklasy nadpisuja TYLKO to -
+	// jedno zrodlo prawdy gatingu, ar_eval wypisuje realny powod.
 	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
 	{
 		return "";
@@ -187,9 +183,8 @@ class MCM_RomanceInteraction
 		// Napis HUD: w3strings (ar_line_*) w jezyku gry, fallback EN.
 		txt = AR_T(lineKey, lineText);
 		core = MCM_AR_GetCore();
-		// Voiceset ma pierwszeństwo dla audio (zawsze głos tego NPC).
-		// Dla NPC z cache voiceset-miss (np. Rosa/Tomira) pomijamy probe -
-		// ten sam efekt (napis), zero spamu warningow w logu.
+		// Voiceset ma pierwszenstwo (zawsze glos tego NPC). NPC z cache
+		// voiceset-miss pomija probe - ten sam efekt, zero spamu w logu.
 		if (IsNameValid(barkVoiceset) && (!core || !core.MCM_AR_IsVoicesetMissing(npc.scmcc.data.nam)))
 		{
 			vsPlayed = npc.PlayVoiceset(100, barkVoiceset);
@@ -203,9 +198,8 @@ class MCM_RomanceInteraction
 			}
 			else
 			{
-				// Cicha degradacja (ARCHITECTURE §15.1): voicesetu brak
-				// w danych audio tego NPC -> fallback na lineId + HUD.
-				// Log tylko przy 1. missie, potem NPC trafia do cache.
+				// Cicha degradacja (ARCHITECTURE §15.1): brak voicesetu
+				// -> fallback na lineId + HUD; log tylko przy 1. missie.
 				MCM_AR_Log("[AR] voiceset missing '" + NameToString(barkVoiceset) + "' on " + NameToString(npc.scmcc.data.nam) + " - fallback lineId (cached)");
 				if (core) core.MCM_AR_MarkVoicesetMissing(npc.scmcc.data.nam);
 				if (lineId > 0 || StrLen(txt) > 0)
@@ -231,13 +225,12 @@ class MCM_RomanceInteraction
 
 		if (!npc) return;
 
-		// Odtwórz kwestię głosową na aktorze (lineID<=0 = tylko napis HUD)
+		// lineID<=0 = sam napis HUD
 		if (lineID > 0)
 		{
 			npc.PlayLine(lineID, true);
 		}
 
-		// Pobierz oficjalny tekst z bazy gry w bieżącym języku gracza (np. PL)
 		if (lineID > 0)
 		{
 			localizedLine = GetLocStringById(lineID);
@@ -248,8 +241,6 @@ class MCM_RomanceInteraction
 		}
 
 		speakerName = MCM_AR_GetCompanionDisplayName(npc);
-
-		// Wyświetl kwestię na ekranie HUD z poprawnym imieniem mówcy i w języku gry
 		thePlayer.DisplayHudMessage(speakerName + ": \"" + localizedLine + "\"");
 
 		mcm = MCM_GetMCM();
@@ -285,9 +276,8 @@ class MCM_RomanceInteraction
 		npc.ActionMoveToNode(player, MT_Walk, 1.0, dist);
 	}
 
-	// Bezpieczne odtworzenie mimiki twarzy.
-	// 'flirt'/'concern' to nasze nazwy semantyczne – mapujemy je na realne
-	// animacje mimiki z w2anims (surowe nazwy padaly po cichu = martwa twarz).
+	// Mimiki: 'flirt'/'concern' to nazwy semantyczne mapowane na realne
+	// animy z w2anims (surowe nazwy padaly po cichu = martwa twarz).
 	protected function PlayMimic(npc : CNewNPC, mimicName : name)
 	{
 		var anim   : name;
@@ -297,7 +287,8 @@ class MCM_RomanceInteraction
 
 		switch (mimicName)
 		{
-			case 'flirt':   anim = 'happy_anim_face'; break;
+			case 'flirt':
+			case 'smile':   anim = 'happy_anim_face'; break;
 			case 'concern': anim = 'sad_anim_face';   break;
 			default:        anim = mimicName;         break;
 		}
@@ -318,33 +309,200 @@ class MCM_RomanceInteraction
 		}
 	}
 
-	// Bezpieczne odtworzenie animacji picia (toast/degustacja wina/kufla)
-	protected latent function PlayDrinkingAnimation(npc : CNewNPC) : bool
-	{
-		var played : bool;
-		if (!npc) return false;
+	// Propy animacji (kielich/kufel): sprzatanie snapshot-delta - usuwamy
+	// WYLACZNIE itemy spoza snapshotu (nigdy bron/zbroje/questowe).
+	// Usuwanie jak vanilla DestroyNotWantedItems (bez DropItemFromSlot).
+	protected var propSnapshot      : array<SItemUniqueId>;
+	protected var propSnapshotNpc   : CNewNPC;
+	protected var propSnapshotValid : bool;
 
-		// Próba animacji degustacji wina / picia
-		played = MCM_AR_ProbeAnim(npc, 'woman_wine_tasting');
-		if (!played)
+	protected function IsInPropSnapshot(itemId : SItemUniqueId) : bool
+	{
+		var i : int;
+		for (i = 0; i < propSnapshot.Size(); i += 1)
 		{
-			played = MCM_AR_ProbeAnim(npc, 'man_work_drinking');
-		}
-		if (played)
-		{
-			Sleep(2.2); // Czas trwania gestu wzniesienia toastu / napicia się
-			return true;
+			if (propSnapshot[i] == itemId) return true;
 		}
 		return false;
 	}
 
-	// -------------------------------------------------------------------
-	// Realny heal akcji opiekuńczych: procent maks. zdrowia Geralta,
-	// skalowany bieżącym poziomem zażyłości (Affinity).
-	// Bazowy ułamek (0.20 dla Yen/Triss, 0.25 dla Keiry/Shani) jest
-	// modyfikowany od 0.6x (niski poziom) do 1.4x (maksymalne Affinity).
-	// Vanilla GainStat(BCS_Vitality, ...) – jak mikstury w r4Player.ws.
-	// -------------------------------------------------------------------
+	// true = to nie wyposazenie bojowe/pancerz/quest, mozna go usunac jako prop
+	protected function IsRemovableProp(inv : CInventoryComponent, itemId : SItemUniqueId) : bool
+	{
+		if (!inv || !inv.IsIdValid(itemId)) return false;
+		if (inv.IsItemWeapon(itemId) || inv.IsItemSecondaryWeapon(itemId) || inv.IsItemFists(itemId)) return false;
+		if (inv.IsItemAnyArmor(itemId) || inv.IsItemQuest(itemId)) return false;
+		return true;
+	}
+
+	// Propy z 4 slotow rak. Sloty propow ('r_hand','l_hand') bez guardu
+	// IsItemQuest (kielichy questowe tez wylatuja); sloty broni - pelne guardy.
+	protected function RemoveHandSlotProps(inv : CInventoryComponent)
+	{
+		var slots  : array<name>;
+		var itemId : SItemUniqueId;
+		var i      : int;
+
+		if (!inv) return;
+		slots.PushBack('r_hand');
+		slots.PushBack('l_hand');
+		slots.PushBack('r_weapon');
+		slots.PushBack('l_weapon');
+		for (i = 0; i < slots.Size(); i += 1)
+		{
+			itemId = inv.GetItemFromSlot(slots[i]);
+			if (!inv.IsIdValid(itemId)) continue;
+			if (IsInPropSnapshot(itemId)) continue;
+
+			if (slots[i] == 'r_hand' || slots[i] == 'l_hand')
+			{
+				if (!inv.IsItemWeapon(itemId) && !inv.IsItemSecondaryWeapon(itemId) && !inv.IsItemFists(itemId) && !inv.IsItemAnyArmor(itemId))
+				{
+					inv.UnmountItem(itemId, true);
+					inv.RemoveItem(itemId, -1);
+				}
+			}
+			else
+			{
+				if (IsRemovableProp(inv, itemId))
+				{
+					inv.UnmountItem(itemId, true);
+					inv.RemoveItem(itemId, -1);
+				}
+			}
+		}
+	}
+
+	// Wolac PRZED animacja picia. Zapisuje co NPC juz trzyma/ma zamontowane.
+	protected function SnapshotHeldItems(npc : CNewNPC)
+	{
+		var inv      : CInventoryComponent;
+		var allItems : array<SItemUniqueId>;
+		var i        : int;
+
+		propSnapshot.Clear();
+		propSnapshotValid = false;
+		propSnapshotNpc   = NULL;
+		if (!npc) return;
+		inv = npc.GetInventory();
+		if (!inv) return;
+
+		inv.GetAllItems(allItems);
+		for (i = 0; i < allItems.Size(); i += 1)
+		{
+			if (inv.IsItemHeld(allItems[i]) || inv.IsItemMounted(allItems[i]))
+			{
+				propSnapshot.PushBack(allItems[i]);
+			}
+		}
+		propSnapshotNpc   = npc;
+		propSnapshotValid = true;
+	}
+
+	// Sprzata propy po animacji (wspolny punkt: koniec sekwencji, abort walka,
+	// EndSoft, EndInteraction). cancelAnim=true: najpierw zatrzymaj slot-anim,
+	// zeby prop sie nie przyczepil ponownie.
+	public function CleanHandProps(npc : CNewNPC, optional cancelAnim : bool)
+	{
+		var inv      : CInventoryComponent;
+		var allItems : array<SItemUniqueId>;
+		var i        : int;
+
+		if (!npc || !propSnapshotValid || propSnapshotNpc != npc) return;
+
+		if (cancelAnim) npc.ActionCancelAll();
+
+		inv = npc.GetInventory();
+		if (inv)
+		{
+			RemoveHandSlotProps(inv);
+
+			// Delta: held/mounted, a nieobecne w snapshocie
+			inv.GetAllItems(allItems);
+			for (i = 0; i < allItems.Size(); i += 1)
+			{
+				if ((inv.IsItemHeld(allItems[i]) || inv.IsItemMounted(allItems[i]))
+				    && !IsInPropSnapshot(allItems[i]) && IsRemovableProp(inv, allItems[i]))
+				{
+					inv.UnmountItem(allItems[i], true);
+					inv.RemoveItem(allItems[i], -1);
+				}
+			}
+		}
+
+		propSnapshot.Clear();
+		propSnapshotValid = false;
+		propSnapshotNpc   = NULL;
+	}
+
+	// Kontrola miedzy krokami sekwencji picia. false = przerwij (despawn/walka).
+	protected function DrinkStepOk(npc : CNewNPC) : bool
+	{
+		if (!npc)
+		{
+			propSnapshot.Clear();
+			propSnapshotValid = false;
+			propSnapshotNpc   = NULL;
+			return false;
+		}
+		if (thePlayer.IsInCombat() || npc.IsInCombat())
+		{
+			CleanHandProps(npc, true);
+			return false;
+		}
+		return true;
+	}
+
+	// Jedna sekwencja: start (unosi kielich) -> loop x2 (pije) -> stop (odstawia).
+	// Zwraca: 0 = animacja niedostepna, 1 = zagrana w calosci, 2 = przerwana.
+	protected latent function RunDrinkSequence(npc : CNewNPC, startAnim : name, loopAnim : name, stopAnim : name) : int
+	{
+		if (!MCM_AR_ProbeAnim(npc, startAnim)) return 0;
+
+		Sleep(1.5);
+		if (!DrinkStepOk(npc)) return 2;
+		MCM_AR_ProbeAnim(npc, loopAnim);
+		Sleep(2.5);
+		if (!DrinkStepOk(npc)) return 2;
+		MCM_AR_ProbeAnim(npc, loopAnim);
+		Sleep(2.0);
+		if (!DrinkStepOk(npc)) return 2;
+		MCM_AR_ProbeAnim(npc, stopAnim);
+		Sleep(1.5);
+		// DrinkStepOk uniewaznia snapshot i sprzata przy przerwaniu/walce
+		if (!DrinkStepOk(npc)) return 2;
+		CleanHandProps(npc);
+		return 1;
+	}
+
+	// Bezpieczne odtworzenie animacji picia (toast/degustacja wina/kufla)
+	public latent function PlayDrinkingAnimation(npc : CNewNPC) : bool
+	{
+		var r : int;
+
+		if (!npc) return false;
+		SnapshotHeldItems(npc);
+
+		// Kobiety: degustacja wina
+		r = RunDrinkSequence(npc, 'woman_noble_wine_tasting_start', 'woman_noble_wine_tasting_loop_01', 'woman_noble_wine_tasting_stop');
+		if (r == 1) return true;
+		if (r == 2) return false;
+
+		// Mezczyzni: degustacja lub praca w karczmie
+		r = RunDrinkSequence(npc, 'man_noble_stand_tasting_wine_start', 'man_noble_stand_tasting_wine_1', 'man_noble_stand_tasting_wine_stop');
+		if (r == 1) return true;
+		if (r == 2) return false;
+
+		r = RunDrinkSequence(npc, 'man_work_drinking_start', 'man_work_drinking_loop_01', 'man_work_drinking_stop');
+		if (r == 1) return true;
+		if (r == 2) return false;
+
+		CleanHandProps(npc);
+		return false;
+	}
+
+	// Heal akcji opiekunczych: % max HP Geralta skalowany Affinity
+	// (bazowy ulamek * 0.6x..1.4x). Vanilla GainStat jak mikstury.
 	protected function HealPlayer(npc : CNewNPC, player : CR4Player, frac : float)
 	{
 		var amount        : int;
@@ -376,22 +534,18 @@ class MCM_RomanceInteraction
 		MCM_AR_Log("[AR] " + id + ": heal +" + amount + " HP (aff=" + aff + ", effFrac=" + effectiveFrac + ")");
 	}
 
-	// -------------------------------------------------------------------
 	// Staging interakcji twarzą w twarz:
 	// Faza 1 (miękkie podejście): NPC kieruje się asynchronicznie ku graczowi.
-	// -------------------------------------------------------------------
 	protected latent function SoftApproach(npc : CNewNPC, player : CR4Player, targetDist : float)
 	{
 		if (!npc || !player) return;
 
-		// Zapamietaj stan follow zanim cokolwiek ruszymy - scena moze
-		// pozniej zdjac flaga (toggle_follow), a EndInteraction musi
-		// wiedziec czy NPC miala wrocic do podazania.
+		// Zapamietaj follow przed ruszeniem - scena moze pozniej zdjac flage
+		// (toggle_follow), a EndInteraction musi wiedziec czy wracac do podazania.
 		npcWasFollowing = npc.scmcc && npc.scmcc.IsFollowing();
 
-		// Zawieszona (idle-suspend) towarzyska ZOSTAJE na liscie idle -
-		// wake-loop omija ja dzieki wasInTalkInteraction/scenie/busyNpc,
-		// a po EndInteraction wpis sprząta sie sam przy nastepnym wake.
+		// Zawieszona (idle-suspend) towarzyska ZOSTAJE na liscie idle; wake-loop
+		// ja omija, a wpis sprzata sie sam przy nastepnym wake.
 
 		// Zatrzymanie ruchu towarzyszki przed rozpoczęciem obrotu.
 		if (npc.scmcc && npc.scmcc.IsFollowing())
@@ -414,9 +568,8 @@ class MCM_RomanceInteraction
 		npc.ActionMoveToNodeAsync(player, MT_Walk, 1.0, targetDist);
 	}
 
-	// Czekaj aż NPC dojdzie na dystans (soft-approach async goni ruchomego
-	// gracza). Zwraca false, gdy trzeba przerwać: gracz uciekł >25m,
-	// walka, timeout. Po false wołaj EndSoft().
+	// Czekaj az NPC dojdzie (async goni ruchomego gracza). false = przerwij
+	// (gracz >25m, walka, timeout); po false wolaj EndSoft().
 	protected latent function WaitForApproach(npc : CNewNPC, player : CR4Player, targetDist : float, timeoutSec : float) : bool
 	{
 		var t : float;
@@ -449,8 +602,7 @@ class MCM_RomanceInteraction
 
 		if (!npc || !player) return;
 
-		// Belt: gdyby kiedykolwiek wywolano HardStage bez SoftApproach,
-		// flaga follow musi byc swieza (StopFollowing(true) jej nie rusza).
+		// Gdyby HardStage wywolano bez SoftApproach: flaga follow musi byc swieza.
 		npcWasFollowing = npc.scmcc && npc.scmcc.IsFollowing();
 
 		if (npc.scmcc && npc.scmcc.IsFollowing())
@@ -467,14 +619,12 @@ class MCM_RomanceInteraction
 		npc.AddTimer('ResetTalkInteractionFlag', 1.0, true, , , true);
 		npc.EnableCharacterCollisions(false);
 
-		// Geralt: stop ruchu + obrót twarzą do towarzyszki
 		player.BlockAction(EIAB_Movement, 'MCM_AR_interaction');
 		player.EnableDynamicLookAt(npc, 120.0);
 		toNpc = npc.GetWorldPosition() - player.GetWorldPosition();
 		rot = EulerAngles(0.0, VecHeading(toNpc), 0.0);
 		player.TeleportWithRotation(player.GetWorldPosition(), rot);
 
-		// NPC: obrót, podejście na dystans rozmowy, finalny obrót
 		npc.ActionRotateToAsync(player.GetWorldPosition());
 		ApproachPlayer(npc, player, targetDist);
 		npc.ActionRotateToAsync(player.GetWorldPosition());
@@ -494,6 +644,7 @@ class MCM_RomanceInteraction
 	{
 		if (!npc) return;
 		npc.ActionCancelAll();
+		CleanHandProps(npc);
 		npc.DisableLookAt();
 		npc.EnableCharacterCollisions(true);
 		npc.wasInTalkInteraction = false;
@@ -502,16 +653,13 @@ class MCM_RomanceInteraction
 		{
 			npc.scmcc.StartFollowing(true);
 		}
-		// Rekord idle-suspendu dla tej NPC umiera razem z interakcja -
-		// inaczej zostawalby martwy guarded wpis blokujacy nowe joby.
+		// Rekord idle-suspendu umiera z interakcja (martwy wpis blokuje nowe joby).
 		if (MCM_AR_GetCore()) MCM_AR_GetCore().RemoveIdleJobFor(npc);
 	}
 
-	// -------------------------------------------------------------------
-	// Zwolnienie po pełnym stagingu/scenie: odblokuj gracza, wyłącz look-at,
-	// wznów follow AI i zreinicjuj mimiki NPC (mechanizm MCME).
-	// Wołaj na KAŻDEJ ścieżce po HardStage – także przy błędzie sceny.
-	// -------------------------------------------------------------------
+	// Zwolnienie po pelnym stagingu/scenie: odblokuj gracza, wylacz look-at,
+	// wznow follow AI i mimiki NPC (mechanizm MCME). Wolaj na KAZDEJ sciezce
+	// po HardStage - takze przy bledzie sceny.
 	protected latent function EndInteraction(npc : CNewNPC, player : CR4Player)
 	{
 		var scm : mod_scm;
@@ -536,11 +684,10 @@ class MCM_RomanceInteraction
 				MCM_AR_Log("[AR] EndInteraction: IsInGameplayScene >6s - restore follow mimo to (NPC moze utknac)");
 			}
 
-			// Zresetowanie akcji lokomocji po zakończeniu sceny.
 			npc.ActionCancelAll();
+			CleanHandProps(npc);
 
-			// Jezeli NPC utknela w SCMPlayIdleAnim (job MCME), pop – inaczej
-			// follow AI nie startuje (stan nadpisuje lokomocje).
+			// NPC utknieta w SCMPlayIdleAnim (job MCME): pop - stan nadpisuje lokomocje.
 			if (npc.GetCurrentStateName() == 'SCMPlayIdleAnim')
 			{
 				npc.PopState(true);
@@ -550,10 +697,8 @@ class MCM_RomanceInteraction
 			npc.EnableCharacterCollisions(true);
 			npc.wasInTalkInteraction = false;
 
-			// Po scenach .w2scene mimiki trzeba reaktywować – ten sam
-			// mechanizm, którego MCME używa przy własnych dialogach.
-			// Ustaw flagę PRZED wznowieniem follow, żeby zmiana stanu
-			// w trakcie StartFollowing już ja widziala.
+			// Po scenach .w2scene reaktywuj mimiki (mechanizm MCME); flage
+			// ustaw PRZED wznowieniem follow - StartFollowing musi ja widziec.
 			if (npc.scmcc)
 			{
 				npc.scmcc.wasInDialogue = true;
@@ -585,8 +730,7 @@ class MCM_RomanceInteraction
 				}
 			}
 		}
-		// Rekord idle-suspendu dla tej NPC umiera razem z interakcja -
-		// inaczej zostawalby martwy guarded wpis blokujacy nowe joby.
+		// Rekord idle-suspendu umiera z interakcja (martwy wpis blokuje nowe joby).
 		if (MCM_AR_GetCore()) MCM_AR_GetCore().RemoveIdleJobFor(npc);
 	}
 
@@ -784,47 +928,79 @@ class MCM_RomanceInteraction
 		return false;
 	}
 
-	// Oczekuje na zwolnienie kolejki dialogowej DialogueManager (maks. maxWaitSec).
+	// Zwalnia kolejke DialogueManager przed scena (zawsze true): czeka max
+	// min(maxWaitSec, 3s) na naturalny koniec kwestii, potem wymusza
+	// MCM_DM_Idle; kwestia >2s bez postepu zwalniana od razu.
 	protected latent function WaitForDialogueFree(maxWaitSec : float) : bool
 	{
-		var t   : float;
-		var mcm : mod_scm;
+		var t        : float;
+		var limitSec : float;
+		var mcm      : mod_scm;
 
+		limitSec = MinF(maxWaitSec, 3.0);
 		t = 0.0;
-		while (t <= maxWaitSec)
+		while (true)
 		{
 			mcm = MCM_GetMCM();
 			if (!mcm || !mcm.DialogueManager || !mcm.DialogueManager.IsBusy())
 			{
 				return true;
 			}
-			if (theGame.GetEngineTimeAsSeconds() - mcm.DialogueManager.lastProgress > 20.0)
+			if (t >= limitSec || theGame.GetEngineTimeAsSeconds() - mcm.DialogueManager.lastProgress > 2.0)
 			{
-				MCM_AR_Log("[AR] WaitForDialogueFree: kolejka bez postepu >20s - stale, bypass");
+				MCM_AR_Log("[AR] WaitForDialogueFree: zwolnienie DialogueManager dla sceny (t=" + (int)t + "s)");
+				mcm.DialogueManager.GotoState('MCM_DM_Idle');
 				return true;
 			}
 			Sleep(0.5);
 			t += 0.5;
 		}
-		return false;
+		return true;
 	}
 
-	// Skrót: odpal scenę .w2scene przez istniejące API MCME i poczekaj
-	// na jej koniec – scena blokująca ustawia flagę dialogu, scena
-	// gameplay trzyma aktora w IsInGameplayScene. Timeout na wypadek,
-	// gdyby scena w ogóle nie wystartowała (wtedy krótki staging).
+	// Wspolna faza propozycji staged: prompt [C] dopiero PO dotarciu NPC
+	// (prompt na starcie = "ghost refuse" na progu walk-away i nieudany
+	// pathing liczony jako odmowa). alwaysRequire: Tier4 wymusza prompt.
+	protected latent function ApproachAndConsent(npc : CNewNPC, player : CR4Player,
+		targetDist : float, promptText : string, optional alwaysRequire : bool) : bool
+	{
+		var ok : bool;
+
+		ok = WaitForApproach(npc, player, targetDist, 8.0);
+		if (!ok)
+		{
+			// NPC nie doszla (pathing/timeout/gracz >25m) – to NIE odmowa.
+			EndSoft(npc);
+			MCM_AR_Log("[AR] " + id + ": approach failed/timeout (not a rejection)");
+			return false;
+		}
+		if (alwaysRequire || MCM_AR_GetConfig().RequiresPlayerConsent())
+		{
+			ok = ShowConsentPrompt(promptText, 10.0, npc);
+			if (!ok)
+			{
+				EndSoft(npc);
+				MarkRejected();
+				MCM_AR_Log("[AR] Player declined/ignored: " + id);
+				return false;
+			}
+		}
+		return true;
+	}
+
+	// Scena .w2scene przez API MCME + wait na koniec. Timeout na wypadek
+	// braku startu (wtedy krotki staging).
 	protected latent function PlayScene(npc : CNewNPC, scenePath : string) : bool
 	{
-		var t   : float;
-		var scm : mod_scm;
-		var ent : MultiCompanionModEntity;
+		var t      : float;
+		var quietT : float;
+		var scm    : mod_scm;
+		var ent    : MultiCompanionModEntity;
 		var dialogueFree : bool;
 		var sawScene     : bool;
 
-		// Gate: scena nie startuje w trakcie swiezej kolejki czatu MCME.
-		// 25s: musi przekraczac prog stale (20s) wewnatrz helpera, inaczej
-		// martwa kolejka nigdy nie doczeka bypassu i scena pada zawsze
-		// (runtime 310930: abort po 10s przy naszym wlasnym barku w kolejce).
+		// Gate: scena nie startuje przy swiezej kolejce czatu MCME
+		// (25s > prog helpera 20s, inaczej martwa kolejka bez bypassu).
 		dialogueFree = WaitForDialogueFree(25.0);
 		if (!dialogueFree)
 		{
@@ -859,14 +1035,19 @@ class MCM_RomanceInteraction
 			MCM_AR_Log("[AR] PlayScene FAIL: SCMEntity NULL: " + scenePath);
 			return false;
 		}
+
+		// Sceny ar_* binduja kompana po tagu encji (dontSearchByVoicetag).
+		// Tag potrzebny tylko na moment rozwiązania aktora przy starcie sceny.
+		if (npc) npc.AddTag('mcme_companion');
 		ent.mod_scm_delayedDialogue(scenePath, 0.05);
 		MCM_AR_Log("[AR] PlayScene: " + scenePath);
 
-		// Czas na timer delayedDialogue + start sceny, potem czekaj aż cicho.
-		// sawScene = scena faktycznie wystartowala - delayedDialogue moze
-		// po cichu odrzucic sciezke, wtedy zwracamy false.
+		// Czekaj az cicho; sawScene=false gdy delayedDialogue odrzucil sciezke.
+		// IsInGameplayScene NIE moze blokowac wyjscia - flaga zostaje dlugo
+		// po scenie (idle-pose + dziwactwo MCME) i dawala 45s martwej ciszy.
 		Sleep(0.6);
 		t = 0.0;
+		quietT = 0.0;
 		sawScene = false;
 		while (t < 45.0)
 		{
@@ -874,86 +1055,62 @@ class MCM_RomanceInteraction
 			{
 				sawScene = true;
 			}
-			if (t >= 4.0 &&
-			    !theGame.IsDialogOrCutscenePlaying() &&
-			    !(npc && npc.IsInGameplayScene()) &&
-			    !(npc && npc.IsSpeaking()))
+			if (theGame.IsDialogOrCutscenePlaying() || (npc && npc.IsSpeaking()))
+			{
+				quietT = 0.0;
+			}
+			else
+			{
+				quietT += 0.5;
+			}
+			if (t >= 4.0 && quietT >= 3.0 && !(npc && npc.IsInGameplayScene()))
+			{
+				break;
+			}
+			if (t >= 15.0 && quietT >= 6.0)
 			{
 				break;
 			}
 			Sleep(0.5);
 			t += 0.5;
 		}
+		if (npc) npc.RemoveTag('mcme_companion');
 		return sawScene;
 	}
 
-	// -------------------------------------------------------------------
-	// Wspólny wait: latent, czeka aż scena/dialog przestanie grać.
-	// Scena blokująca ustawia flagę dialogu, gameplay-scena trzyma aktora
-	// w IsInGameplayScene. Grace 4s na start + timeout na fail-start.
-	// -------------------------------------------------------------------
-	protected latent function WaitForSceneEnd(npc : CNewNPC, optional timeoutSec : float) : bool
+	// Wspolny wait: czeka az scena/dialog przestanie grac. Grace 4s na start
+	// + timeout na fail-start.
+	protected latent function WaitForSceneEnd(npc : CNewNPC, optional timeoutSec : float, optional rehideWeapons : bool) : bool
 	{
 		var t              : float;
 		var sawScene       : bool;
 		var playerReleased : bool;
-		var core           : MCM_AutonomousRomanceCore;
-		var hud            : CR4ScriptedHud;
-		var dm             : CR4HudModuleDialog;
-		var idxToPick      : int;
+		var rehideT        : float;
 
 		if (timeoutSec <= 0.0) timeoutSec = 60.0;
 
 		sawScene = false;
 		playerReleased = false;
-		core = thePlayer.mcm_ar_core;
-		dm = NULL;
+		rehideT = -1.0;
 
-		// Fast-start: scena .w2scene laduje sie ~0.1s, krotka przerwa
-		// wystarczy aby OnDialogChoicesSet zdazyl ustawic pendingPick.
 		Sleep(0.1);
 		t = 0.0;
 		while (t <= timeoutSec)
 		{
-			// Auto-pick opcji w scenach FollowWithKiss: wrap OnDialogChoicesSet
-			// ustawil pendingPickIdx – wykonujemy select+accept natychmiast
-			// (0.05s delay = 1-2 klatki, menu praktycznie niewidoczne).
-			if (core && core.arAutoPick && core.arPendingPickIdx >= 0 &&
-			    theGame.GetEngineTimeAsSeconds() - core.arPendingPickAt >= 0.05)
+			// Cutscenki sex_* remountuja itemy w trakcie - periodyczny re-hide.
+			if (rehideWeapons && t - rehideT >= 1.0)
 			{
-				if (!dm)
-				{
-					hud = (CR4ScriptedHud)theGame.GetHud();
-					if (hud)
-					{
-						dm = (CR4HudModuleDialog)hud.GetHudModule("DialogModule");
-					}
-				}
-				if (dm)
-				{
-					// Bufor lokalny: Sleep ponizej jest latent yield – stan
-					// core'a moze sie zmienic (disarm z innego watku), wtedy
-					// OnDialogOptionAccepted dostalby idx=-1.
-					idxToPick = core.arPendingPickIdx;
-					core.arPendingPickIdx = -1;
-					dm.OnDialogOptionSelected(idxToPick);
-					Sleep(0.05);
-					dm.OnDialogOptionAccepted(idxToPick);
-					MCM_AR_Log("[AR] autoPick: zaakceptowano opcje " + idxToPick);
-				}
-				else
-				{
-					core.arPendingPickIdx = -1;
-				}
+				HideActorWeapons(thePlayer);
+				if (npc) HideActorWeapons(npc);
+				rehideT = t;
 			}
 			if (theGame.IsDialogOrCutscenePlaying() || (npc && npc.IsInGameplayScene()))
 			{
 				sawScene = true;
 			}
-			// Scena skonczona z perspektywy gracza – oddaj sterowanie od razu.
-			// NPC moze jeszcze wychodzic z gameplay-sceny (IsInGameplayScene
-			// zostaje kilka sekund po koncu) – to nie powod trzymania locka
-			// ruchu na graczu (raportowane "zamrozenie" po scenach).
+			// Koniec sceny dla gracza = zwolnij lock od razu. NPC moze
+			// jeszcze wychodzic z gameplay-sceny (IsInGameplayScene zostaje
+			// po koncu) - bez trzymania locka na graczu.
 			if (!playerReleased && sawScene && !theGame.IsDialogOrCutscenePlaying())
 			{
 				thePlayer.UnblockAction(EIAB_Movement, 'MCM_AR_interaction');
@@ -984,131 +1141,95 @@ class MCM_RomanceInteraction
 		return false;
 	}
 
-	// -------------------------------------------------------------------
-	// Prawdziwa scena-dialog – dokładna replika ścieżki [E] na towarzyszce
-	// (SCMCC.OnPlayerInteract): zabija job-workera (bez tego scena nie może
-	// przejąć aktora i umiera po cichu), fakty following, mimiki przed
-	// sceną, PreDialogue (fakt allownaughty), LoadResource z logiem NULL,
-	// synchroniczny PlayScene. Zwraca false gdy scena nie wystartowała.
-	// -------------------------------------------------------------------
-	protected latent function PlayDialogueScene(npc : CNewNPC, scenePath : string, optional autoPick : bool) : bool
+	// Sceny autonomiczne kiss/hug: per-NPC .w2scene z wycietym PChoice we
+	// wlasnym bundle (sciezki ar_*) - zero kola dialogowego, zero kolizji
+	// z oryginalami MCME. Brak wpisu = akcja zwraca false.
+	protected function AutonomousScenePath(npc : CNewNPC, isHug : bool) : string
 	{
-		var worker : MCM_Worker;
-		var scene  : CStoryScene;
-		var ok     : bool;
-		var scm    : mod_scm;
-		var mcm    : mod_scm;
-		var core   : MCM_AutonomousRomanceCore;
-		var dialogueFree : bool;
+		var nam : name;
 
-		if (!npc || !npc.scmcc) return false;
+		if (!npc || !npc.scmcc || !npc.scmcc.data) return "";
+		nam = npc.scmcc.data.nam;
 
-		// Gate: scena nie startuje w trakcie swiezej kolejki czatu MCME
-		dialogueFree = WaitForDialogueFree(25.0);
-		if (!dialogueFree)
+		if (isHug)
 		{
-			MCM_AR_Log("[AR] PlayDialogueScene ABORT: DialogueManager busy >25s: " + scenePath);
-			return false;
+			switch (nam)
+			{
+				case 'cirilla':
+				case 'ciri':
+					return "dlc\mod_mcme_autonomous_romance\dialogue\ar_cirilla_hug.w2scene";
+			}
+			return "";
 		}
 
-		// LoadResource PRZED jakimikolwiek mutacjami stanu/faktow –
-		// przy braku sceny wychodzimy czysto.
-		scene = (CStoryScene)LoadResource(scenePath, true);
-		if (!scene)
+		switch (nam)
 		{
-			MCM_AR_Log("[AR] PlayDialogueScene FAIL: LoadResource NULL: " + scenePath);
-			return false;
+			case 'yennefer':
+				return "dlc\mod_mcme_autonomous_romance\dialogue\ar_yennefer_kiss.w2scene";
+			case 'triss':
+				return "dlc\mod_mcme_autonomous_romance\dialogue\ar_triss_kiss.w2scene";
+			case 'keira_metz':
+			case 'keira':
+				return "dlc\mod_mcme_autonomous_romance\dialogue\ar_keira_kiss.w2scene";
+			case 'shani':
+				return "dlc\mod_mcme_autonomous_romance\dialogue\ar_shani_kiss.w2scene";
+			case 'cerys':
+			case 'becca':
+				return "dlc\mod_mcme_autonomous_romance\dialogue\ar_cerys_kiss.w2scene";
+			case 'syanna':
+				return "dlc\mod_mcme_autonomous_romance\dialogue\ar_syanna_kiss.w2scene";
+			// Ciri kiss tylko w trybie Adult (opcia MCM_AR_CiriMode);
+			// domyślny Lore-Friendly zwraca "" -> akcja odfiltrowana (no_scene).
+			case 'cirilla':
+			case 'ciri':
+				if (thePlayer.MCM_AR_GetConfig().IsCiriAdultMode())
+				{
+					return "dlc\mod_mcme_autonomous_romance\dialogue\ar_cirilla_kiss.w2scene";
+				}
+				return "";
+			case 'rosa_var_attre':
+				return "dlc\mod_mcme_autonomous_romance\dialogue\ar_rosa_kiss.w2scene";
+			case 'prologue_village_herbalist':
+			case 'tomira':
+				return "dlc\mod_mcme_autonomous_romance\dialogue\ar_tomira_kiss.w2scene";
+			// noble_woman_base rig (anna/vivienne/orianna): brak animacji kiss
+			// dla tego szkieletu -> "" (no_scene), inaczej T-pose w scenie.
+			case 'philippa_eilhart':
+				return "dlc\mod_mcme_autonomous_romance\dialogue\ar_philippa_kiss.w2scene";
+			case 'ves':
+				return "dlc\mod_mcme_autonomous_romance\dialogue\ar_ves_kiss.w2scene";
+			case 'mh303_succbus_v2':
+			case 'salma':
+				return "dlc\mod_mcme_autonomous_romance\dialogue\ar_salma_kiss.w2scene";
+			case 'pryscilla':
+			case 'priscilla':
+				return "dlc\mod_mcme_autonomous_romance\dialogue\ar_priscilla_kiss.w2scene";
+			case 'edna_var_attre':
+				return "dlc\mod_mcme_autonomous_romance\dialogue\ar_edna_kiss.w2scene";
+			case 'fringilla_vigo':
+				return "dlc\mod_mcme_autonomous_romance\dialogue\ar_fringilla_kiss.w2scene";
+			case 'margarita':
+			case 'margaritta':
+				return "dlc\mod_mcme_autonomous_romance\dialogue\ar_margarita_kiss.w2scene";
 		}
-
-		scm = mod_scm_GetSCM();
-		mcm = MCM_GetMCM();
-		if (!scm || !mcm)
-		{
-			MCM_AR_Log("[AR] PlayDialogueScene FAIL: SCM/MCM NULL for " + NameToString(npc.scmcc.data.nam));
-			return false;
-		}
-
-		if (mcm.JobManager)
-		{
-			worker = mcm.JobManager.getWorker(npc);
-		}
-		if (worker)
-		{
-			worker.forceStop();
-		}
-		if (npc.GetCurrentStateName() == 'SCMPlayIdleAnim')
-		{
-			npc.PopState(true);
-		}
-		npc.EnableCharacterCollisions(false);
-
-		if (npc.scmcc.IsFollowing())
-		{
-			FactsRemove('mod_scm_fact_following');
-			FactsAdd('mod_scm_fact_following', 1, -1);
-		}
-		else
-		{
-			FactsRemove('mod_scm_fact_following');
-			FactsAdd('mod_scm_fact_following', 0, -1);
-		}
-
-		// Jak MCME przed dialogiem: oznacz "była w dialogu" i zreinicjuj mimiki
-		npc.scmcc.wasInDialogue = true;
-		scm.RefreshMimicsNextStateChange();
-		if (scm.NaughtyManager)
-		{
-			scm.NaughtyManager.PreDialogue(npc);
-		}
-
-		// Uzbroj auto-pick tylko dla naszych scen FollowWithKiss – opcja
-		// "kiss" z menu hub zostanie wybrana automatycznie (faza 0), a gdy
-		// scena wroci do menu, "exit" (faza 1). Nigdy globalnie.
-		core = thePlayer.mcm_ar_core;
-		if (autoPick && core)
-		{
-			core.arAutoPick = true;
-			core.arPickPhase = 0;
-			core.arPendingPickIdx = -1;
-			MCM_AR_Log("[AR] autoPick ARMED for " + NameToString(npc.scmcc.data.nam));
-		}
-		else if (!autoPick)
-		{
-			MCM_AR_Log("[AR] autoPick NOT armed: autoPick=false");
-		}
-		else
-		{
-			MCM_AR_Log("[AR] autoPick NOT armed: core NULL");
-		}
-
-		npc.AddTag('mcme_companion');
-		theGame.GetStorySceneSystem().PlayScene(scene, "Input");
-		MCM_AR_Log("[AR] PlayDialogueScene: " + scenePath + " for " + npc.scmcc.data.nam);
-
-		ok = WaitForSceneEnd(npc, 60.0);
-		npc.RemoveTag('mcme_companion');
-
-		if (core)
-		{
-			core.arAutoPick = false;
-			core.arPickPhase = 0;
-			core.arPendingPickIdx = -1;
-		}
-		return ok;
+		return "";
 	}
 
-	// -------------------------------------------------------------------
-	// Filar 1: Universal Kiss & Hug Dispatcher (v2.0)
-	// Odpala czysta scene w2scene pozbawiona PChoice z tagiem 'mcme_companion'.
-	// Po zakonczeniu wywoluje unikalna reakcje towarzyszki w jezyku gry.
-	// -------------------------------------------------------------------
 	public latent function PlayKissScene(npc : CNewNPC) : bool
 	{
-		var ok : bool;
-		var scenePath : string;
+		var path : string;
+		var ok   : bool;
 
-		scenePath = "dlc\\mod_spawn_companions\\dialogue\\trissFollowWithKiss.w2scene";
-		ok = PlayDialogueScene(npc, scenePath, false);
+		path = AutonomousScenePath(npc, false);
+		if (StrLen(path) == 0)
+		{
+			if (npc && npc.scmcc && npc.scmcc.data)
+			{
+				MCM_AR_Log("[AR] KissScene: no autonomous scene for " + NameToString(npc.scmcc.data.nam));
+			}
+			return false;
+		}
+		ok = PlayScene(npc, path);
 		if (ok)
 		{
 			PlayPostKissReaction(npc);
@@ -1118,11 +1239,19 @@ class MCM_RomanceInteraction
 
 	public latent function PlayHugScene(npc : CNewNPC) : bool
 	{
-		var ok : bool;
-		var scenePath : string;
+		var path : string;
+		var ok   : bool;
 
-		scenePath = "dlc\\mod_spawn_companions\\dialogue\\ciriFollowWithHug.w2scene";
-		ok = PlayDialogueScene(npc, scenePath, false);
+		path = AutonomousScenePath(npc, true);
+		if (StrLen(path) == 0)
+		{
+			if (npc && npc.scmcc && npc.scmcc.data)
+			{
+				MCM_AR_Log("[AR] HugScene: no autonomous scene for " + NameToString(npc.scmcc.data.nam));
+			}
+			return false;
+		}
+		ok = PlayScene(npc, path);
 		if (ok)
 		{
 			PlayPostHugReaction(npc);
@@ -1221,9 +1350,7 @@ class MCM_RomanceInteraction
 		PlayOneLiner(npc, 0, text);
 	}
 
-	// -------------------------------------------------------------------
 	// Scena intymna w punkcie intymnym (NaughtyPoint).
-	// -------------------------------------------------------------------
 	protected function HasIntimateScene(npc : CNewNPC) : bool
 	{
 		return StrLen(ResolveIntimateScenePath(npc)) > 0;
@@ -1281,10 +1408,8 @@ class MCM_RomanceInteraction
 		return "";
 	}
 
-	// Ścisły zasięg dla scen intymnych: PreDialogue wymaga punktu <=16m
-	// (ciaśniej niż limit PreNaughtyWith 20m) – eligibility na 16m, inaczej
-	// akcja oferuje consent dla sceny, która potem i tak pada na allownaughty=0.
-	// Szerszy notifier (30m) jest na ctx.isNearNaughtySpot – to gate kwalifikacji.
+	// Eligibility na 16m (PreDialogue <=16m < PreNaughtyWith 20m) - inaczej
+	// consent dla sceny padajacej na allownaughty=0. Notifier: ctx 30m.
 	protected function IsOnNaughtyPoint() : bool
 	{
 		var pt : mod_scm_NaughtyPoint;
@@ -1303,6 +1428,15 @@ class MCM_RomanceInteraction
 	{
 		switch (npcName)
 		{
+			// CIRI: T4 tylko w trybie Adult (MCM_AR_CiriMode); domyslny
+			// Lore-Friendly -> "" (wiez rodzinna, brak sceny intymnej).
+			case 'cirilla':
+			case 'ciri':
+				if (thePlayer.MCM_AR_GetConfig().IsCiriAdultMode())
+				{
+					return "dlc\mod_spawn_companions\naughty\ciri\anywhere.w2scene";
+				}
+				return "";
 			case 'anna_henrietta': return "dlc\mod_spawn_companions\naughty\anarietta\anywhere.w2scene";
 			// 'vivienne' = forma ludzka (vivienne_bird = przekleta forma ptasia)
 			case 'sq701_vivienne':
@@ -1310,11 +1444,141 @@ class MCM_RomanceInteraction
 			case 'becca':
 			case 'cerys':          return "dlc\mod_spawn_companions\naughty\cerys\anywhere.w2scene";
 			case 'syanna':         return "dlc\mod_spawn_companions\naughty\syanna\anywhere.w2scene";
+			// noble rig -> brak kiss scene; top tier to naughty cutscene (rig-safe)
+			case 'vampire_diva':
+			case 'oriana':
+			case 'orianna':        return "dlc\mod_spawn_companions\naughty\oriana\anywhere.w2scene";
+			// Fallbacki dla NPC, gdy pack nie ustawi specialData.naughtyScene
+			case 'philippa_eilhart':
+			case 'philippa':        return "dlc\mod_spawn_companions\naughty\philippa\anywhere.w2scene";
+			case 'ves':             return "dlc\mod_spawn_companions\naughty\ves\anywhere.w2scene";
+			case 'mh303_succbus_v2':
+			case 'salma':           return "dlc\mod_spawn_companions\naughty\salma\anywhere.w2scene";
+			case 'priscilla':       return "dlc\mod_spawn_companions\naughty\priscilla\anywhere.w2scene";
+			case 'edna_var_attre':
+			case 'edna':            return "dlc\mod_spawn_companions\naughty\edna\anywhere.w2scene";
+			case 'fringilla_vigo':
+			case 'fringilla':       return "dlc\mod_spawn_companions\naughty\fringilla\anywhere.w2scene";
+			// upstream pisownia katalogu to 'margaritta' (podwojne t)
+			case 'margarita':       return "dlc\mod_spawn_companions\naughty\margaritta\anywhere.w2scene";
 		}
 		return "";
 	}
 
-	protected latent function PlayIntimateScene(npc : CNewNPC) : bool
+	// Filtr: bron / amunicja / pochwa. Pochwy modowanych itemow nie maja
+	// tagu 'Scabbard' (tag dotyczy startowych), wiec kluczowe sa tez
+	// kategorie steel_scabbards/silver_scabbards.
+	protected function IsWeaponOrScabbardItem(inv : CInventoryComponent, item : SItemUniqueId) : bool
+	{
+		var cat : name;
+
+		if (inv.IsItemWeapon(item) || inv.IsItemBolt(item) ||
+		    inv.ItemHasTag(item, 'Scabbard'))
+		{
+			return true;
+		}
+		cat = inv.GetItemCategory(item);
+		return cat == 'steel_scabbards' || cat == 'silver_scabbards';
+	}
+
+	// Diagnostyka: zamontowane itemy aktora z flagami (W/B/S) i info
+	// o encji - pokazuje co realnie renderuje sie w scenie.
+	protected function DumpMountedItems(actor : CActor, who : string)
+	{
+		var inv    : CInventoryComponent;
+		var items  : array<SItemUniqueId>;
+		var i      : int;
+		var flags  : string;
+
+		if (!actor) return;
+		inv = (CInventoryComponent)actor.GetComponentByClassName('CInventoryComponent');
+		if (!inv) return;
+		inv.GetAllItems(items);
+		for (i = 0; i < items.Size(); i += 1)
+		{
+			if (!inv.IsItemMounted(items[i])) continue;
+			flags = "";
+			if (inv.IsItemWeapon(items[i])) flags += "W";
+			if (inv.IsItemBolt(items[i])) flags += "B";
+			if (!inv.IsItemWeapon(items[i]) && !inv.IsItemBolt(items[i]) &&
+			    IsWeaponOrScabbardItem(inv, items[i])) flags += "S";
+			if (inv.GetItemEntityUnsafe(items[i])) flags += "+ent";
+			MCM_AR_Log("[AR]   mounted<" + who + ">: " + NameToString(inv.GetItemName(items[i])) +
+			           " cat=" + NameToString(inv.GetItemCategory(items[i])) +
+			           " flags=" + flags);
+		}
+	}
+
+	// Chowa encje zamontowanych broni/pochw aktora na czas sceny intymnej.
+	// NIE unmountujemy - cutscenki sex_* remountuja itemy eventami w trakcie
+	// odtwarzania; SetHideInGame na encji itemu przetrwa remount.
+	protected function HideActorWeapons(actor : CActor) : int
+	{
+		var inv    : CInventoryComponent;
+		var items  : array<SItemUniqueId>;
+		var ent    : CItemEntity;
+		var i, hid : int;
+
+		if (!actor) return 0;
+		inv = (CInventoryComponent)actor.GetComponentByClassName('CInventoryComponent');
+		if (!inv) return 0;
+		inv.GetAllItems(items);
+		hid = 0;
+		for (i = 0; i < items.Size(); i += 1)
+		{
+			if (!inv.IsItemMounted(items[i]))
+			{
+				continue;
+			}
+			if (!IsWeaponOrScabbardItem(inv, items[i]))
+			{
+				continue;
+			}
+			ent = inv.GetItemEntityUnsafe(items[i]);
+			if (ent)
+			{
+				ent.SetHideInGame(true);
+				hid += 1;
+			}
+		}
+		return hid;
+	}
+
+	// Odchowuje bronie ukryte przez HideActorWeapons; rescan po ekwipunku
+	// (scena mogla odtworzyc encje itemow remountem w trakcie).
+	protected function UnhideActorWeapons(actor : CActor) : int
+	{
+		var inv    : CInventoryComponent;
+		var items  : array<SItemUniqueId>;
+		var ent    : CItemEntity;
+		var i, cnt : int;
+
+		if (!actor) return 0;
+		inv = (CInventoryComponent)actor.GetComponentByClassName('CInventoryComponent');
+		if (!inv) return 0;
+		inv.GetAllItems(items);
+		cnt = 0;
+		for (i = 0; i < items.Size(); i += 1)
+		{
+			if (!inv.IsItemMounted(items[i]))
+			{
+				continue;
+			}
+			if (!IsWeaponOrScabbardItem(inv, items[i]))
+			{
+				continue;
+			}
+			ent = inv.GetItemEntityUnsafe(items[i]);
+			if (ent)
+			{
+				ent.SetHideInGame(false);
+				cnt += 1;
+			}
+		}
+		return cnt;
+	}
+
+	public latent function PlayIntimateScene(npc : CNewNPC) : bool
 	{
 		var worker : MCM_Worker;
 		var point  : mod_scm_NaughtyPoint;
@@ -1329,6 +1593,7 @@ class MCM_RomanceInteraction
 		var nowT   : float;
 		var greetT : array<float>;
 		var dialogueFree : bool;
+		var hidP, hidN : int;
 
 		if (!npc || !npc.scmcc) return false;
 		nm = npc.scmcc.data.nam;
@@ -1359,9 +1624,8 @@ class MCM_RomanceInteraction
 
 		if (npc.scmcc.specialData && StrLen(npc.scmcc.specialData.naughtyScene) > 0)
 		{
-			// Precheck zasobu: delayedDialogue robi LoadResource w timerze
-			// i przy NULL po cichu nic nie odpala - stalibysmy 90s w
-			// WaitForSceneEnd z NPC w stanie staged.
+			// Precheck zasobu: delayedDialogue przy NULL po cichu nic nie
+			// odpala - stalibysmy 90s w WaitForSceneEnd z NPC staged.
 			scene = (CStoryScene)LoadResource(npc.scmcc.specialData.naughtyScene, true);
 			if (!scene)
 			{
@@ -1381,8 +1645,7 @@ class MCM_RomanceInteraction
 		}
 		else
 		{
-			// Sciezka manualna: LoadResource PRZED mutacjami stanu –
-			// przy braku sceny wychodzimy czysto.
+			// Sciezka manualna: LoadResource PRZED mutacjami stanu.
 			path = NaughtyScenePath(nm);
 			scene = (CStoryScene)LoadResource(path, true);
 			if (!scene)
@@ -1390,9 +1653,8 @@ class MCM_RomanceInteraction
 				MCM_AR_Log("[AR] IntimateScene FAIL: LoadResource NULL: " + path);
 				return false;
 			}
-			// Sceny manualne moga czytac ten sam fakt - consent gracza
-			// jest juz jawny, ustawiamy sami (specialData nie istnieje,
-			// wiec PreDialogue ustawilby 0).
+			// Sceny manualne moga czytac ten fakt - consent juz jawny
+			// (brak specialData = PreDialogue ustawilby 0).
 			FactsSet('mod_scm_allownaughty', 1);
 		}
 
@@ -1411,11 +1673,17 @@ class MCM_RomanceInteraction
 		npc.EnableCharacterCollisions(false);
 		npc.scmcc.wasInDialogue = true;
 		scm.RefreshMimicsNextStateChange();
+		hidP = HideActorWeapons(thePlayer);
+		hidN = 0;
+		if (npc) hidN = HideActorWeapons(npc);
+		MCM_AR_Log("[AR] IntimateScene: hid " + hidP + " player + " + hidN + " npc weapon entit(ies)");
+		DumpMountedItems(thePlayer, "player");
+		DumpMountedItems(npc, "npc");
 
 		if (npc.scmcc.specialData && StrLen(npc.scmcc.specialData.naughtyScene) > 0)
 		{
-			// PreNaughtyWith wewnatrz robi mod_scm_GetNPC(nam, ST_Special, false)
-			// – jak zwroci NULL, MCME cicho nic nie odpala. Diag pre-check.
+			// PreNaughtyWith robi mod_scm_GetNPC(ST_Special) - NULL = MCME
+			// po cichu nic nie odpala (diag pre-check).
 			if (!mod_scm_GetNPC(nm, ST_Special, false))
 			{
 				MCM_AR_Log("[AR] IntimateScene WARN: GetNPC(ST_Special) NULL for " +
@@ -1433,20 +1701,23 @@ class MCM_RomanceInteraction
 			MCM_AR_Log("[AR] IntimateScene (manual): " + path + " for " + NameToString(nm));
 		}
 
-		ok = WaitForSceneEnd(npc, 90.0);
+		ok = WaitForSceneEnd(npc, 90.0, true);
 		MCM_AR_Log("[AR] IntimateScene end: ok=" + ok + " for " + NameToString(nm));
-		// Scena mogla zawisnac (np. czeka na pozycje aktora przy AP) –
-		// IsInGameplayScene nadal true po timeout = NPC stoi do reloadu.
+		// IsInGameplayScene true po timeout = scena wiszaca, NPC stoi do reloadu.
 		if (!ok && npc && npc.IsInGameplayScene())
 		{
 			MCM_AR_Log("[AR] IntimateScene WARN: " + NameToString(nm) +
 			           " nadal IsInGameplayScene po timeout - scena wiszaca");
 		}
-		// Przywrócenie ekwipunku i wyglądu towarzyszek po scenie intymnej.
+		// PostNaughty (EquipItem) moze odtworzyc encje itemow - unhide po nim.
 		if (scm && scm.NaughtyManager)
 		{
 			scm.NaughtyManager.PostNaughty();
 		}
+		hidP = UnhideActorWeapons(thePlayer);
+		hidN = 0;
+		if (npc) hidN = UnhideActorWeapons(npc);
+		MCM_AR_Log("[AR] IntimateScene: unhid " + hidP + " player + " + hidN + " npc weapon entit(ies)");
 
 		// Aktualizacja czasu widoczności towarzyszek po ukryciu podczas sceny intymnej.
 		amb = thePlayer.mcm_ar_ambient;
@@ -1464,9 +1735,7 @@ class MCM_RomanceInteraction
 	}
 }
 
-// ---------------------------------------------------------------------------
-// Klasa bazowa: Autonomiczna prośba o prezent (Gift Request - Kierunek C1)
-// ---------------------------------------------------------------------------
+// Klasa bazowa: Gift Request (autonomiczna prosba o prezent)
 
 class MCM_AR_GiftRequest_Base extends MCM_RomanceInteraction
 {
@@ -1496,7 +1765,6 @@ class MCM_AR_GiftRequest_Base extends MCM_RomanceInteraction
 		gifts.PushBack('Dwarven spirit');
 	}
 
-	// Znajdź pierwszy dostępny trunek z listy preferencji w ekwipunku gracza
 	public function FindBestAvailableGift() : name
 	{
 		var gifts : array<name>;
@@ -1513,8 +1781,7 @@ class MCM_AR_GiftRequest_Base extends MCM_RomanceInteraction
 		return '';
 	}
 
-	// Przyjazna nazwa wyświetlana na ekranie HUD - silnik sam lokalizuje
-	// nazwy itemow (inv.GetItemLocalizedNameByName -> klucz -> tekst),
+	// Nazwa itemu na HUD: silnik lokalizuje (GetItemLocalizedNameByName),
 	// fallback na surowe id.
 	public function GetGiftDisplayName(item : name) : string
 	{
@@ -1545,12 +1812,12 @@ class MCM_AR_GiftRequest_Base extends MCM_RomanceInteraction
 
 	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
 	{
-		var consent      : bool;
 		var chosenGift   : name;
 		var giftName     : string;
 		var compName     : string;
 		var promptMsg    : string;
 		var removed      : bool;
+		var ok           : bool;
 
 		chosenGift = FindBestAvailableGift();
 		if (!IsNameValid(chosenGift))
@@ -1567,23 +1834,10 @@ class MCM_AR_GiftRequest_Base extends MCM_RomanceInteraction
 
 		promptMsg = AR_Fmt(AR_T("ar_prompt_gift", "[C] Give {1} to {2}"), giftName, compName);
 
-		if (MCM_AR_GetConfig().RequiresPlayerConsent())
+		ok = ApproachAndConsent(npc, player, 2.4, promptMsg);
+		if (!ok)
 		{
-			consent = ShowConsentPrompt(promptMsg, 10.0, npc);
-		}
-		else
-		{
-			consent = WaitForApproach(npc, player, 2.4, 8.0);
-		}
-
-		if (!consent)
-		{
-			EndSoft(npc);
-			if (MCM_AR_GetConfig().RequiresPlayerConsent())
-			{
-				MarkRejected();
-			}
-			MCM_AR_Log("[AR] Player declined gift request (" + giftName + ") from " + compName);
+			MCM_AR_Log("[AR] Gift request failed/declined (" + giftName + ") from " + compName);
 			return false;
 		}
 
@@ -1595,7 +1849,6 @@ class MCM_AR_GiftRequest_Base extends MCM_RomanceInteraction
 			return false;
 		}
 
-		// Usunięcie 1 sztuki z ekwipunku
 		removed = player.inv.RemoveItemByName(chosenGift, 1);
 		if (!removed)
 		{
@@ -1605,7 +1858,6 @@ class MCM_AR_GiftRequest_Base extends MCM_RomanceInteraction
 			return false;
 		}
 
-		// Dodanie punktów Affinity (+3)
 		if (npc && npc.scmcc && npc.scmcc.data)
 		{
 			MCM_AR_GetAffinity().AddAffinityPoints(npc.scmcc.data.nam, 3);
@@ -1615,8 +1867,7 @@ class MCM_AR_GiftRequest_Base extends MCM_RomanceInteraction
 			MCM_AR_GetAffinity().AddAffinityPoints(targetNpc, 3);
 		}
 
-		// Reakcja: look-at, mimika, animacja picia, podziękowanie
-		npc.EnableDynamicLookAt(player, 6.0);
+		npc.EnableDynamicLookAt(player, 10.0);
 		PlayMimic(npc, 'flirt');
 		PlayDrinkingAnimation(npc);
 
@@ -1644,9 +1895,7 @@ class MCM_AR_GiftRequest_Base extends MCM_RomanceInteraction
 	}
 }
 
-// ---------------------------------------------------------------------------
 // Centralny rejestr akcji (Action Registry Pattern)
-// ---------------------------------------------------------------------------
 
 
 class MCM_RomanceActionRegistry
@@ -1701,15 +1950,19 @@ class MCM_RomanceActionRegistry
 			if (!action) continue;
 			if (action.id == actionId)
 			{
+				core = MCM_AR_GetCore();
+				if (core && !core.BeginStagedInteraction(npc)) return false;
+
 				action.MarkAttempted();
 				res = action.Execute(npc, player, ctx);
+				if (core) core.EndStagedInteraction();
+
 				if (res)
 				{
 					action.MarkExecuted();
 					affinity.AddAffinityPoints(npcName, 1);
 					if (action.triggerType == RTT_Scene || action.triggerType == RTT_Prompt)
 					{
-						core = MCM_AR_GetCore();
 						if (core)
 						{
 							core.lastSceneOkNpc  = npcName;
@@ -1723,9 +1976,7 @@ class MCM_RomanceActionRegistry
 		return false;
 	}
 
-	// -----------------------------------------------------------------------
 	// Główna pętla selekcji i wykonania
-	// -----------------------------------------------------------------------
 	public latent function TryExecute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext, optional out eligibleCount : int, optional ambientOnly : bool) : bool
 	{
 		var eligible    : array<MCM_RomanceInteraction>;
@@ -1749,7 +2000,7 @@ class MCM_RomanceActionRegistry
 			if (!action) continue;
 
 			// Filtr: akcja musi pasować do NPC lub być ogólna
-			if (IsNameValid(action.targetNpc) && action.targetNpc != npcName) continue;
+			if (IsNameValid(action.targetNpc) && action.targetNpc != npcName && !(action.targetNpc == 'pryscilla' && npcName == 'priscilla') && !(action.targetNpc == 'priscilla' && npcName == 'pryscilla')) continue;
 
 			// Filtr kanału: ambient = tylko RTT_OneLiner, staged = reszta
 			if (ambientOnly)
@@ -1796,7 +2047,6 @@ class MCM_RomanceActionRegistry
 				if (result)
 				{
 					eligible[i].MarkExecuted();
-					// Przyznaj punkty zażyłości
 					affinity.AddAffinityPoints(npcName, 1);
 					// Stempelek dla afterglow/konfrontacji zazdrości (T3/T4)
 					if (eligible[i].triggerType == RTT_Scene || eligible[i].triggerType == RTT_Prompt)
@@ -1813,10 +2063,8 @@ class MCM_RomanceActionRegistry
 		return false;
 	}
 
-	// -----------------------------------------------------------------------
-	// Akcje okienkowe (isTimeCritical) – lustro TryExecute dla kanalu ambient,
-	// ale bez wazonego losu: bierze eligible o najwyzszym weight (remis: pierwsza).
-	// -----------------------------------------------------------------------
+	// Akcje okienkowe (isTimeCritical) - jak TryExecute, ale bez wazonego
+	// losu: eligible o najwyzszym weight (remis: pierwsza).
 	public latent function TryExecuteTimeCritical(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
 	{
 		var action  : MCM_RomanceInteraction;
@@ -1903,16 +2151,29 @@ class MCM_RomanceActionRegistry
 		return NULL;
 	}
 
+	// Szuka akcji danego NPC po sufiksie id (np. "gift_request"). Kluczem jest
+	// scmcc.data.nam, wiec dziala dla wszystkich postaci bez recznej mapy nazw.
+	public function FindActionForNpc(nam : name, idSuffix : string) : MCM_RomanceInteraction
+	{
+		var i : int;
+		for (i = 0; i < actions.Size(); i += 1)
+		{
+			if (actions[i] && (actions[i].targetNpc == nam || (actions[i].targetNpc == 'priscilla' && nam == 'pryscilla') || (actions[i].targetNpc == 'pryscilla' && nam == 'priscilla')) && StrContains(NameToString(actions[i].id), idSuffix))
+			{
+				return actions[i];
+			}
+		}
+		return NULL;
+	}
+
 	public function GetActionCount() : int
 	{
 		return actions.Size();
 	}
 }
 
-// ---------------------------------------------------------------------------
 // Specjalna akcja: HUD Prompt Input Listener
 // (zarejestruj odpowiedź gracza na prompt [C])
-// ---------------------------------------------------------------------------
 
 // Stan trzymania klawisza zgody [C] na graczu (czas naciśnięcia i flaga aktywnego trzymania).
 @addField(CR4Player)
@@ -1976,9 +2237,8 @@ event OnMCM_AR_ConsentKey(action : SInputAction)
 	}
 }
 
-// Consent prompt handler jest obslugiwany przez event OnMCM_AR_ConsentKey zarejestrowany na CR4Player.
-// USUNIETO @wrapMethod(CNewNPC) OnInteraction - powodowal shadowing wrappera z modMCME_RemasteredNPCHooks.ws
-// i calkowicie blokowal klawisz [E] (rozmowe z towarzyszkami)!
+// @wrapMethod(CNewNPC) OnInteraction usuniety celowo: shadowing wrappera
+// modMCME_RemasteredNPCHooks calkowicie blokowal klawisz [E] (dialog).
 
 
 // Pary rywalizujące ze sobą o Geralta (kanoniczny trójkąt)
@@ -2067,54 +2327,5 @@ function MCM_AR_ProbeAnim(npc : CNewNPC, animName : name) : bool
 		played = animComp.PlaySlotAnimationAsync(animName, 'GAMEPLAY_SLOT', settings);
 	}
 	return played;
-}
-
-// Obsługa wyboru dialogowego w scenach FollowWithKiss.
-@wrapMethod(CR4HudModuleDialog)
-function OnDialogChoicesSet(choices : array<SSceneChoice>, alternativeUI : bool)
-{
-	var core : MCM_AutonomousRomanceCore;
-
-	if (thePlayer)
-	{
-		core = thePlayer.mcm_ar_core;
-	}
-
-	wrappedMethod(choices, alternativeUI);
-
-	if (core)
-	{
-		if (choices.Size() > 0)
-		{
-			core.MCM_AR_OnDialogChoices(choices);
-		}
-		else
-		{
-			MCM_AR_Log("[AR] OnDialogChoicesSet: puste choices (flush)");
-		}
-	}
-	else
-	{
-		MCM_AR_Log("[AR] OnDialogChoicesSet: thePlayer/core NULL, n=" + choices.Size());
-	}
-}
-
-// Obsługa menu wyboru dialogowego na poziomie warstwy interfejsu (SendDialogChoicesToUI).
-@wrapMethod(CR4HudModuleDialog)
-function SendDialogChoicesToUI(choices : array<SSceneChoice>, allowContentMissingDialog : bool)
-{
-	var core : MCM_AutonomousRomanceCore;
-
-	if (thePlayer)
-	{
-		core = thePlayer.mcm_ar_core;
-	}
-
-	wrappedMethod(choices, allowContentMissingDialog);
-
-	if (core && choices.Size() > 0)
-	{
-		core.MCM_AR_OnDialogChoices(choices);
-	}
 }
 

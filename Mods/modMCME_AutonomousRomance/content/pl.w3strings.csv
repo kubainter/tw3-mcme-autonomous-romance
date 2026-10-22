@@ -210,8 +210,8 @@
 2118800208|        |ar_thanks_margarita|Ciepło... prawdziwe ciepło. Dziękuję, Geralt.
 2118800209|        |ar_line_orianna_oneliner_flirt|Twoja krew pachnie wybornie, wiedźminie... ale wolę cię żywego i rozmownego.
 2118800210|        |ar_line_orianna_care|Odpocznij, Geralt. Nawet wiedźmińskie serce musi się męczyć przy takim wysiłku.
-2118800211|        |ar_prompt_orianna_kiss|[C] Pocałuj Oriannę
-2118800212|        |ar_line_orianna_kiss|Podejdź bliżej, wiedźminie. Pozwól mi nacieszyć się tą cichą chwilą z tobą.
+2118800211|        |ar_prompt_orianna_intimate|[C] Zostań z Orianną na osobności
+2118800212|        |ar_line_orianna_intimate_invite|Moje apetyty są starsze niż ty, wiedźminie. Zaspokój je gdzieś na uboczu.
 2118800213|        |ar_afterglow_orianna|Znakomite... Smak, do którego łatwo mogłabym przywyknąć.
 2118800214|        |ar_line_orianna_gift_request|Czy posiadasz rocznik o głębi zdolnej zaciekawić moje podniebienie?
 2118800215|        |ar_thanks_orianna|Znakomite. Wciąż przewyższasz moje oczekiwania.
@@ -234,3 +234,23 @@
 2118800232|        |ar_afterglow_walk_margarita|Rzadki dotyk otuchy na bezkresnym gościńcu.
 2118800233|        |ar_afterglow_walk_orianna|Ten smak przyjemnie się utrzymuje. Zobaczmy, co jeszcze przyniesie droga.
 2118800234|        |ar_afterglow_walk_ciri|Dobrze iść obok ciebie, Geralcie. Jak za dawnych lat.
+2118800235|        |option_mcm_ar_opt_cirimode|Ciri: tryb MCME Adult (Wył. = więź rodzinna zgodna z lore)
+2118800236|        |option_MCM_AR_CiriMode|Ciri: tryb MCME Adult (Wył. = więź rodzinna zgodna z lore)
+2118800237|        |ar_prompt_ciri_kiss|[C] Pocałuj Ciri
+2118800238|        |ar_line_ciri_kiss|W końcu znalazłeś odwagę, wiedźminie?
+2118800239|        |ar_prompt_ciri_intimate|[C] Zostań z Ciri sam na sam
+2118800240|        |ar_line_ciri_intimate_invite|Świat może poczekać, Geralcie. Tylko tym razem.
+2118800241|        |ar_prompt_philippa_intimate|[C] Zostań z Filippą na osobności
+2118800242|        |ar_line_philippa_intimate_invite|Nie składam ofert dwa razy, wiedźminie.
+2118800243|        |ar_prompt_ves_intimate|[C] Zostań z Ves na osobności
+2118800244|        |ar_line_ves_intimate_invite|Wreszcie po służbie. Nie każ żołnierzowi czekać.
+2118800245|        |ar_prompt_salma_intimate|[C] Zostań z Salmą na osobności
+2118800246|        |ar_line_salma_intimate_invite|Mmm... Słyszę Twój puls już stąd. Chodź.
+2118800247|        |ar_prompt_priscilla_intimate|[C] Zostań z Priscillą na osobności
+2118800248|        |ar_line_priscilla_intimate_invite|Dzisiejszy wiersz nie potrzebuje publiczności. Tylko my.
+2118800249|        |ar_prompt_edna_intimate|[C] Zostań z Edną na osobności
+2118800250|        |ar_line_edna_intimate_invite|Siostra umarłaby z zazdrości. Chodź, wiedźminie.
+2118800251|        |ar_prompt_fringilla_intimate|[C] Zostań z Fringillą na osobności
+2118800252|        |ar_line_fringilla_intimate_invite|Nawet Nilfgaardka potrzebuje ciepła. Gdzieś na osobności, Geralcie.
+2118800253|        |ar_prompt_margarita_intimate|[C] Zostań z Margaritą na osobności
+2118800254|        |ar_line_margarita_intimate_invite|Aretuza uczyła dyscypliny, nie abstynencji. Chodź.
