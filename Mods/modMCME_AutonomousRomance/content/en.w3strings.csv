@@ -210,8 +210,8 @@
 2118800208|        |ar_thanks_margarita|Warmth... true warmth. Thank you, Geralt.
 2118800209|        |ar_line_orianna_oneliner_flirt|Your blood smells rich, witcher... but I prefer you alive and talking.
 2118800210|        |ar_line_orianna_care|Rest, Geralt. Even a witcher's heart must weary under such strain.
-2118800211|        |ar_prompt_orianna_kiss|[C] Kiss Orianna
-2118800212|        |ar_line_orianna_kiss|Step closer, witcher. Let me savor this quiet moment with you.
+2118800211|        |ar_prompt_orianna_intimate|[C] Stay alone with Orianna
+2118800212|        |ar_line_orianna_intimate_invite|I have cultivated appetites far older than you, witcher. Indulge me somewhere private.
 2118800213|        |ar_afterglow_orianna|Exquisite... A taste I could easily grow fond of.
 2118800214|        |ar_line_orianna_gift_request|Do you possess a vintage with enough depth to intrigue my palate?
 2118800215|        |ar_thanks_orianna|Exquisite. You continue to exceed my expectations.
@@ -234,3 +234,23 @@
 2118800232|        |ar_afterglow_walk_margarita|A rare touch of comfort on an endless road.
 2118800233|        |ar_afterglow_walk_orianna|That taste lingers delightfully. Let's see what else the road brings.
 2118800234|        |ar_afterglow_walk_ciri|Good to walk beside you, Geralt. Like old times.
+2118800235|        |option_mcm_ar_opt_cirimode|Ciri: MCME Adult Mode (Off = Lore-Friendly family bond)
+2118800236|        |option_MCM_AR_CiriMode|Ciri: MCME Adult Mode (Off = Lore-Friendly family bond)
+2118800237|        |ar_prompt_ciri_kiss|[C] Kiss Ciri
+2118800238|        |ar_line_ciri_kiss|Finally found your nerve, witcher?
+2118800239|        |ar_prompt_ciri_intimate|[C] Stay alone with Ciri
+2118800240|        |ar_line_ciri_intimate_invite|The world can wait, Geralt. Just this once.
+2118800241|        |ar_prompt_philippa_intimate|[C] Stay alone with Philippa
+2118800242|        |ar_line_philippa_intimate_invite|I don't make offers twice, witcher.
+2118800243|        |ar_prompt_ves_intimate|[C] Stay alone with Ves
+2118800244|        |ar_line_ves_intimate_invite|Off duty at last. Don't keep a soldier waiting.
+2118800245|        |ar_prompt_salma_intimate|[C] Stay alone with Salma
+2118800246|        |ar_line_salma_intimate_invite|Mmm... I can hear your pulse from here. Come.
+2118800247|        |ar_prompt_priscilla_intimate|[C] Stay alone with Priscilla
+2118800248|        |ar_line_priscilla_intimate_invite|Tonight's verse needs no audience. Just us.
+2118800249|        |ar_prompt_edna_intimate|[C] Stay alone with Edna
+2118800250|        |ar_line_edna_intimate_invite|My sister would die of envy. Come, witcher.
+2118800251|        |ar_prompt_fringilla_intimate|[C] Stay alone with Fringilla
+2118800252|        |ar_line_fringilla_intimate_invite|Even a Nilfgaardian needs warmth. Somewhere private, Geralt.
+2118800253|        |ar_prompt_margarita_intimate|[C] Stay alone with Margarita
+2118800254|        |ar_line_margarita_intimate_invite|Aretuza taught me discipline, not abstinence. Come.

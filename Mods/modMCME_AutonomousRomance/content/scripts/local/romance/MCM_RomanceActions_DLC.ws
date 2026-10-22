@@ -5,9 +5,7 @@
 /* pliku – można je wyłączyć bez wpływu na Yen/Triss/Keira/Shani           */
 /*****************************************************************************/
 
-// ---------------------------------------------------------------------------
 // Rejestracja DLC akcji – rozszerzenie registry przez @wrapMethod
-// ---------------------------------------------------------------------------
 
 @wrapMethod(MCM_RomanceActionRegistry)
 function InitDefaultActions()
@@ -17,14 +15,12 @@ function InitDefaultActions()
 	// ===== ANNA HENRIETTA =====
 	RegisterAction(new MCM_AR_Anarietta_OneLinerFlirt   in this);
 	RegisterAction(new MCM_AR_Anarietta_PostCombatPride in this);
-	RegisterAction(new MCM_AR_Anarietta_NightRoyal      in this);
 	RegisterAction(new MCM_AR_Anarietta_IntimateInvite  in this);
 	RegisterAction(new MCM_AR_Anarietta_GiftRequest     in this);
 
 	// ===== VIVIENNE =====
 	RegisterAction(new MCM_AR_Vivienne_OneLinerFlirt    in this);
 	RegisterAction(new MCM_AR_Vivienne_CampfireMystery  in this);
-	RegisterAction(new MCM_AR_Vivienne_NightInvitation  in this);
 	RegisterAction(new MCM_AR_Vivienne_IntimateInvite   in this);
 	RegisterAction(new MCM_AR_Vivienne_GiftRequest      in this);
 
@@ -46,48 +42,55 @@ function InitDefaultActions()
 	RegisterAction(new MCM_AR_Philippa_OneLinerFlirt   in this);
 	RegisterAction(new MCM_AR_Philippa_Care            in this);
 	RegisterAction(new MCM_AR_Philippa_Kiss            in this);
+	RegisterAction(new MCM_AR_Philippa_IntimateInvite  in this);
 	RegisterAction(new MCM_AR_Philippa_GiftRequest     in this);
 
 	// ===== VES =====
 	RegisterAction(new MCM_AR_Ves_OneLinerFlirt        in this);
 	RegisterAction(new MCM_AR_Ves_Campfire             in this);
 	RegisterAction(new MCM_AR_Ves_Kiss                 in this);
+	RegisterAction(new MCM_AR_Ves_IntimateInvite       in this);
 	RegisterAction(new MCM_AR_Ves_GiftRequest          in this);
 
 	// ===== SALMA =====
 	RegisterAction(new MCM_AR_Salma_OneLinerFlirt      in this);
 	RegisterAction(new MCM_AR_Salma_Allure             in this);
 	RegisterAction(new MCM_AR_Salma_Kiss               in this);
+	RegisterAction(new MCM_AR_Salma_IntimateInvite     in this);
 	RegisterAction(new MCM_AR_Salma_GiftRequest        in this);
 
 	// ===== PRISCILLA =====
 	RegisterAction(new MCM_AR_Priscilla_OneLinerFlirt  in this);
 	RegisterAction(new MCM_AR_Priscilla_Care           in this);
 	RegisterAction(new MCM_AR_Priscilla_Kiss           in this);
+	RegisterAction(new MCM_AR_Priscilla_IntimateInvite in this);
 	RegisterAction(new MCM_AR_Priscilla_GiftRequest    in this);
 
 	// ===== EDNA VAR ATTRE =====
 	RegisterAction(new MCM_AR_Edna_OneLinerFlirt       in this);
 	RegisterAction(new MCM_AR_Edna_Care                in this);
 	RegisterAction(new MCM_AR_Edna_Kiss                in this);
+	RegisterAction(new MCM_AR_Edna_IntimateInvite      in this);
 	RegisterAction(new MCM_AR_Edna_GiftRequest         in this);
 
 	// ===== FRINGILLA VIGO =====
 	RegisterAction(new MCM_AR_Fringilla_OneLinerFlirt  in this);
 	RegisterAction(new MCM_AR_Fringilla_Care           in this);
 	RegisterAction(new MCM_AR_Fringilla_Kiss           in this);
+	RegisterAction(new MCM_AR_Fringilla_IntimateInvite in this);
 	RegisterAction(new MCM_AR_Fringilla_GiftRequest    in this);
 
 	// ===== MARGARITA =====
 	RegisterAction(new MCM_AR_Margarita_OneLinerFlirt  in this);
 	RegisterAction(new MCM_AR_Margarita_Care           in this);
 	RegisterAction(new MCM_AR_Margarita_Kiss           in this);
+	RegisterAction(new MCM_AR_Margarita_IntimateInvite in this);
 	RegisterAction(new MCM_AR_Margarita_GiftRequest    in this);
 
 	// ===== ORIANNA =====
 	RegisterAction(new MCM_AR_Orianna_OneLinerFlirt    in this);
 	RegisterAction(new MCM_AR_Orianna_Care             in this);
-	RegisterAction(new MCM_AR_Orianna_Kiss             in this);
+	RegisterAction(new MCM_AR_Orianna_IntimateInvite   in this);
 	RegisterAction(new MCM_AR_Orianna_GiftRequest      in this);
 
 	// ===== TAWERNA (Tier 1, ambient) =====
@@ -101,9 +104,7 @@ function InitDefaultActions()
 	RegisterAction(new MCM_AR_Cerys_NightFiller         in this);
 }
 
-//=============================================================================
-//  ANNA HENRIETTA (Anarietta) – Tier 1: Królewskie docinki – ambient
-//=============================================================================
+//  ANNA HENRIETTA – Tier 1: Krolewskie docinki – ambient
 
 class MCM_AR_Anarietta_OneLinerFlirt extends MCM_RomanceInteraction
 {
@@ -133,9 +134,7 @@ class MCM_AR_Anarietta_OneLinerFlirt extends MCM_RomanceInteraction
 	}
 }
 
-//=============================================================================
 //  ANNA HENRIETTA – Tier 2: Po walce (królewska duma) – soft approach
-//=============================================================================
 
 class MCM_AR_Anarietta_PostCombatPride extends MCM_RomanceInteraction
 {
@@ -146,7 +145,7 @@ class MCM_AR_Anarietta_PostCombatPride extends MCM_RomanceInteraction
 	default triggerType     = RTT_Gesture;
 	default weight          = 8;
 	default barkMimic       = 'concern';
-	// ID 1199342: "...How can you be so damned calm?" – idealne po walce
+	// ID 1199342: "...How can you be so damned calm?" - jej glos
 	default lineId          = 1199342;
 	default lineText        = "There's something I'd like to know... How can you be so damned calm?";
 	default lineKey         = "ar_line_anarietta_postcombat_pride";
@@ -174,67 +173,9 @@ class MCM_AR_Anarietta_PostCombatPride extends MCM_RomanceInteraction
 	}
 }
 
-//=============================================================================
 //  ANNA HENRIETTA – Tier 3: Nocna propozycja królewska (propozycja -> scena)
-//=============================================================================
 
-class MCM_AR_Anarietta_NightRoyal extends MCM_RomanceInteraction
-{
-	default id              = 'anarietta_night_royal';
-	default targetNpc       = 'anna_henrietta';
-	default minAffinity     = 60;
-	default cooldownSeconds = 2400.0;
-	default triggerType     = RTT_Prompt;
-	default weight          = 4;
-	default barkMimic       = 'flirt';
-	// ID 1192250: "Come, witcher." – jej głos, idealne zaproszenie
-	default lineId          = 1192250;
-	default lineText        = "Come, witcher.";
-	default lineKey         = "ar_line_anarietta_night_royal";
-
-	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
-	{
-		if (!ctx.isNight) return "not_night";
-		return "";
-	}
-
-	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
-	{
-		var consent : bool;
-		var ok      : bool;
-
-		SoftApproach(npc, player, 2.4);
-		PlayBark(npc);
-
-		if (MCM_AR_GetConfig().RequiresPlayerConsent())
-		{
-			consent = ShowConsentPrompt(AR_T("ar_prompt_anarietta_escort", "[C] Accompany the Duchess"), 10.0, npc);
-		}
-		else
-		{
-			consent = WaitForApproach(npc, player, 2.4, 8.0);
-		}
-
-		if (!consent)
-		{
-			EndSoft(npc);
-			if (MCM_AR_GetConfig().RequiresPlayerConsent())
-			{
-				MarkRejected();
-			}
-			return false;
-		}
-
-		HardStage(npc, player, 1.5);
-		ok = PlayKissScene(npc);
-		EndInteraction(npc, player);
-		return ok;
-	}
-}
-
-//=============================================================================
 //  ANNA HENRIETTA – Tier 4: Zaproszenie intymne przy "sweet spot"
-//=============================================================================
 
 class MCM_AR_Anarietta_IntimateInvite extends MCM_RomanceInteraction
 {
@@ -257,35 +198,27 @@ class MCM_AR_Anarietta_IntimateInvite extends MCM_RomanceInteraction
 
 	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
 	{
-		var consent : bool;
-		var ok      : bool;
+		var ok : bool;
 
 		SoftApproach(npc, player, 2.2);
 		PlayBark(npc);
 
-		// Tier 4 = scena intymna: zgoda ZAWSZE wymagana ([C]), niezaleznie
-		// od configu – autonomia konczy sie na propozycji, nie na scenie.
-		consent = ShowConsentPrompt(AR_T("ar_prompt_anarietta_intimate", "[C] Stay alone with the Duchess"), 10.0, npc);
-
-		if (!consent)
+		// Tier 4: scena intymna - zgoda gracza [C] zawsze wymagana.
+		ok = ApproachAndConsent(npc, player, 2.2, AR_T("ar_prompt_anarietta_intimate", "[C] Stay alone with the Duchess"), true);
+		if (!ok)
 		{
-			EndSoft(npc);
-			MarkRejected();
 			return false;
 		}
 
 		HardStage(npc, player, 1.5);
-		// Anarietta nie ma rejestracji specialData.naughtyScene –
-		// PlayIntimateScene użyje ścieżki manualnej (naughty\anarietta).
+		// Anarietta bez specialData.naughtyScene - sciezka manualna (naughty\anarietta).
 		ok = PlayIntimateScene(npc);
 		EndInteraction(npc, player);
 		return ok;
 	}
 }
 
-//=============================================================================
 //  VIVIENNE – Tier 1: Flirt z tajemnicą – ambient
-//=============================================================================
 
 class MCM_AR_Vivienne_OneLinerFlirt extends MCM_RomanceInteraction
 {
@@ -296,8 +229,7 @@ class MCM_AR_Vivienne_OneLinerFlirt extends MCM_RomanceInteraction
 	default triggerType     = RTT_OneLiner;
 	default weight          = 10;
 	default barkMimic       = 'flirt';
-	// 1208517 byla odpowiedzia na niezaskladane pytanie o perfumy –
-	// zamieniona na voiceset + wlasny napis.
+	// 1208517 byla odpowiedzia na inne pytanie - voiceset + wlasny napis.
 	default barkVoiceset    = 'greeting_geralt';
 	default lineText        = "A fine day for a ride, don't you think?";
 	default lineKey         = "ar_line_vivienne_oneliner_flirt";
@@ -316,9 +248,7 @@ class MCM_AR_Vivienne_OneLinerFlirt extends MCM_RomanceInteraction
 	}
 }
 
-//=============================================================================
 //  VIVIENNE – Tier 2: Przy ognisku (tajemnica Vivienne) – soft approach
-//=============================================================================
 
 class MCM_AR_Vivienne_CampfireMystery extends MCM_RomanceInteraction
 {
@@ -329,7 +259,7 @@ class MCM_AR_Vivienne_CampfireMystery extends MCM_RomanceInteraction
 	default triggerType     = RTT_Gesture;
 	default weight          = 7;
 	default barkMimic       = 'flirt';
-	// ID 1197401: "Come." – lapidarne, ale w jej glosie i pasuje przy ognisku
+	// ID 1197401: "Come." - jej glos
 	default lineId          = 1197401;
 	default lineText        = "Come.";
 	default lineKey         = "ar_line_vivienne_campfire_mystery";
@@ -356,66 +286,9 @@ class MCM_AR_Vivienne_CampfireMystery extends MCM_RomanceInteraction
 	}
 }
 
-//=============================================================================
 //  VIVIENNE – Tier 3: Nocne zaproszenie (propozycja -> scena)
-//=============================================================================
 
-class MCM_AR_Vivienne_NightInvitation extends MCM_RomanceInteraction
-{
-	default id              = 'vivienne_night_invitation';
-	default targetNpc       = 'sq701_vivienne';
-	default minAffinity     = 60;
-	default cooldownSeconds = 2400.0;
-	default triggerType     = RTT_Prompt;
-	default weight          = 4;
-	default barkMimic       = 'flirt';
-	default barkVoiceset    = 'greeting_geralt';
-	default lineText        = "Will you walk with me, Geralt?";
-	default lineKey         = "ar_line_vivienne_night_invitation";
-
-	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
-	{
-		if (!ctx.isNight) return "not_night";
-		return "";
-	}
-
-	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
-	{
-		var consent : bool;
-		var ok      : bool;
-
-		SoftApproach(npc, player, 2.4);
-		PlayBark(npc);
-
-		if (MCM_AR_GetConfig().RequiresPlayerConsent())
-		{
-			consent = ShowConsentPrompt(AR_T("ar_prompt_vivienne_stay", "[C] Stay with Vivienne"), 10.0, npc);
-		}
-		else
-		{
-			consent = WaitForApproach(npc, player, 2.4, 8.0);
-		}
-
-		if (!consent)
-		{
-			EndSoft(npc);
-			if (MCM_AR_GetConfig().RequiresPlayerConsent())
-			{
-				MarkRejected();
-			}
-			return false;
-		}
-
-		HardStage(npc, player, 1.5);
-		ok = PlayKissScene(npc);
-		EndInteraction(npc, player);
-		return ok;
-	}
-}
-
-//=============================================================================
 //  VIVIENNE – Tier 4: Zaproszenie intymne przy "sweet spot"
-//=============================================================================
 
 class MCM_AR_Vivienne_IntimateInvite extends MCM_RomanceInteraction
 {
@@ -438,35 +311,27 @@ class MCM_AR_Vivienne_IntimateInvite extends MCM_RomanceInteraction
 
 	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
 	{
-		var consent : bool;
-		var ok      : bool;
+		var ok : bool;
 
 		SoftApproach(npc, player, 2.2);
 		PlayBark(npc);
 
-		// Tier 4 = scena intymna: zgoda ZAWSZE wymagana ([C]), niezaleznie
-		// od configu – autonomia konczy sie na propozycji, nie na scenie.
-		consent = ShowConsentPrompt(AR_T("ar_prompt_vivienne_intimate", "[C] Stay alone with Vivienne"), 10.0, npc);
-
-		if (!consent)
+		// Tier 4: scena intymna - zgoda gracza [C] zawsze wymagana.
+		ok = ApproachAndConsent(npc, player, 2.2, AR_T("ar_prompt_vivienne_intimate", "[C] Stay alone with Vivienne"), true);
+		if (!ok)
 		{
-			EndSoft(npc);
-			MarkRejected();
 			return false;
 		}
 
 		HardStage(npc, player, 1.5);
-		// Vivienne bez rejestracji specialData.naughtyScene – sciezka
-		// manualna: naughty\vivienne\anywhere.w2scene (forma ludzka).
+		// Vivienne bez specialData.naughtyScene - sciezka manualna (forma ludzka).
 		ok = PlayIntimateScene(npc);
 		EndInteraction(npc, player);
 		return ok;
 	}
 }
 
-//=============================================================================
 //  CERYS – Tier 1: Bezczelny flirt à la Skellige – ambient
-//=============================================================================
 
 class MCM_AR_Cerys_OneLinerFlirt extends MCM_RomanceInteraction
 {
@@ -477,7 +342,7 @@ class MCM_AR_Cerys_OneLinerFlirt extends MCM_RomanceInteraction
 	default triggerType     = RTT_OneLiner;
 	default weight          = 10;
 	default barkMimic       = 'flirt';
-	// ID 500732: "Show me what you've got, monster slayer!" – w 100% Cerys
+	// ID 500732: "Show me what you've got, monster slayer!" - jej glos
 	default lineId          = 500732;
 	default lineText        = "Show me what you've got, monster slayer!";
 	default lineKey         = "ar_line_cerys_oneliner_flirt";
@@ -496,9 +361,7 @@ class MCM_AR_Cerys_OneLinerFlirt extends MCM_RomanceInteraction
 	}
 }
 
-//=============================================================================
 //  CERYS – Tier 2: Po walce (Skellige honor) – soft approach
-//=============================================================================
 
 class MCM_AR_Cerys_PostCombatSkellige extends MCM_RomanceInteraction
 {
@@ -509,8 +372,7 @@ class MCM_AR_Cerys_PostCombatSkellige extends MCM_RomanceInteraction
 	default triggerType     = RTT_Gesture;
 	default weight          = 8;
 	default barkMimic       = 'concern';
-	// 1000394 bylo o koronacji ("same lass I was, save for the title") –
-	// nie o walce. Zamienione na voiceset + wlasny napis.
+	// 1000394 bylo o koronacji, nie o walce - voiceset + wlasny napis.
 	default barkVoiceset    = 'greeting_geralt';
 	default lineText        = "Still standing? Good. Skellige needs no widows.";
 	default lineKey         = "ar_line_cerys_postcombat_skellige";
@@ -538,20 +400,19 @@ class MCM_AR_Cerys_PostCombatSkellige extends MCM_RomanceInteraction
 	}
 }
 
-//=============================================================================
 //  CERYS – Tier 3: Nocne zaproszenie po skelligeańsku (propozycja -> scena)
-//=============================================================================
 
 class MCM_AR_Cerys_NightInvitation extends MCM_RomanceInteraction
 {
 	default id              = 'cerys_night_invitation';
+	default usesAutonomousKiss = true;
 	default targetNpc       = 'becca';
 	default minAffinity     = 60;
 	default cooldownSeconds = 2400.0;
 	default triggerType     = RTT_Prompt;
 	default weight          = 4;
 	default barkMimic       = 'flirt';
-	// ID 429005: "Geralt! Come! Think I've got an idea!" – energiczna Cerys
+	// ID 429005: "Geralt! Come! Think I've got an idea!" - jej glos
 	default lineId          = 429005;
 	default lineText        = "Geralt! Come! Think I've got an idea!";
 	default lineKey         = "ar_line_cerys_night_invitation";
@@ -564,28 +425,14 @@ class MCM_AR_Cerys_NightInvitation extends MCM_RomanceInteraction
 
 	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
 	{
-		var consent : bool;
-		var ok      : bool;
+		var ok : bool;
 
 		SoftApproach(npc, player, 2.4);
 		PlayBark(npc);
 
-		if (MCM_AR_GetConfig().RequiresPlayerConsent())
+		ok = ApproachAndConsent(npc, player, 2.4, AR_T("ar_prompt_cerys_stay", "[C] Stay with Cerys"));
+		if (!ok)
 		{
-			consent = ShowConsentPrompt(AR_T("ar_prompt_cerys_stay", "[C] Stay with Cerys"), 10.0, npc);
-		}
-		else
-		{
-			consent = WaitForApproach(npc, player, 2.4, 8.0);
-		}
-
-		if (!consent)
-		{
-			EndSoft(npc);
-			if (MCM_AR_GetConfig().RequiresPlayerConsent())
-			{
-				MarkRejected();
-			}
 			return false;
 		}
 
@@ -596,9 +443,7 @@ class MCM_AR_Cerys_NightInvitation extends MCM_RomanceInteraction
 	}
 }
 
-//=============================================================================
 //  CERYS – Tier 4: Zaproszenie intymne przy "sweet spot"
-//=============================================================================
 
 class MCM_AR_Cerys_IntimateInvite extends MCM_RomanceInteraction
 {
@@ -621,36 +466,27 @@ class MCM_AR_Cerys_IntimateInvite extends MCM_RomanceInteraction
 
 	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
 	{
-		var consent : bool;
-		var ok      : bool;
+		var ok : bool;
 
 		SoftApproach(npc, player, 2.2);
 		PlayBark(npc);
 
-		// Tier 4 = scena intymna: zgoda ZAWSZE wymagana ([C]), niezaleznie
-		// od configu – autonomia konczy sie na propozycji, nie na scenie.
-		consent = ShowConsentPrompt(AR_T("ar_prompt_cerys_intimate", "[C] Stay alone with Cerys"), 10.0, npc);
-
-		if (!consent)
+		// Tier 4: scena intymna - zgoda gracza [C] zawsze wymagana.
+		ok = ApproachAndConsent(npc, player, 2.2, AR_T("ar_prompt_cerys_intimate", "[C] Stay alone with Cerys"), true);
+		if (!ok)
 		{
-			EndSoft(npc);
-			MarkRejected();
 			return false;
 		}
 
 		HardStage(npc, player, 1.5);
-		// Cerys MA rejestracje specialData.naughtyScene (naughty\cerys) –
-		// PlayIntimateScene pojdzie pełnym pipeline MCME PreNaughtyWith.
+		// Cerys MA specialData.naughtyScene (naughty\cerys) - pelny pipeline PreNaughtyWith.
 		ok = PlayIntimateScene(npc);
 		EndInteraction(npc, player);
 		return ok;
 	}
 }
 
-//=============================================================================
-//  GIFT REQUESTS (Kierunek C1) – Anna Henrietta, Vivienne, Cerys,
-//                               Philippa, Syanna, Salma, Ves
-//=============================================================================
+//  GIFT REQUESTS – Anna Henrietta, Vivienne, Cerys, Philippa, Syanna, Salma, Ves
 
 class MCM_AR_Anarietta_GiftRequest extends MCM_AR_GiftRequest_Base
 {
@@ -807,7 +643,7 @@ class MCM_AR_Anarietta_TavernDrink extends MCM_RomanceInteraction
 
 	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
 	{
-		npc.EnableDynamicLookAt(player, 6.0);
+		npc.EnableDynamicLookAt(player, 10.0);
 		PlayDrinkingAnimation(npc);
 		PlayBark(npc);
 		return true;
@@ -834,7 +670,7 @@ class MCM_AR_Vivienne_TavernDrink extends MCM_RomanceInteraction
 
 	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
 	{
-		npc.EnableDynamicLookAt(player, 6.0);
+		npc.EnableDynamicLookAt(player, 10.0);
 		PlayDrinkingAnimation(npc);
 		PlayBark(npc);
 		return true;
@@ -861,7 +697,7 @@ class MCM_AR_Cerys_TavernDrink extends MCM_RomanceInteraction
 
 	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
 	{
-		npc.EnableDynamicLookAt(player, 6.0);
+		npc.EnableDynamicLookAt(player, 10.0);
 		PlayDrinkingAnimation(npc);
 		PlayBark(npc);
 		return true;
@@ -951,9 +787,7 @@ class MCM_AR_Cerys_NightFiller extends MCM_RomanceInteraction
 	}
 }
 
-//=============================================================================
-//  SYANNA (Syanna) – Tier 1..4 (Full Core CDPR Nude Romance)
-//=============================================================================
+//  SYANNA – Tier 1..4 (pelna scena CDPR)
 
 class MCM_AR_Syanna_OneLinerFlirt extends MCM_RomanceInteraction
 {
@@ -1019,6 +853,7 @@ class MCM_AR_Syanna_PostCombat extends MCM_RomanceInteraction
 class MCM_AR_Syanna_Kiss extends MCM_RomanceInteraction
 {
 	default id              = 'syanna_kiss';
+	default usesAutonomousKiss = true;
 	default targetNpc       = 'syanna';
 	default minAffinity     = 50;
 	default cooldownSeconds = 1800.0;
@@ -1030,28 +865,14 @@ class MCM_AR_Syanna_Kiss extends MCM_RomanceInteraction
 
 	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
 	{
-		var consent : bool;
-		var ok      : bool;
+		var ok : bool;
 
 		SoftApproach(npc, player, 2.4);
 		PlayBark(npc);
 
-		if (MCM_AR_GetConfig().RequiresPlayerConsent())
+		ok = ApproachAndConsent(npc, player, 2.4, AR_T("ar_prompt_syanna_kiss", "[C] Kiss Syanna"));
+		if (!ok)
 		{
-			consent = ShowConsentPrompt(AR_T("ar_prompt_syanna_kiss", "[C] Kiss Syanna"), 10.0, npc);
-		}
-		else
-		{
-			consent = WaitForApproach(npc, player, 2.4, 8.0);
-		}
-
-		if (!consent)
-		{
-			EndSoft(npc);
-			if (MCM_AR_GetConfig().RequiresPlayerConsent())
-			{
-				MarkRejected();
-			}
 			return false;
 		}
 
@@ -1082,18 +903,15 @@ class MCM_AR_Syanna_IntimateInvite extends MCM_RomanceInteraction
 
 	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
 	{
-		var consent : bool;
-		var ok      : bool;
+		var ok : bool;
 
 		SoftApproach(npc, player, 2.2);
 		PlayBark(npc);
 
-		consent = ShowConsentPrompt(AR_T("ar_prompt_syanna_intimate", "[C] Stay alone with Syanna"), 10.0, npc);
-
-		if (!consent)
+		// Tier 4: scena intymna - zgoda gracza [C] zawsze wymagana.
+		ok = ApproachAndConsent(npc, player, 2.2, AR_T("ar_prompt_syanna_intimate", "[C] Stay alone with Syanna"), true);
+		if (!ok)
 		{
-			EndSoft(npc);
-			MarkRejected();
 			return false;
 		}
 
@@ -1104,9 +922,7 @@ class MCM_AR_Syanna_IntimateInvite extends MCM_RomanceInteraction
 	}
 }
 
-//=============================================================================
-//  PHILIPPA EILHART – Tier 1..3
-//=============================================================================
+//  PHILIPPA EILHART – Tier 1..4
 
 class MCM_AR_Philippa_OneLinerFlirt extends MCM_RomanceInteraction
 {
@@ -1171,6 +987,7 @@ class MCM_AR_Philippa_Care extends MCM_RomanceInteraction
 class MCM_AR_Philippa_Kiss extends MCM_RomanceInteraction
 {
 	default id              = 'philippa_kiss';
+	default usesAutonomousKiss = true;
 	default targetNpc       = 'philippa_eilhart';
 	default minAffinity     = 50;
 	default cooldownSeconds = 1800.0;
@@ -1182,28 +999,14 @@ class MCM_AR_Philippa_Kiss extends MCM_RomanceInteraction
 
 	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
 	{
-		var consent : bool;
-		var ok      : bool;
+		var ok : bool;
 
 		SoftApproach(npc, player, 2.4);
 		PlayBark(npc);
 
-		if (MCM_AR_GetConfig().RequiresPlayerConsent())
+		ok = ApproachAndConsent(npc, player, 2.4, AR_T("ar_prompt_philippa_kiss", "[C] Kiss Philippa"));
+		if (!ok)
 		{
-			consent = ShowConsentPrompt(AR_T("ar_prompt_philippa_kiss", "[C] Kiss Philippa"), 10.0, npc);
-		}
-		else
-		{
-			consent = WaitForApproach(npc, player, 2.4, 8.0);
-		}
-
-		if (!consent)
-		{
-			EndSoft(npc);
-			if (MCM_AR_GetConfig().RequiresPlayerConsent())
-			{
-				MarkRejected();
-			}
 			return false;
 		}
 
@@ -1214,9 +1017,45 @@ class MCM_AR_Philippa_Kiss extends MCM_RomanceInteraction
 	}
 }
 
-//=============================================================================
-//  VES – Tier 1..3
-//=============================================================================
+class MCM_AR_Philippa_IntimateInvite extends MCM_RomanceInteraction
+{
+	default id              = 'philippa_intimate_invite';
+	default targetNpc       = 'philippa_eilhart';
+	default minAffinity     = 80;
+	default cooldownSeconds = 3600.0;
+	default triggerType     = RTT_Scene;
+	default weight          = 3;
+	default barkMimic       = 'flirt';
+	default lineText        = "I don't make offers twice, witcher.";
+	default lineKey         = "ar_line_philippa_intimate_invite";
+
+	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
+	{
+		if (!IsOnNaughtyPoint()) return "no_naughty_point";
+		return IntimateSceneBlockReason(npc);
+	}
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		var ok : bool;
+
+		SoftApproach(npc, player, 2.2);
+		PlayBark(npc);
+
+		ok = ApproachAndConsent(npc, player, 2.2, AR_T("ar_prompt_philippa_intimate", "[C] Stay alone with Philippa"), true);
+		if (!ok)
+		{
+			return false;
+		}
+
+		HardStage(npc, player, 1.5);
+		ok = PlayIntimateScene(npc);
+		EndInteraction(npc, player);
+		return ok;
+	}
+}
+
+//  VES – Tier 1..4
 
 class MCM_AR_Ves_OneLinerFlirt extends MCM_RomanceInteraction
 {
@@ -1281,6 +1120,7 @@ class MCM_AR_Ves_Campfire extends MCM_RomanceInteraction
 class MCM_AR_Ves_Kiss extends MCM_RomanceInteraction
 {
 	default id              = 'ves_kiss';
+	default usesAutonomousKiss = true;
 	default targetNpc       = 'ves';
 	default minAffinity     = 50;
 	default cooldownSeconds = 1800.0;
@@ -1292,28 +1132,14 @@ class MCM_AR_Ves_Kiss extends MCM_RomanceInteraction
 
 	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
 	{
-		var consent : bool;
-		var ok      : bool;
+		var ok : bool;
 
 		SoftApproach(npc, player, 2.4);
 		PlayBark(npc);
 
-		if (MCM_AR_GetConfig().RequiresPlayerConsent())
+		ok = ApproachAndConsent(npc, player, 2.4, AR_T("ar_prompt_ves_kiss", "[C] Kiss Ves"));
+		if (!ok)
 		{
-			consent = ShowConsentPrompt(AR_T("ar_prompt_ves_kiss", "[C] Kiss Ves"), 10.0, npc);
-		}
-		else
-		{
-			consent = WaitForApproach(npc, player, 2.4, 8.0);
-		}
-
-		if (!consent)
-		{
-			EndSoft(npc);
-			if (MCM_AR_GetConfig().RequiresPlayerConsent())
-			{
-				MarkRejected();
-			}
 			return false;
 		}
 
@@ -1324,9 +1150,45 @@ class MCM_AR_Ves_Kiss extends MCM_RomanceInteraction
 	}
 }
 
-//=============================================================================
-//  SALMA (Succubus) – Tier 1..3
-//=============================================================================
+class MCM_AR_Ves_IntimateInvite extends MCM_RomanceInteraction
+{
+	default id              = 'ves_intimate_invite';
+	default targetNpc       = 'ves';
+	default minAffinity     = 80;
+	default cooldownSeconds = 3600.0;
+	default triggerType     = RTT_Scene;
+	default weight          = 3;
+	default barkMimic       = 'flirt';
+	default lineText        = "Off duty at last. Don't keep a soldier waiting.";
+	default lineKey         = "ar_line_ves_intimate_invite";
+
+	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
+	{
+		if (!IsOnNaughtyPoint()) return "no_naughty_point";
+		return IntimateSceneBlockReason(npc);
+	}
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		var ok : bool;
+
+		SoftApproach(npc, player, 2.2);
+		PlayBark(npc);
+
+		ok = ApproachAndConsent(npc, player, 2.2, AR_T("ar_prompt_ves_intimate", "[C] Stay alone with Ves"), true);
+		if (!ok)
+		{
+			return false;
+		}
+
+		HardStage(npc, player, 1.5);
+		ok = PlayIntimateScene(npc);
+		EndInteraction(npc, player);
+		return ok;
+	}
+}
+
+//  SALMA (Succubus) – Tier 1..4
 
 class MCM_AR_Salma_OneLinerFlirt extends MCM_RomanceInteraction
 {
@@ -1385,6 +1247,7 @@ class MCM_AR_Salma_Allure extends MCM_RomanceInteraction
 class MCM_AR_Salma_Kiss extends MCM_RomanceInteraction
 {
 	default id              = 'salma_kiss';
+	default usesAutonomousKiss = true;
 	default targetNpc       = 'mh303_succbus_v2';
 	default minAffinity     = 50;
 	default cooldownSeconds = 1800.0;
@@ -1396,28 +1259,14 @@ class MCM_AR_Salma_Kiss extends MCM_RomanceInteraction
 
 	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
 	{
-		var consent : bool;
-		var ok      : bool;
+		var ok : bool;
 
 		SoftApproach(npc, player, 2.4);
 		PlayBark(npc);
 
-		if (MCM_AR_GetConfig().RequiresPlayerConsent())
+		ok = ApproachAndConsent(npc, player, 2.4, AR_T("ar_prompt_salma_kiss", "[C] Kiss Salma"));
+		if (!ok)
 		{
-			consent = ShowConsentPrompt(AR_T("ar_prompt_salma_kiss", "[C] Kiss Salma"), 10.0, npc);
-		}
-		else
-		{
-			consent = WaitForApproach(npc, player, 2.4, 8.0);
-		}
-
-		if (!consent)
-		{
-			EndSoft(npc);
-			if (MCM_AR_GetConfig().RequiresPlayerConsent())
-			{
-				MarkRejected();
-			}
 			return false;
 		}
 
@@ -1428,14 +1277,50 @@ class MCM_AR_Salma_Kiss extends MCM_RomanceInteraction
 	}
 }
 
-//=============================================================================
-//  PRISCILLA – Tier 1..3 + Gift
-//=============================================================================
+class MCM_AR_Salma_IntimateInvite extends MCM_RomanceInteraction
+{
+	default id              = 'salma_intimate_invite';
+	default targetNpc       = 'mh303_succbus_v2';
+	default minAffinity     = 80;
+	default cooldownSeconds = 3600.0;
+	default triggerType     = RTT_Scene;
+	default weight          = 3;
+	default barkMimic       = 'flirt';
+	default lineText        = "Mmm... I can hear your pulse from here. Come.";
+	default lineKey         = "ar_line_salma_intimate_invite";
+
+	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
+	{
+		if (!IsOnNaughtyPoint()) return "no_naughty_point";
+		return IntimateSceneBlockReason(npc);
+	}
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		var ok : bool;
+
+		SoftApproach(npc, player, 2.2);
+		PlayBark(npc);
+
+		ok = ApproachAndConsent(npc, player, 2.2, AR_T("ar_prompt_salma_intimate", "[C] Stay alone with Salma"), true);
+		if (!ok)
+		{
+			return false;
+		}
+
+		HardStage(npc, player, 1.5);
+		ok = PlayIntimateScene(npc);
+		EndInteraction(npc, player);
+		return ok;
+	}
+}
+
+//  PRISCILLA – Tier 1..4 + Gift
 
 class MCM_AR_Priscilla_OneLinerFlirt extends MCM_RomanceInteraction
 {
 	default id              = 'priscilla_oneliner_flirt';
-	default targetNpc       = 'pryscilla';
+	default targetNpc       = 'priscilla';
 	default minAffinity     = 0;
 	default cooldownSeconds = 300.0;
 	default triggerType     = RTT_OneLiner;
@@ -1461,7 +1346,7 @@ class MCM_AR_Priscilla_OneLinerFlirt extends MCM_RomanceInteraction
 class MCM_AR_Priscilla_Care extends MCM_RomanceInteraction
 {
 	default id              = 'priscilla_care';
-	default targetNpc       = 'pryscilla';
+	default targetNpc       = 'priscilla';
 	default minAffinity     = 30;
 	default cooldownSeconds = 600.0;
 	default triggerType     = RTT_Gesture;
@@ -1489,7 +1374,8 @@ class MCM_AR_Priscilla_Care extends MCM_RomanceInteraction
 class MCM_AR_Priscilla_Kiss extends MCM_RomanceInteraction
 {
 	default id              = 'priscilla_kiss';
-	default targetNpc       = 'pryscilla';
+	default usesAutonomousKiss = true;
+	default targetNpc       = 'priscilla';
 	default minAffinity     = 50;
 	default cooldownSeconds = 1800.0;
 	default triggerType     = RTT_Prompt;
@@ -1500,28 +1386,14 @@ class MCM_AR_Priscilla_Kiss extends MCM_RomanceInteraction
 
 	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
 	{
-		var consent : bool;
-		var ok      : bool;
+		var ok : bool;
 
 		SoftApproach(npc, player, 2.4);
 		PlayBark(npc);
 
-		if (MCM_AR_GetConfig().RequiresPlayerConsent())
+		ok = ApproachAndConsent(npc, player, 2.4, AR_T("ar_prompt_priscilla_kiss", "[C] Kiss Priscilla"));
+		if (!ok)
 		{
-			consent = ShowConsentPrompt(AR_T("ar_prompt_priscilla_kiss", "[C] Kiss Priscilla"), 10.0, npc);
-		}
-		else
-		{
-			consent = WaitForApproach(npc, player, 2.4, 8.0);
-		}
-
-		if (!consent)
-		{
-			EndSoft(npc);
-			if (MCM_AR_GetConfig().RequiresPlayerConsent())
-			{
-				MarkRejected();
-			}
 			return false;
 		}
 
@@ -1532,10 +1404,48 @@ class MCM_AR_Priscilla_Kiss extends MCM_RomanceInteraction
 	}
 }
 
+class MCM_AR_Priscilla_IntimateInvite extends MCM_RomanceInteraction
+{
+	default id              = 'priscilla_intimate_invite';
+	default targetNpc       = 'priscilla';
+	default minAffinity     = 80;
+	default cooldownSeconds = 3600.0;
+	default triggerType     = RTT_Scene;
+	default weight          = 3;
+	default barkMimic       = 'flirt';
+	default lineText        = "Tonight's verse needs no audience. Just us.";
+	default lineKey         = "ar_line_priscilla_intimate_invite";
+
+	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
+	{
+		if (!IsOnNaughtyPoint()) return "no_naughty_point";
+		return IntimateSceneBlockReason(npc);
+	}
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		var ok : bool;
+
+		SoftApproach(npc, player, 2.2);
+		PlayBark(npc);
+
+		ok = ApproachAndConsent(npc, player, 2.2, AR_T("ar_prompt_priscilla_intimate", "[C] Stay alone with Priscilla"), true);
+		if (!ok)
+		{
+			return false;
+		}
+
+		HardStage(npc, player, 1.5);
+		ok = PlayIntimateScene(npc);
+		EndInteraction(npc, player);
+		return ok;
+	}
+}
+
 class MCM_AR_Priscilla_GiftRequest extends MCM_AR_GiftRequest_Base
 {
 	default id              = 'priscilla_gift_request';
-	default targetNpc       = 'pryscilla';
+	default targetNpc       = 'priscilla';
 	default lineText        = "My throat grows dry from the road. Do you carry any fine wine, Geralt?";
 	default lineKey         = "ar_line_priscilla_gift_request";
 	default thanksLineText  = "Exquisite. My voice thanks you, Geralt.";
@@ -1551,9 +1461,7 @@ class MCM_AR_Priscilla_GiftRequest extends MCM_AR_GiftRequest_Base
 	}
 }
 
-//=============================================================================
-//  EDNA VAR ATTRE – Tier 1..3 + Gift
-//=============================================================================
+//  EDNA VAR ATTRE – Tier 1..4 + Gift
 
 class MCM_AR_Edna_OneLinerFlirt extends MCM_RomanceInteraction
 {
@@ -1612,6 +1520,7 @@ class MCM_AR_Edna_Care extends MCM_RomanceInteraction
 class MCM_AR_Edna_Kiss extends MCM_RomanceInteraction
 {
 	default id              = 'edna_kiss';
+	default usesAutonomousKiss = true;
 	default targetNpc       = 'edna_var_attre';
 	default minAffinity     = 50;
 	default cooldownSeconds = 1800.0;
@@ -1623,33 +1532,57 @@ class MCM_AR_Edna_Kiss extends MCM_RomanceInteraction
 
 	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
 	{
-		var consent : bool;
-		var ok      : bool;
+		var ok : bool;
 
 		SoftApproach(npc, player, 2.4);
 		PlayBark(npc);
 
-		if (MCM_AR_GetConfig().RequiresPlayerConsent())
+		ok = ApproachAndConsent(npc, player, 2.4, AR_T("ar_prompt_edna_kiss", "[C] Kiss Edna"));
+		if (!ok)
 		{
-			consent = ShowConsentPrompt(AR_T("ar_prompt_edna_kiss", "[C] Kiss Edna"), 10.0, npc);
-		}
-		else
-		{
-			consent = WaitForApproach(npc, player, 2.4, 8.0);
-		}
-
-		if (!consent)
-		{
-			EndSoft(npc);
-			if (MCM_AR_GetConfig().RequiresPlayerConsent())
-			{
-				MarkRejected();
-			}
 			return false;
 		}
 
 		HardStage(npc, player, 1.5);
 		ok = PlayKissScene(npc);
+		EndInteraction(npc, player);
+		return ok;
+	}
+}
+
+class MCM_AR_Edna_IntimateInvite extends MCM_RomanceInteraction
+{
+	default id              = 'edna_intimate_invite';
+	default targetNpc       = 'edna_var_attre';
+	default minAffinity     = 80;
+	default cooldownSeconds = 3600.0;
+	default triggerType     = RTT_Scene;
+	default weight          = 3;
+	default barkMimic       = 'flirt';
+	default lineText        = "My sister would die of envy. Come, witcher.";
+	default lineKey         = "ar_line_edna_intimate_invite";
+
+	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
+	{
+		if (!IsOnNaughtyPoint()) return "no_naughty_point";
+		return IntimateSceneBlockReason(npc);
+	}
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		var ok : bool;
+
+		SoftApproach(npc, player, 2.2);
+		PlayBark(npc);
+
+		ok = ApproachAndConsent(npc, player, 2.2, AR_T("ar_prompt_edna_intimate", "[C] Stay alone with Edna"), true);
+		if (!ok)
+		{
+			return false;
+		}
+
+		HardStage(npc, player, 1.5);
+		ok = PlayIntimateScene(npc);
 		EndInteraction(npc, player);
 		return ok;
 	}
@@ -1673,9 +1606,7 @@ class MCM_AR_Edna_GiftRequest extends MCM_AR_GiftRequest_Base
 	}
 }
 
-//=============================================================================
-//  FRINGILLA VIGO – Tier 1..3 + Gift
-//=============================================================================
+//  FRINGILLA VIGO – Tier 1..4 + Gift
 
 class MCM_AR_Fringilla_OneLinerFlirt extends MCM_RomanceInteraction
 {
@@ -1734,6 +1665,7 @@ class MCM_AR_Fringilla_Care extends MCM_RomanceInteraction
 class MCM_AR_Fringilla_Kiss extends MCM_RomanceInteraction
 {
 	default id              = 'fringilla_kiss';
+	default usesAutonomousKiss = true;
 	default targetNpc       = 'fringilla_vigo';
 	default minAffinity     = 50;
 	default cooldownSeconds = 1800.0;
@@ -1745,33 +1677,57 @@ class MCM_AR_Fringilla_Kiss extends MCM_RomanceInteraction
 
 	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
 	{
-		var consent : bool;
-		var ok      : bool;
+		var ok : bool;
 
 		SoftApproach(npc, player, 2.4);
 		PlayBark(npc);
 
-		if (MCM_AR_GetConfig().RequiresPlayerConsent())
+		ok = ApproachAndConsent(npc, player, 2.4, AR_T("ar_prompt_fringilla_kiss", "[C] Kiss Fringilla"));
+		if (!ok)
 		{
-			consent = ShowConsentPrompt(AR_T("ar_prompt_fringilla_kiss", "[C] Kiss Fringilla"), 10.0, npc);
-		}
-		else
-		{
-			consent = WaitForApproach(npc, player, 2.4, 8.0);
-		}
-
-		if (!consent)
-		{
-			EndSoft(npc);
-			if (MCM_AR_GetConfig().RequiresPlayerConsent())
-			{
-				MarkRejected();
-			}
 			return false;
 		}
 
 		HardStage(npc, player, 1.5);
 		ok = PlayKissScene(npc);
+		EndInteraction(npc, player);
+		return ok;
+	}
+}
+
+class MCM_AR_Fringilla_IntimateInvite extends MCM_RomanceInteraction
+{
+	default id              = 'fringilla_intimate_invite';
+	default targetNpc       = 'fringilla_vigo';
+	default minAffinity     = 80;
+	default cooldownSeconds = 3600.0;
+	default triggerType     = RTT_Scene;
+	default weight          = 3;
+	default barkMimic       = 'flirt';
+	default lineText        = "Even a Nilfgaardian needs warmth. Somewhere private, Geralt.";
+	default lineKey         = "ar_line_fringilla_intimate_invite";
+
+	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
+	{
+		if (!IsOnNaughtyPoint()) return "no_naughty_point";
+		return IntimateSceneBlockReason(npc);
+	}
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		var ok : bool;
+
+		SoftApproach(npc, player, 2.2);
+		PlayBark(npc);
+
+		ok = ApproachAndConsent(npc, player, 2.2, AR_T("ar_prompt_fringilla_intimate", "[C] Stay alone with Fringilla"), true);
+		if (!ok)
+		{
+			return false;
+		}
+
+		HardStage(npc, player, 1.5);
+		ok = PlayIntimateScene(npc);
 		EndInteraction(npc, player);
 		return ok;
 	}
@@ -1796,9 +1752,7 @@ class MCM_AR_Fringilla_GiftRequest extends MCM_AR_GiftRequest_Base
 	}
 }
 
-//=============================================================================
-//  MARGARITA LAUX-ANTILLE – Tier 1..3 + Gift
-//=============================================================================
+//  MARGARITA LAUX-ANTILLE – Tier 1..4 + Gift
 
 class MCM_AR_Margarita_OneLinerFlirt extends MCM_RomanceInteraction
 {
@@ -1857,6 +1811,7 @@ class MCM_AR_Margarita_Care extends MCM_RomanceInteraction
 class MCM_AR_Margarita_Kiss extends MCM_RomanceInteraction
 {
 	default id              = 'margarita_kiss';
+	default usesAutonomousKiss = true;
 	default targetNpc       = 'margarita';
 	default minAffinity     = 50;
 	default cooldownSeconds = 1800.0;
@@ -1868,33 +1823,57 @@ class MCM_AR_Margarita_Kiss extends MCM_RomanceInteraction
 
 	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
 	{
-		var consent : bool;
-		var ok      : bool;
+		var ok : bool;
 
 		SoftApproach(npc, player, 2.4);
 		PlayBark(npc);
 
-		if (MCM_AR_GetConfig().RequiresPlayerConsent())
+		ok = ApproachAndConsent(npc, player, 2.4, AR_T("ar_prompt_margarita_kiss", "[C] Kiss Margarita"));
+		if (!ok)
 		{
-			consent = ShowConsentPrompt(AR_T("ar_prompt_margarita_kiss", "[C] Kiss Margarita"), 10.0, npc);
-		}
-		else
-		{
-			consent = WaitForApproach(npc, player, 2.4, 8.0);
-		}
-
-		if (!consent)
-		{
-			EndSoft(npc);
-			if (MCM_AR_GetConfig().RequiresPlayerConsent())
-			{
-				MarkRejected();
-			}
 			return false;
 		}
 
 		HardStage(npc, player, 1.5);
 		ok = PlayKissScene(npc);
+		EndInteraction(npc, player);
+		return ok;
+	}
+}
+
+class MCM_AR_Margarita_IntimateInvite extends MCM_RomanceInteraction
+{
+	default id              = 'margarita_intimate_invite';
+	default targetNpc       = 'margarita';
+	default minAffinity     = 80;
+	default cooldownSeconds = 3600.0;
+	default triggerType     = RTT_Scene;
+	default weight          = 3;
+	default barkMimic       = 'flirt';
+	default lineText        = "Aretuza taught me discipline, not abstinence. Come.";
+	default lineKey         = "ar_line_margarita_intimate_invite";
+
+	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
+	{
+		if (!IsOnNaughtyPoint()) return "no_naughty_point";
+		return IntimateSceneBlockReason(npc);
+	}
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		var ok : bool;
+
+		SoftApproach(npc, player, 2.2);
+		PlayBark(npc);
+
+		ok = ApproachAndConsent(npc, player, 2.2, AR_T("ar_prompt_margarita_intimate", "[C] Stay alone with Margarita"), true);
+		if (!ok)
+		{
+			return false;
+		}
+
+		HardStage(npc, player, 1.5);
+		ok = PlayIntimateScene(npc);
 		EndInteraction(npc, player);
 		return ok;
 	}
@@ -1919,9 +1898,7 @@ class MCM_AR_Margarita_GiftRequest extends MCM_AR_GiftRequest_Base
 	}
 }
 
-//=============================================================================
 //  ORIANNA – Tier 1..3 + Gift
-//=============================================================================
 
 class MCM_AR_Orianna_OneLinerFlirt extends MCM_RomanceInteraction
 {
@@ -1977,52 +1954,6 @@ class MCM_AR_Orianna_Care extends MCM_RomanceInteraction
 	}
 }
 
-class MCM_AR_Orianna_Kiss extends MCM_RomanceInteraction
-{
-	default id              = 'orianna_kiss';
-	default targetNpc       = 'vampire_diva';
-	default minAffinity     = 50;
-	default cooldownSeconds = 1800.0;
-	default triggerType     = RTT_Prompt;
-	default weight          = 5;
-	default barkMimic       = 'flirt';
-	default lineText        = "Step closer, witcher. Let me savor this quiet moment with you.";
-	default lineKey         = "ar_line_orianna_kiss";
-
-	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
-	{
-		var consent : bool;
-		var ok      : bool;
-
-		SoftApproach(npc, player, 2.4);
-		PlayBark(npc);
-
-		if (MCM_AR_GetConfig().RequiresPlayerConsent())
-		{
-			consent = ShowConsentPrompt(AR_T("ar_prompt_orianna_kiss", "[C] Kiss Orianna"), 10.0, npc);
-		}
-		else
-		{
-			consent = WaitForApproach(npc, player, 2.4, 8.0);
-		}
-
-		if (!consent)
-		{
-			EndSoft(npc);
-			if (MCM_AR_GetConfig().RequiresPlayerConsent())
-			{
-				MarkRejected();
-			}
-			return false;
-		}
-
-		HardStage(npc, player, 1.5);
-		ok = PlayKissScene(npc);
-		EndInteraction(npc, player);
-		return ok;
-	}
-}
-
 class MCM_AR_Orianna_GiftRequest extends MCM_AR_GiftRequest_Base
 {
 	default id              = 'orianna_gift_request';
@@ -2038,6 +1969,48 @@ class MCM_AR_Orianna_GiftRequest extends MCM_AR_GiftRequest_Base
 		gifts.Clear();
 		gifts.PushBack('Est Est');
 		gifts.PushBack('Erveluce');
+	}
+}
+
+//  ORIANNA – Tier 4: Zaproszenie intymne przy "sweet spot"
+//  Rig noble_woman_base nie ma animacji kiss – top tier to naughty cutscene
+//  (jak w upstream paczce: opcja kiss -> sex scene).
+
+class MCM_AR_Orianna_IntimateInvite extends MCM_RomanceInteraction
+{
+	default id              = 'orianna_intimate_invite';
+	default targetNpc       = 'vampire_diva';
+	default minAffinity     = 80;
+	default cooldownSeconds = 3600.0;
+	default triggerType     = RTT_Scene;
+	default weight          = 3;
+	default barkMimic       = 'flirt';
+	default lineText        = "I have cultivated appetites far older than you, witcher. Indulge me somewhere private.";
+	default lineKey         = "ar_line_orianna_intimate_invite";
+
+	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
+	{
+		if (!IsOnNaughtyPoint()) return "no_naughty_point";
+		return IntimateSceneBlockReason(npc);
+	}
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		var ok : bool;
+
+		SoftApproach(npc, player, 2.2);
+		PlayBark(npc);
+
+		ok = ApproachAndConsent(npc, player, 2.2, AR_T("ar_prompt_orianna_intimate", "[C] Stay alone with Orianna"), true);
+		if (!ok)
+		{
+			return false;
+		}
+
+		HardStage(npc, player, 1.5);
+		ok = PlayIntimateScene(npc);
+		EndInteraction(npc, player);
+		return ok;
 	}
 }
 

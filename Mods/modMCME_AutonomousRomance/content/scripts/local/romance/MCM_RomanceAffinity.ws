@@ -4,9 +4,7 @@
 /* Namespace: mcme_ar_  (w 100% unikalny, brak kolizji z grą i modami)       */
 /*****************************************************************************/
 
-// ---------------------------------------------------------------------------
 // Wrapper konfiguracji MCM (user.settings)
-// ---------------------------------------------------------------------------
 
 class MCM_AR_ConfigWrapper
 {
@@ -19,9 +17,7 @@ class MCM_AR_ConfigWrapper
 	private var defaultEnabled        : bool;  default defaultEnabled        = true;
 	private var defaultRequireConsent : bool;  default defaultRequireConsent = true;
 
-	// -----------------------------------------------------------------------
 	// Odczyt z CInGameConfigWrapper (MCM menu)
-	// -----------------------------------------------------------------------
 	private function GetFloat(group : name, var_ : name, defaultVal : float) : float
 	{
 		var wrapper : CInGameConfigWrapper;
@@ -44,9 +40,7 @@ class MCM_AR_ConfigWrapper
 		return (val == "1" || val == "true");
 	}
 
-	// -----------------------------------------------------------------------
 	// Publiczne API
-	// -----------------------------------------------------------------------
 	public function IsEnabled() : bool
 	{
 		return GetBool('MCM_AR', 'MCM_AR_Enabled', defaultEnabled);
@@ -58,9 +52,7 @@ class MCM_AR_ConfigWrapper
 		return GetFloat('MCM_AR', 'MCM_AR_CooldownSlider', defaultCooldown);
 	}
 
-	// Interwał timera decyzyjnego MCM_AR_AutonomousTick (sekundy).
-	// Suwak MCM 20-160s (krok 10s); wartość aplikowana przy starcie timera
-	// w MCM_AR_InitCore - zmiana w menu wymaga reloadu skryptów/sesji.
+	// Interwal timera decyzyjnego (20-160s); zmiana w menu = reload sesji.
 	public function GetTickIntervalSeconds() : float
 	{
 		var val : float;
@@ -97,10 +89,17 @@ class MCM_AR_ConfigWrapper
 		return GetBool('MCM_AR', 'MCM_AR_RequireConsent', defaultRequireConsent);
 	}
 
+	// Tryb Ciri: false = Lore-Friendly (wiez rodzinna, tylko hug),
+	// true = MCME Adult (odblokowuje kiss + scene intymna dla cirilla).
+	public function IsCiriAdultMode() : bool
+	{
+		return GetBool('MCM_AR', 'MCM_AR_CiriMode', false);
+	}
+
 	// Wyświetlanie komunikatów diagnostycznych w HUD
 	public function IsDebugHudOn() : bool
 	{
-		return GetBool('MCM_AR', 'MCM_AR_DebugHud', true);
+		return GetBool('MCM_AR', 'MCM_AR_DebugHud', false);
 	}
 
 	// Preset gadatliwosci barkow: 1=Quiet, 2=Default, 3=Chatty (suwak 1-3)
@@ -125,11 +124,8 @@ class MCM_AR_ConfigWrapper
 	}
 }
 
-// ---------------------------------------------------------------------------
-// Globalny singleton konfiguracji
-// ---------------------------------------------------------------------------
+// Singleton konfiguracji
 
-// Deklaracja pola na CR4Player
 @addField(CR4Player)
 public var mcm_ar_config : MCM_AR_ConfigWrapper;
 
@@ -155,8 +151,7 @@ function MCM_AR_Log(msg : string, optional forceHUD : bool)
 
 	LogChannel('MCM_AR', msg);
 
-	// Ring buffer diagnostyki w core (odczyt bezposredni, BEZ rekursywnego wywolywania GetCore!)
-	// Gdy core jeszcze nie istnieje - bootlog na polu gracza (dump: ar_bootlog).
+	// Ring w core; przed init trafia na pole gracza (dump: ar_bootlog).
 	if (thePlayer)
 	{
 		core = thePlayer.mcm_ar_core;
@@ -174,8 +169,7 @@ function MCM_AR_Log(msg : string, optional forceHUD : bool)
 		}
 	}
 
-	// DEV (TW3SE): tee calego strumienia do tw3se\out\ar_log.txt + pipe
-	// events. MCM_AR_DevLog to leaf bez rekursji; w release stub = noop.
+	// DEV (TW3SE): tee do ar_log.txt + pipe; release stub = noop.
 	MCM_AR_DevLog(msg);
 
 	if (forceHUD || (thePlayer && MCM_AR_GetConfig().IsDebugHudOn()))
@@ -193,14 +187,10 @@ function MCM_AR_IsDebugOn() : bool
 	return FactsQuerySum('mcme_ar_debug') > 0;
 }
 
-// ---------------------------------------------------------------------------
 // Lokalizacja w3strings (teksty widoczne dla gracza na HUD)
-// ---------------------------------------------------------------------------
 
-// AR_T(key, fallback): tekst w jezyku gry z en/pl.w3strings; gdy klucza
-// brak (brak paczki jezykowej, starsza wersja pliku) -> hardcoded fallback.
-// Klucze: ar_line_* / ar_thanks_* (barki), ar_prompt_* (zgoda [C]),
-// ar_msg_* (komunikaty HUD). Przestrzen id: 211880xxxx.
+// AR_T: lokalizacja w3strings (ar_line_*/ar_thanks_*/ar_prompt_*/ar_msg_*),
+// fallback EN gdy klucza brak w paczce.
 function AR_T(key : string, optional fallback : string) : string
 {
 	var txt : string;
@@ -220,8 +210,7 @@ function AR_ReplToken(text : string, token : string, value : string) : string
 	return StrMid(text, 0, idx) + value + StrMid(text, idx + StrLen(token));
 }
 
-// AR_Fmt(text, a, b, c): podmienia {1},{2},{3} w zlokalizowanym tekscie
-// (np. "[C] Give {1} to {2}" -> "[C] Give Est Est to Yennefer").
+// AR_Fmt: podmienia {1},{2},{3} w tekscie lokalizacji.
 function AR_Fmt(text : string, arg1 : string, optional arg2 : string, optional arg3 : string) : string
 {
 	text = AR_ReplToken(text, "{1}", arg1);
@@ -233,20 +222,11 @@ function AR_Fmt(text : string, arg1 : string, optional arg2 : string, optional a
 }
 
 
-
-// Uwaga: inicjalizacja mcm_ar_config odbywa się w MCM_RomanceCore.ws @wrapMethod(CR4Player) OnSpawned
-// Nie duplikujemy wrapa tutaj – jeden wrapper na metodę zapewnia czysty chain adnotacji.
-
-
-// ---------------------------------------------------------------------------
-// Silnik obliczania zażyłości (Affinity Resolver)
-// ---------------------------------------------------------------------------
+// Affinity resolver
 
 class MCM_RomanceAffinityResolver
 {
-	// -----------------------------------------------------------------------
-	// Główna metoda: zwraca sumę wszystkich filarów * mnożnik konfiguracji
-	// -----------------------------------------------------------------------
+	// Suma filarow: base + earned * mnoznik konfiguracji.
 	public function GetAffinity(npcName : name) : int
 	{
 		var config : MCM_AR_ConfigWrapper;
@@ -256,24 +236,16 @@ class MCM_RomanceAffinityResolver
 
 		config = MCM_AR_GetConfig();
 
-		// Tryb "always in love" – zwróć maksimum
 		if (config.IsForceRomanceOn()) return 200;
 
-		// Filar 1: deterministyczne fakty fabularne
-		base = GetBaseStoryAffinity(npcName);
-
-		// Filar 2: trwały postęp sesji (FactsQuerySum)
-		earned = GetEarnedAffinity(npcName);
-
-		// Filar 3 (offset): tylko jeśli mnożnik != 1.0 – wpływa na skalę earned
-		total = (float)(base) + ((float)(earned) * config.GetAffinityMultiplier());
+		base   = GetBaseStoryAffinity(npcName);   // fakty fabularne
+		earned = GetEarnedAffinity(npcName);      // postep sesji (Facts)
+		total  = (float)(base) + ((float)(earned) * config.GetAffinityMultiplier());
 
 		return RoundMath(total);
 	}
 
-	// -----------------------------------------------------------------------
-	// Filar 1 – deterministyczna projekcja z oryginalnych wyborów fabularnych
-	// -----------------------------------------------------------------------
+	// Projekcja z wyborow fabularnych (fakty questowe vanilla).
 	public function GetBaseStoryAffinity(npcName : name) : int
 	{
 		var score : int;
@@ -401,16 +373,13 @@ class MCM_RomanceAffinityResolver
 		return score;
 	}
 
-	// -----------------------------------------------------------------------
-	// Filar 2 – trwały postęp: bezpieczny odczyt przez FactsQuerySum
-	// Prefiks "mcme_ar_" gwarantuje unikalność w całym ekosystemie modów
-	// -----------------------------------------------------------------------
+	// Postep sesji. Prefiks mcme_ar_ = brak kolizji w bazie faktow.
 	public function GetEarnedAffinity(npcName : name) : int
 	{
 		return FactsQuerySum("mcme_ar_" + NameToString(npcName) + "_affinity");
 	}
 
-	// Dodaj punkty zażyłości (wywoływane po wykonaniu akcji)
+	// Punkty za wykonana akcje.
 	public function AddAffinityPoints(npcName : name, amount : int)
 	{
 		var factName : string;
@@ -419,26 +388,20 @@ class MCM_RomanceAffinityResolver
 		factName = "mcme_ar_" + NameToString(npcName) + "_affinity";
 		current = FactsQuerySum(factName);
 
-		// Zapobiega save-bloat: FactsAdd tworzy permanentnie nowy wpis w bazie faktów
-		// dla każdego dodania, co bardzo szybko zwiększa rozmiar save'a.
-		// FactsRemove z FactsAdd podmienia stary wpis.
+		// Remove+Add: podmiana wpisu, brak akumulacji (save-bloat).
 		FactsRemove(factName);
 		FactsAdd(factName, current + amount);
 		LogChannel('MCM_AR', "[AR] Affinity +" + amount + " for " + npcName + " (total: " + (current + amount) + ")");
 	}
 
-	// -----------------------------------------------------------------------
-	// Pomocnik: wymagany próg zażyłości dla danego Tier
-	// -----------------------------------------------------------------------
+	// Wymagany prog za zadany Tier.
 	public function MeetsMinAffinity(npcName : name, minAffinity : int) : bool
 	{
 		return GetAffinity(npcName) >= minAffinity;
 	}
 }
 
-// ---------------------------------------------------------------------------
-// Globalny singleton resolvera (lazy-initialized w Core)
-// ---------------------------------------------------------------------------
+// Singleton resolvera (lazy-init w Core)
 
 function MCM_AR_GetAffinity() : MCM_RomanceAffinityResolver
 {
