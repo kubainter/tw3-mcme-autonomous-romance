@@ -12,6 +12,7 @@
                 <Entry varId="MCM_AR_ForceRomance"    value="0"/>
                 <Entry varId="MCM_AR_RequireConsent"  value="1"/>
                 <Entry varId="MCM_AR_DebugHud"        value="1"/>
+                <Entry varId="MCM_AR_BarkPreset"      value="2"/>
             </Preset>
 
             <Preset id="1" displayName="mcm_ar_preset_active">
@@ -23,6 +24,7 @@
                 <Entry varId="MCM_AR_ForceRomance"    value="0"/>
                 <Entry varId="MCM_AR_RequireConsent"  value="1"/>
                 <Entry varId="MCM_AR_DebugHud"        value="1"/>
+                <Entry varId="MCM_AR_BarkPreset"      value="2"/>
             </Preset>
 
             <Preset id="2" displayName="mcm_ar_preset_relaxed">
@@ -34,6 +36,7 @@
                 <Entry varId="MCM_AR_ForceRomance"    value="0"/>
                 <Entry varId="MCM_AR_RequireConsent"  value="1"/>
                 <Entry varId="MCM_AR_DebugHud"        value="0"/>
+                <Entry varId="MCM_AR_BarkPreset"      value="2"/>
             </Preset>
 
             <Preset id="3" displayName="mcm_ar_preset_sandbox">
@@ -45,6 +48,7 @@
                 <Entry varId="MCM_AR_ForceRomance"    value="1"/>
                 <Entry varId="MCM_AR_RequireConsent"  value="0"/>
                 <Entry varId="MCM_AR_DebugHud"        value="1"/>
+                <Entry varId="MCM_AR_BarkPreset"      value="2"/>
             </Preset>
 
             <Preset id="4" displayName="mcm_ar_preset_disabled">
@@ -92,6 +96,11 @@
                  displayName="mcm_ar_opt_debug"
                  displayType="TOGGLE"
                  defaultValue="1"/>
+
+            <Var id="MCM_AR_BarkPreset"
+                 displayName="mcm_ar_opt_barkpreset"
+                 displayType="SLIDER;1;3;2"
+                 defaultValue="2"/>
         </VisibleVars>
     </Group>
 </UserConfig>

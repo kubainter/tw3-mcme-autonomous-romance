@@ -66,7 +66,7 @@
 2118800064|        |ar_line_triss_postcombat_hug|Tsa, o Geralcie. W co tym razem się wpakowałeś?
 2118800065|        |ar_line_triss_night_whisper|Hmmmm, Geraaalcie...
 2118800066|        |ar_line_triss_campfire_warmth|Pozostań przy ogniu jeszcze chwilę, Geralcie.
-2118800067|        |ar_line_triss_garden_kiss|Chodź tu, Geralcie.
+2118800067|        |ar_line_triss_kiss_invite|Chodź tu, Geralcie.
 2118800068|        |ar_line_triss_intimate_invite|Hmmmm, Geraaalcie...
 2118800069|        |ar_line_triss_jealousy_snark|O, naprawdę chcesz o tym rozmawiać? Może powinnam zawołać Yennefer? Szkoda, żeby to przegapiła.
 2118800070|        |ar_line_keira_oneliner_flirt|Och, zdecydowanie nie jesteś chłopcem. Jesteś silnym, opanowanym wiedźminem, który z pewnością pomoże damie w potrzebie.
@@ -113,3 +113,124 @@
 2118800111|        |ar_thanks_salma|Mmm, przepyszne. Dziękuję.
 2118800112|        |ar_thanks_ves|Dobre. Wielkie dzięki, Geralcie.
 2118800113|        |ar_msg_travel_aff|Więź z {1} zacieśnia się podczas wspólnej drogi (+1)
+2118800114|        |ar_line_triss_tavern_drink|Jeszcze jedna kolejka? Stawiam.
+2118800115|        |ar_line_keira_tavern_drink|Kieliszek, Geralcie? Nawet czarodziejka musi odpocząć.
+2118800116|        |ar_line_shani_tavern_drink|Siadaj, pij. Zalecenia lekarskie.
+2118800117|        |ar_line_anarietta_tavern_drink|Księżna pozwala sobie na tę jedną przyjemność.
+2118800118|        |ar_line_vivienne_tavern_drink|Chwila spokoju i dobre wino. Rzadkie dary.
+2118800119|        |ar_line_cerys_tavern_drink|Miód ze Skellige bije to pomyje, ale towarzystwo pomaga.
+2118800120|        |ar_line_yen_night_filler|Noc nam sprzyja, wiedźminie.
+2118800121|        |ar_line_triss_night_filler|Cicho... W tę porę świat mi bardziej odpowiada.
+2118800122|        |ar_line_keira_night_filler|Też nie śpisz? Nocki w wiosce są tępe.
+2118800123|        |ar_line_shani_night_filler|Praca medyka nie kończy się o zmierzchu.
+2118800124|        |ar_line_anarietta_night_filler|Noce w Toussaint stworzono do spacerów.
+2118800125|        |ar_line_vivienne_night_filler|Kiedyś bałam się nocy. Już nie.
+2118800126|        |ar_line_cerys_night_filler|Noce na Skellige są zimniejsze. To nic.
+2118800127|        |mcm_ar_opt_barkpreset|Gadatliwość towarzyszek (1=Cicho, 2=Normalnie, 3=Gadatliwe)
+2118800128|        |ar_line_weather_bark|Taka pogoda... dobrze, że jesteśmy w niej razem.
+2118800129|        |ar_line_horse_bark|Jazda z tobą bije samotne włóczenie.
+2118800130|        |ar_line_interior_bark|Dobrze choć na chwilę umknąć wiatrowi.
+2118800131|        |ar_line_boat_bark|Woda, wiatr i ty. Mogło być gorzej.
+2118800132|        |ar_line_afterglow|To było... miłe. Nie bądź dla mnie obcy.
+2118800133|        |ar_line_jealousy_aftermath|Widziałam to. Mogłeś choć udawać, że jesteś dyskretny.
+2118800134|        |ar_line_rosa_oneliner_flirt|Uważaj, wiedźminie. Siniaczę ego dla sportu.
+2118800135|        |ar_line_tomira_oneliner_flirt|Droga ci służy, Geralcie. Gdy się jej zmęczysz, moje drzwi są otwarte.
+2118800136|        |ar_line_rosa_gift_request|Wiedźmin twojej rangi na pewno ma przy sobie porządne wino, nie?
+2118800137|        |ar_thanks_rosa|Znośne. Po raz pierwszy.
+2118800138|        |ar_line_tomira_gift_request|Kończy mi się spirytus do nalewek. Użyczysz trochę?
+2118800139|        |ar_thanks_tomira|To pomoże bardziej, niż myślisz. Dziękuję, Geralcie.
+2118800140|        |option_mcm_ar_opt_barkpreset|Gadatliwość towarzyszek (1=Cicho, 2=Normalnie, 3=Gadatliwe)
+2118800141|        |option_MCM_AR_BarkPreset|Gadatliwość towarzyszek (1=Cicho, 2=Normalnie, 3=Gadatliwe)
+2118800142|        |preset_Mods_AutonomousRomance|Autonomous Romance v2.0.0
+2118800143|        |ar_prompt_rosa_kiss|[C] Pocałuj Rosę
+2118800144|        |ar_line_rosa_kiss|Geralt... Nie tak szybko. Daj mi na ciebie spojrzeć.
+2118800145|        |ar_afterglow_rosa|Nieźle. Choć moja forma szermiercza wciąż przewyższa twoją.
+2118800146|        |ar_prompt_tomira_kiss|[C] Pocałuj Tomirę
+2118800147|        |ar_line_tomira_kiss|Chodź tutaj, Geralt. Zapracowałeś na chwilę spokoju.
+2118800148|        |ar_afterglow_tomira|Słodsze niż jakiekolwiek ziele w moim ogrodzie. Uważaj na siebie na szlaku.
+2118800149|        |ar_prompt_ciri_hug|[C] Obejmij Ciri
+2118800150|        |ar_line_ciri_hug|Geralt... Dobrze cię mieć obok.
+2118800151|        |ar_afterglow_ciri|Dobrze znowu być razem, Geralt.
+2118800152|        |ar_afterglow_yen|Miła odmiana. Ruszajmy dalej, Geralt.
+2118800153|        |ar_afterglow_triss|Brakowało mi tego... Bądź blisko, dobrze?
+2118800154|        |ar_afterglow_keira|Mmm... Nic nie straciłeś ze swojej wprawy, wiedźminie.
+2118800155|        |ar_afterglow_shani|Od razu ta podróż wydaje się lepsza, Geralt.
+2118800156|        |ar_afterglow_anarietta|Zachwycająca chwila. A teraz wróćmy do naszych obowiązków.
+2118800157|        |ar_afterglow_vivienne|Dziękuję, Geralt. Wnosisz ciepło do mojego serca.
+2118800158|        |ar_afterglow_cerys|Ha! Nieźle, wiedźminie, wcale nieźle.
+2118800159|        |ar_line_syanna_oneliner_flirt|Ciągle się gapisz, Geralt? Zrób portret, starczy na dłużej.
+2118800160|        |ar_line_syanna_postcombat|Nieźle machasz tym srebrem. Przez moment czułam się niemal bezpiecznie.
+2118800161|        |ar_prompt_syanna_kiss|[C] Pocałuj Syannę
+2118800162|        |ar_line_syanna_kiss|Chodź tutaj, Geralt. Nie udawaj nieśmiałego.
+2118800163|        |ar_prompt_syanna_intimate|[C] Zostań sam na sam z Syanną
+2118800164|        |ar_line_syanna_intimate_invite|Pamiętam chmury... i to, co robiliśmy nad nimi. Przypomnisz mi?
+2118800165|        |ar_afterglow_syanna|Nie sądziłam, że masz to w sobie, wiedźminie. Miła niespodzianka.
+2118800166|        |ar_line_philippa_oneliner_flirt|Cicho, Geralt. Myślenie nigdy nie było twoją mocną stroną.
+2118800167|        |ar_line_philippa_care|Wciąż dychasz? Dobrze. W jednym kawałku jesteś o wiele bardziej użyteczny.
+2118800168|        |ar_prompt_philippa_kiss|[C] Pocałuj Filippę
+2118800169|        |ar_line_philippa_kiss|Geralt. Podejdź bliżej... i nie każ mi się powtarzać.
+2118800170|        |ar_afterglow_philippa|Zadowalające, Geralt. Nie przyzwyczajajmy się jednak do marudzenia.
+2118800171|        |ar_line_ves_oneliner_flirt|Oczy przed siebie, wiedźminie. Vernon ma dość zwiadowców, nie musisz gapić się na moje plecy.
+2118800172|        |ar_line_ves_campfire|Nie ma to jak ogień i ostry miecz. Siadaj, złap oddech.
+2118800173|        |ar_prompt_ves_kiss|[C] Pocałuj Ves
+2118800174|        |ar_line_ves_kiss|Cicho. Żadnych dowódców, żadnej wojny... tylko my.
+2118800175|        |ar_afterglow_ves|Nie jesteś miękki, co? Dobrze. Wracajmy na szlak.
+2118800176|        |ar_line_salma_oneliner_flirt|Twoja aura... płonie cieplej niż u jakiegokolwiek śmiertelnika, wiedźminie.
+2118800177|        |ar_line_salma_allure|Zmęczony, biały wilku? Pozwól, by mój zapach ukoił twoje myśli.
+2118800178|        |ar_prompt_salma_kiss|[C] Pocałuj Salmę
+2118800179|        |ar_line_salma_kiss|Chodź, słodki łowco. Jeden dotyk ci nie zaszkodzi...
+2118800180|        |ar_afterglow_salma|Mmm... Rozkosz. Zawsze wiesz, jak sprawić przyjemność.
+2118800181|        |ar_line_priscilla_oneliner_flirt|Droga z tobą przypomina balladę, która dopiero czeka na spisanie.
+2118800182|        |ar_line_priscilla_care|Odpocznij chwilę, Geralt. Nawet bohaterowie robią pauzę między zwrotkami.
+2118800183|        |ar_prompt_priscilla_kiss|[C] Pocałuj Priscillę
+2118800184|        |ar_line_priscilla_kiss|Geralt... Bądź blisko. Niech ta chwila trwa.
+2118800185|        |ar_afterglow_priscilla|Jak zwrotka zapomnianej ballady. Dziękuję, Geralt.
+2118800186|        |ar_line_priscilla_gift_request|W gardle zasycha od kurzu z gościńca. Masz może jakieś przednie wino, Geralt?
+2118800187|        |ar_thanks_priscilla|Wyborne. Mój głos ci dziękuje, Geralt.
+2118800188|        |ar_line_edna_oneliner_flirt|Moja siostra myśli, że tylko ona docenia twój szorstki urok.
+2118800189|        |ar_line_edna_care|Wyglądasz na zmęczonego, wiedźminie. Etykieta nilfgaardzkiego dworu jest łatwiejsza niż twoje życie.
+2118800190|        |ar_prompt_edna_kiss|[C] Pocałuj Ednę
+2118800191|        |ar_line_edna_kiss|Niech Rosa ćwiczy parowania. Chodź tutaj, Geralt.
+2118800192|        |ar_afterglow_edna|Śmiały jesteś, wiedźminie. Znacznie śmielszy, niż sądzi moja siostra.
+2118800193|        |ar_line_edna_gift_request|Masz może w tej skórzanej torbie rocznik warty spróbowania?
+2118800194|        |ar_thanks_edna|Znacznie lepsze, niż się spodziewałam. Dziękuję, wiedźminie.
+2118800195|        |ar_line_fringilla_oneliner_flirt|Wciąż patrzysz na mnie tym czujnym, nilfgaardzkim wzrokiem, Geralt?
+2118800196|        |ar_line_fringilla_care|Magia rozgrzewa zimną stal, wiedźminie. Nie forsuj się tak.
+2118800197|        |ar_prompt_fringilla_kiss|[C] Pocałuj Fringillę
+2118800198|        |ar_line_fringilla_kiss|Loża nie patrzy, Geralt. Podejdź bliżej.
+2118800199|        |ar_afterglow_fringilla|Rzadka chwila czułości. Zapamiętam ją.
+2118800200|        |ar_line_fringilla_gift_request|Kropla mocnego, południowego wina rozjaśniłaby mi umysł. Masz jakieś?
+2118800201|        |ar_thanks_fringilla|Przypomina mi dom. Dziękuję, Geralt.
+2118800202|        |ar_line_margarita_oneliner_flirt|Aretuza nauczyła mnie dyscypliny, Geralt. Ty kusisz, by o niej zapomnieć.
+2118800203|        |ar_line_margarita_care|Dźwigasz zbyt wiele ran, stary przyjacielu. Pozwól sobie odetchnąć.
+2118800204|        |ar_prompt_margarita_kiss|[C] Pocałuj Margaritę
+2118800205|        |ar_line_margarita_kiss|Chodź tutaj, Geralt. Oboje zaznaliśmy już dość chłodu.
+2118800206|        |ar_afterglow_margarita|Ciepło jest bezcenne w takich czasach. Dziękuję.
+2118800207|        |ar_line_margarita_gift_request|Po lochach Oxenfurtu każdy rozgrzewający trunek to błogosławieństwo. Masz trochę?
+2118800208|        |ar_thanks_margarita|Ciepło... prawdziwe ciepło. Dziękuję, Geralt.
+2118800209|        |ar_line_orianna_oneliner_flirt|Twoja krew pachnie wybornie, wiedźminie... ale wolę cię żywego i rozmownego.
+2118800210|        |ar_line_orianna_care|Odpocznij, Geralt. Nawet wiedźmińskie serce musi się męczyć przy takim wysiłku.
+2118800211|        |ar_prompt_orianna_kiss|[C] Pocałuj Oriannę
+2118800212|        |ar_line_orianna_kiss|Podejdź bliżej, wiedźminie. Pozwól mi nacieszyć się tą cichą chwilą z tobą.
+2118800213|        |ar_afterglow_orianna|Znakomite... Smak, do którego łatwo mogłabym przywyknąć.
+2118800214|        |ar_line_orianna_gift_request|Czy posiadasz rocznik o głębi zdolnej zaciekawić moje podniebienie?
+2118800215|        |ar_thanks_orianna|Znakomite. Wciąż przewyższasz moje oczekiwania.
+2118800216|        |ar_afterglow_walk_yen|Wciąż o tym myślisz, Geralcie? Patrz na drogę.
+2118800217|        |ar_afterglow_walk_triss|Serce wciąż mi mocniej bije... Dobrze być z tobą.
+2118800218|        |ar_afterglow_walk_keira|Mmm, od razu krew szybciej krąży. Przyjemny przerywnik.
+2118800219|        |ar_afterglow_walk_shani|Taka chwila sprawia, że cała ta droga wydaje się lżejsza.
+2118800220|        |ar_afterglow_walk_anarietta|Zachwycający przerywnik, Geralcie. Nie zapominajmy jednak o tym, co przed nami.
+2118800221|        |ar_afterglow_walk_vivienne|Moje myśli są teraz lżejsze... Dziękuję, Geralcie.
+2118800222|        |ar_afterglow_walk_cerys|Ha! Krok ci się nie plącze, wiedźminie?
+2118800223|        |ar_afterglow_walk_rosa|Tylko się nie potknij, wiedźminie. Twoje myśli chyba błądzą gdzie indziej.
+2118800224|        |ar_afterglow_walk_tomira|Głusza nie wydaje się taka groźna, gdy jesteś obok.
+2118800225|        |ar_afterglow_walk_syanna|Dziwne, że po czymś takim wciąż idziesz prosto, wiedźminie.
+2118800226|        |ar_afterglow_walk_philippa|Znośna dystrakcja. A teraz miej oczy dookoła głowy.
+2118800227|        |ar_afterglow_walk_ves|Tylko nie trać czujności. Jeszcze kawał drogi przed nami.
+2118800228|        |ar_afterglow_walk_salma|Wciąż czuję twoje ciepło, wiedźminie... Rozkoszne.
+2118800229|        |ar_afterglow_walk_priscilla|Melodia w samym środku pustkowia. Dziękuję, Geralcie.
+2118800230|        |ar_afterglow_walk_edna|Wciąż się uśmiechasz, wiedźminie? To był ledwie przedsmak.
+2118800231|        |ar_afterglow_walk_fringilla|Krótka chwila wytchnienia pośród znoju. Ruszajmy.
+2118800232|        |ar_afterglow_walk_margarita|Rzadki dotyk otuchy na bezkresnym gościńcu.
+2118800233|        |ar_afterglow_walk_orianna|Ten smak przyjemnie się utrzymuje. Zobaczmy, co jeszcze przyniesie droga.
+2118800234|        |ar_afterglow_walk_ciri|Dobrze iść obok ciebie, Geralcie. Jak za dawnych lat.

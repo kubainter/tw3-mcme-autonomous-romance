@@ -100,6 +100,11 @@ function MCM_AR_DevDelVar(k : string) : bool
 	return false;
 }
 
+function MCM_AR_DevLua(code : string) : string
+{
+	return "";
+}
+
 function MCM_AR_DevReloadScripts()
 {
 }

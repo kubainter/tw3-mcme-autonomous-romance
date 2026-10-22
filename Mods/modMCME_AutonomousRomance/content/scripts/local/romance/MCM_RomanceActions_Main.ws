@@ -29,7 +29,7 @@ function InitDefaultActions()
 	RegisterAction(new MCM_AR_Triss_PostCombatHug       in this);
 	RegisterAction(new MCM_AR_Triss_NightWhisper        in this);
 	RegisterAction(new MCM_AR_Triss_CampfireWarmth      in this);
-	RegisterAction(new MCM_AR_Triss_GardenKiss          in this);
+	RegisterAction(new MCM_AR_Triss_KissInvite          in this);
 	RegisterAction(new MCM_AR_Triss_IntimateInvite      in this);
 	RegisterAction(new MCM_AR_Triss_JealousySnark       in this);
 	RegisterAction(new MCM_AR_Triss_GiftRequest        in this);
@@ -48,6 +48,27 @@ function InitDefaultActions()
 	RegisterAction(new MCM_AR_Shani_NightRelax          in this);
 	RegisterAction(new MCM_AR_Shani_IntimateInvite      in this);
 	RegisterAction(new MCM_AR_Shani_GiftRequest        in this);
+
+	RegisterAction(new MCM_AR_Triss_TavernDrink         in this);
+	RegisterAction(new MCM_AR_Keira_TavernDrink         in this);
+	RegisterAction(new MCM_AR_Shani_TavernDrink         in this);
+	RegisterAction(new MCM_AR_Yen_NightFiller           in this);
+	RegisterAction(new MCM_AR_Triss_NightFiller         in this);
+	RegisterAction(new MCM_AR_Keira_NightFiller         in this);
+	RegisterAction(new MCM_AR_Shani_NightFiller         in this);
+	RegisterAction(new MCM_AR_WeatherBark               in this);
+	RegisterAction(new MCM_AR_HorseBark                 in this);
+	RegisterAction(new MCM_AR_InteriorBark              in this);
+	RegisterAction(new MCM_AR_BoatBark                  in this);
+	RegisterAction(new MCM_AR_AfterglowBark             in this);
+	RegisterAction(new MCM_AR_JealousyAftermath         in this);
+	RegisterAction(new MCM_AR_Rosa_OneLinerFlirt        in this);
+	RegisterAction(new MCM_AR_Tomira_OneLinerFlirt      in this);
+	RegisterAction(new MCM_AR_Rosa_Kiss                 in this);
+	RegisterAction(new MCM_AR_Tomira_Kiss               in this);
+	RegisterAction(new MCM_AR_Ciri_Hug                  in this);
+	RegisterAction(new MCM_AR_Rosa_GiftRequest          in this);
+	RegisterAction(new MCM_AR_Tomira_GiftRequest        in this);
 }
 
 //=============================================================================
@@ -185,7 +206,7 @@ class MCM_AR_Yen_NightInvitation extends MCM_RomanceInteraction
 
 		// FAZA 2 – staging dopiero po akceptacji (~1-2s locka), potem scena
 		HardStage(npc, player, 1.5);
-		ok = PlayDialogueScene(npc, "dlc\mod_spawn_companions\dialogue\yenneferFollowWithKiss.w2scene", true);
+		ok = PlayKissScene(npc);
 		EndInteraction(npc, player);
 		return ok;
 	}
@@ -246,9 +267,8 @@ class MCM_AR_Yen_IntimateInvite extends MCM_RomanceInteraction
 	{
 		// Tylko obok punktu intymnego MCME (scena wymaga action pointu <=20m)
 		if (!IsOnNaughtyPoint()) return "no_naughty_point";
-		// NPC musi miec scene intymna (rejestracja specialData lub plik)
-		if (!HasIntimateScene(npc)) return "no_scene";
-		return "";
+		// NPC musi miec scene intymna + plik sceny musi istniec (DLC gate)
+		return IntimateSceneBlockReason(npc);
 	}
 
 	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
@@ -520,7 +540,7 @@ class MCM_AR_Triss_NightWhisper extends MCM_RomanceInteraction
 		}
 
 		HardStage(npc, player, 1.5);
-		ok = PlayDialogueScene(npc, "dlc\mod_spawn_companions\dialogue\trissFollowWithKiss.w2scene", true);
+		ok = PlayKissScene(npc);
 		EndInteraction(npc, player);
 		return ok;
 	}
@@ -564,9 +584,9 @@ class MCM_AR_Triss_CampfireWarmth extends MCM_RomanceInteraction
 //  TRISS – Tier 3: Pocałunek w ogrodzie (propozycja -> [C] -> scena dialogu)
 //=============================================================================
 
-class MCM_AR_Triss_GardenKiss extends MCM_RomanceInteraction
+class MCM_AR_Triss_KissInvite extends MCM_RomanceInteraction
 {
-	default id              = 'triss_garden_kiss';
+	default id              = 'triss_kiss_invite';
 	default targetNpc       = 'triss';
 	default minAffinity     = 70;
 	default cooldownSeconds = 2400.0;
@@ -576,7 +596,7 @@ class MCM_AR_Triss_GardenKiss extends MCM_RomanceInteraction
 	// 1074691 tez tu bylo bledne (odpowiedz jako zaproszenie) – voiceset.
 	default barkVoiceset    = 'greeting_geralt';
 	default lineText        = "Come here, Geralt.";
-	default lineKey         = "ar_line_triss_garden_kiss";
+	default lineKey         = "ar_line_triss_kiss_invite";
 
 	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
 	{
@@ -606,7 +626,7 @@ class MCM_AR_Triss_GardenKiss extends MCM_RomanceInteraction
 		}
 
 		HardStage(npc, player, 1.5);
-		ok = PlayDialogueScene(npc, "dlc\mod_spawn_companions\dialogue\trissFollowWithKiss.w2scene", true);
+		ok = PlayKissScene(npc);
 		EndInteraction(npc, player);
 		return ok;
 	}
@@ -633,8 +653,7 @@ class MCM_AR_Triss_IntimateInvite extends MCM_RomanceInteraction
 	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
 	{
 		if (!IsOnNaughtyPoint()) return "no_naughty_point";
-		if (!HasIntimateScene(npc)) return "no_scene";
-		return "";
+		return IntimateSceneBlockReason(npc);
 	}
 
 	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
@@ -834,7 +853,7 @@ class MCM_AR_Keira_NightProposal extends MCM_RomanceInteraction
 		}
 
 		HardStage(npc, player, 1.5);
-		ok = PlayDialogueScene(npc, "dlc\mod_spawn_companions\dialogue\keiraFollowWithKiss.w2scene", true);
+		ok = PlayKissScene(npc);
 		EndInteraction(npc, player);
 		return ok;
 	}
@@ -892,8 +911,7 @@ class MCM_AR_Keira_IntimateInvite extends MCM_RomanceInteraction
 	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
 	{
 		if (!IsOnNaughtyPoint()) return "no_naughty_point";
-		if (!HasIntimateScene(npc)) return "no_scene";
-		return "";
+		return IntimateSceneBlockReason(npc);
 	}
 
 	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
@@ -1050,7 +1068,7 @@ class MCM_AR_Shani_NightRelax extends MCM_RomanceInteraction
 		}
 
 		HardStage(npc, player, 1.5);
-		ok = PlayDialogueScene(npc, "dlc\mod_spawn_companions\dialogue\shaniFollowWithKiss.w2scene", true);
+		ok = PlayKissScene(npc);
 		EndInteraction(npc, player);
 		return ok;
 	}
@@ -1077,8 +1095,7 @@ class MCM_AR_Shani_IntimateInvite extends MCM_RomanceInteraction
 	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
 	{
 		if (!IsOnNaughtyPoint()) return "no_naughty_point";
-		if (!HasIntimateScene(npc)) return "no_scene";
-		return "";
+		return IntimateSceneBlockReason(npc);
 	}
 
 	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
@@ -1188,6 +1205,728 @@ class MCM_AR_Shani_GiftRequest extends MCM_AR_GiftRequest_Base
 		gifts.PushBack('Mettina Rose');
 		gifts.PushBack('Beauclair White');
 		gifts.PushBack('Erveluce');
+	}
+}
+
+
+// --- Tavern banter ---
+
+class MCM_AR_Triss_TavernDrink extends MCM_RomanceInteraction
+{
+	default id              = 'triss_tavern_drink';
+	default targetNpc       = 'triss';
+	default minAffinity     = 0;
+	default cooldownSeconds = 600.0;
+	default triggerType     = RTT_OneLiner;
+	default weight          = 6;
+	default barkVoiceset    = 'greeting_geralt';
+	default lineText        = "Another round? This one's on me.";
+	default lineKey         = "ar_line_triss_tavern_drink";
+
+	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
+	{
+		if (!ctx.isInTavern) return "not_in_tavern";
+		return "";
+	}
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		npc.EnableDynamicLookAt(player, 6.0);
+		PlayDrinkingAnimation(npc);
+		PlayBark(npc);
+		return true;
+	}
+}
+
+class MCM_AR_Keira_TavernDrink extends MCM_RomanceInteraction
+{
+	default id              = 'keira_tavern_drink';
+	default targetNpc       = 'keira';
+	default minAffinity     = 0;
+	default cooldownSeconds = 600.0;
+	default triggerType     = RTT_OneLiner;
+	default weight          = 6;
+	default barkVoiceset    = 'greeting_geralt';
+	default lineText        = "A drink, Geralt? Even a sorceress needs to unwind.";
+	default lineKey         = "ar_line_keira_tavern_drink";
+
+	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
+	{
+		if (!ctx.isInTavern) return "not_in_tavern";
+		return "";
+	}
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		npc.EnableDynamicLookAt(player, 6.0);
+		PlayDrinkingAnimation(npc);
+		PlayBark(npc);
+		return true;
+	}
+}
+
+class MCM_AR_Shani_TavernDrink extends MCM_RomanceInteraction
+{
+	default id              = 'shani_tavern_drink';
+	default targetNpc       = 'shani';
+	default minAffinity     = 0;
+	default cooldownSeconds = 600.0;
+	default triggerType     = RTT_OneLiner;
+	default weight          = 6;
+	default barkVoiceset    = 'greeting_geralt';
+	default lineText        = "Sit down, drink. Doctor's orders.";
+	default lineKey         = "ar_line_shani_tavern_drink";
+
+	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
+	{
+		if (!ctx.isInTavern) return "not_in_tavern";
+		return "";
+	}
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		npc.EnableDynamicLookAt(player, 6.0);
+		PlayDrinkingAnimation(npc);
+		PlayBark(npc);
+		return true;
+	}
+}
+
+// --- Night filler ---
+
+class MCM_AR_Yen_NightFiller extends MCM_RomanceInteraction
+{
+	default id              = 'yen_night_filler';
+	default targetNpc       = 'yennefer';
+	default minAffinity     = 0;
+	default cooldownSeconds = 600.0;
+	default triggerType     = RTT_OneLiner;
+	default weight          = 8;
+	default barkMimic       = 'flirt';
+	default barkVoiceset    = 'greeting_geralt';
+	default lineText        = "The night suits us, witcher.";
+	default lineKey         = "ar_line_yen_night_filler";
+
+	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
+	{
+		if (!ctx.isNight) return "not_night";
+		return "";
+	}
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		npc.EnableDynamicLookAt(player, 6.0);
+		PlayBark(npc);
+		return true;
+	}
+}
+
+class MCM_AR_Triss_NightFiller extends MCM_RomanceInteraction
+{
+	default id              = 'triss_night_filler';
+	default targetNpc       = 'triss';
+	default minAffinity     = 0;
+	default cooldownSeconds = 600.0;
+	default triggerType     = RTT_OneLiner;
+	default weight          = 8;
+	default barkMimic       = 'flirt';
+	default barkVoiceset    = 'greeting_geralt';
+	default lineText        = "Quiet... I like the world better at this hour.";
+	default lineKey         = "ar_line_triss_night_filler";
+
+	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
+	{
+		if (!ctx.isNight) return "not_night";
+		return "";
+	}
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		npc.EnableDynamicLookAt(player, 6.0);
+		PlayBark(npc);
+		return true;
+	}
+}
+
+class MCM_AR_Keira_NightFiller extends MCM_RomanceInteraction
+{
+	default id              = 'keira_night_filler';
+	default targetNpc       = 'keira';
+	default minAffinity     = 0;
+	default cooldownSeconds = 600.0;
+	default triggerType     = RTT_OneLiner;
+	default weight          = 8;
+	default barkMimic       = 'flirt';
+	default barkVoiceset    = 'greeting_geralt';
+	default lineText        = "Can't sleep either? Village nights are so dull.";
+	default lineKey         = "ar_line_keira_night_filler";
+
+	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
+	{
+		if (!ctx.isNight) return "not_night";
+		return "";
+	}
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		npc.EnableDynamicLookAt(player, 6.0);
+		PlayBark(npc);
+		return true;
+	}
+}
+
+class MCM_AR_Shani_NightFiller extends MCM_RomanceInteraction
+{
+	default id              = 'shani_night_filler';
+	default targetNpc       = 'shani';
+	default minAffinity     = 0;
+	default cooldownSeconds = 600.0;
+	default triggerType     = RTT_OneLiner;
+	default weight          = 8;
+	default barkMimic       = 'flirt';
+	default barkVoiceset    = 'greeting_geralt';
+	default lineText        = "A medic's work doesn't end at sundown.";
+	default lineKey         = "ar_line_shani_night_filler";
+
+	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
+	{
+		if (!ctx.isNight) return "not_night";
+		return "";
+	}
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		npc.EnableDynamicLookAt(player, 6.0);
+		PlayBark(npc);
+		return true;
+	}
+}
+
+// --- Contextual barks ---
+
+class MCM_AR_WeatherBark extends MCM_RomanceInteraction
+{
+	default id              = 'ar_weather_bark';
+	default targetNpc       = '';
+	default minAffinity     = 0;
+	default cooldownSeconds = 900.0;
+	default triggerType     = RTT_OneLiner;
+	default weight          = 5;
+	default barkVoiceset    = 'greeting_geralt';
+	default lineText        = "This weather... at least we're in it together.";
+	default lineKey         = "ar_line_weather_bark";
+
+	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
+	{
+		if (ctx.weatherName != 'WT_Rain_Storm' && ctx.weatherName != 'WT_Light_Rain' &&
+		    ctx.weatherName != 'WT_Sun_Shower' && ctx.weatherName != 'WT_Snow' &&
+		    ctx.weatherName != 'WT_Blizzard' && ctx.weatherName != 'WT_Fog')
+		{
+			return "weather_ok";
+		}
+		return "";
+	}
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		npc.EnableDynamicLookAt(player, 6.0);
+		PlayBark(npc);
+		return true;
+	}
+}
+
+class MCM_AR_HorseBark extends MCM_RomanceInteraction
+{
+	default id              = 'ar_horse_bark';
+	default targetNpc       = '';
+	default minAffinity     = 0;
+	default cooldownSeconds = 600.0;
+	default triggerType     = RTT_OneLiner;
+	default weight          = 6;
+	default barkVoiceset    = 'greeting_geralt';
+	default lineText        = "Riding with you beats walking alone.";
+	default lineKey         = "ar_line_horse_bark";
+
+	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
+	{
+		if (!ctx.playerMounted || ctx.playerOnBoat) return "not_mounted";
+		return "";
+	}
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		npc.EnableDynamicLookAt(player, 6.0);
+		PlayBark(npc);
+		return true;
+	}
+}
+
+class MCM_AR_InteriorBark extends MCM_RomanceInteraction
+{
+	default id              = 'ar_interior_bark';
+	default targetNpc       = '';
+	default minAffinity     = 0;
+	default cooldownSeconds = 600.0;
+	default triggerType     = RTT_OneLiner;
+	default weight          = 5;
+	default barkVoiceset    = 'greeting_geralt';
+	default lineText        = "Nice to be out of the wind for a bit.";
+	default lineKey         = "ar_line_interior_bark";
+
+	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
+	{
+		if (!ctx.isInInterior || ctx.isInTavern) return "not_in_interior";
+		return "";
+	}
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		npc.EnableDynamicLookAt(player, 6.0);
+		PlayBark(npc);
+		return true;
+	}
+}
+
+class MCM_AR_BoatBark extends MCM_RomanceInteraction
+{
+	default id              = 'ar_boat_bark';
+	default targetNpc       = '';
+	default minAffinity     = 0;
+	default cooldownSeconds = 600.0;
+	default triggerType     = RTT_OneLiner;
+	default weight          = 5;
+	default barkVoiceset    = 'greeting_geralt';
+	default lineText        = "Water, wind and you. Could be worse.";
+	default lineKey         = "ar_line_boat_bark";
+
+	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
+	{
+		if (!ctx.playerOnBoat) return "not_on_boat";
+		return "";
+	}
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		npc.EnableDynamicLookAt(player, 6.0);
+		PlayBark(npc);
+		return true;
+	}
+}
+
+// --- Afterglow & Jealousy ---
+
+class MCM_AR_AfterglowBark extends MCM_RomanceInteraction
+{
+	default id              = 'ar_afterglow';
+	default targetNpc       = '';
+	default minAffinity     = 0;
+	default cooldownSeconds = 300.0;
+	default triggerType     = RTT_OneLiner;
+	default weight          = 8;
+	default isTimeCritical  = true;
+	default barkMimic       = 'flirt';
+	default barkVoiceset    = 'greeting_geralt';
+	default lineText        = "That was... nice. Don't be a stranger.";
+	default lineKey         = "ar_line_afterglow";
+
+	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
+	{
+		var core : MCM_AutonomousRomanceCore;
+		core = MCM_AR_GetCore();
+		if (!core || core.lastSceneOkNpc != npc.scmcc.data.nam) return "no_recent_scene";
+		if (theGame.GetEngineTimeAsSeconds() - core.lastSceneOkTime > 120.0) return "no_recent_scene";
+		return "";
+	}
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		var nam : name;
+
+		if (!npc || !npc.scmcc || !npc.scmcc.data) return false;
+		nam = npc.scmcc.data.nam;
+
+		switch (nam)
+		{
+			case 'yennefer':
+				lineKey  = "ar_afterglow_walk_yen";
+				lineText = "Still thinking about that, Geralt? Keep your eyes on the road.";
+				break;
+			case 'triss':
+				lineKey  = "ar_afterglow_walk_triss";
+				lineText = "My heart's still racing a bit... It's good to be with you.";
+				break;
+			case 'keira_metz':
+			case 'keira':
+				lineKey  = "ar_afterglow_walk_keira";
+				lineText = "Mmm, that certainly put some color in my cheeks.";
+				break;
+			case 'shani':
+				lineKey  = "ar_afterglow_walk_shani";
+				lineText = "A moment like that makes the whole journey lighter.";
+				break;
+			case 'anna_henrietta':
+				lineKey  = "ar_afterglow_walk_anarietta";
+				lineText = "A delightful interlude, Geralt. Let us not neglect what lies ahead.";
+				break;
+			case 'sq701_vivienne':
+			case 'vivienne':
+				lineKey  = "ar_afterglow_walk_vivienne";
+				lineText = "My thoughts are lighter now... Thank you, Geralt.";
+				break;
+			case 'becca':
+			case 'cerys':
+				lineKey  = "ar_afterglow_walk_cerys";
+				lineText = "Ha! Not losing your step, are you, Geralt?";
+				break;
+			case 'rosa_var_attre':
+				lineKey  = "ar_afterglow_walk_rosa";
+				lineText = "Careful not to trip, witcher. Your head seems elsewhere.";
+				break;
+			case 'prologue_village_herbalist':
+			case 'tomira':
+				lineKey  = "ar_afterglow_walk_tomira";
+				lineText = "The wild doesn't seem quite so harsh with you beside me.";
+				break;
+			case 'syanna':
+				lineKey  = "ar_afterglow_walk_syanna";
+				lineText = "Surprised you're still walking straight, witcher.";
+				break;
+			case 'philippa_eilhart':
+			case 'filippa':
+				lineKey  = "ar_afterglow_walk_philippa";
+				lineText = "Satisfactory distraction. Now keep your guard up.";
+				break;
+			case 'ves':
+				lineKey  = "ar_afterglow_walk_ves";
+				lineText = "Don't lose your focus now. Miles to go.";
+				break;
+			case 'mh303_succbus_v2':
+			case 'salma':
+				lineKey  = "ar_afterglow_walk_salma";
+				lineText = "Your warmth stays with me, witcher... Delicious.";
+				break;
+			case 'pryscilla':
+			case 'priscilla':
+				lineKey  = "ar_afterglow_walk_priscilla";
+				lineText = "A melody in the middle of nowhere. Thank you, Geralt.";
+				break;
+			case 'edna_var_attre':
+				lineKey  = "ar_afterglow_walk_edna";
+				lineText = "Still smiling, witcher? It was just a taste.";
+				break;
+			case 'fringilla_vigo':
+			case 'fringilla':
+				lineKey  = "ar_afterglow_walk_fringilla";
+				lineText = "A brief peace in a bitter war. Let's keep moving.";
+				break;
+			case 'margarita':
+			case 'margaritta':
+				lineKey  = "ar_afterglow_walk_margarita";
+				lineText = "A rare touch of comfort on an endless road.";
+				break;
+			case 'vampire_diva':
+			case 'oriana':
+			case 'orianna':
+				lineKey  = "ar_afterglow_walk_orianna";
+				lineText = "That taste lingers delightfully. Let's see what else the road brings.";
+				break;
+			case 'cirilla':
+			case 'ciri':
+				lineKey   = "ar_afterglow_walk_ciri";
+				lineText  = "Good to walk beside you, Geralt. Like old times.";
+				barkMimic = 'smile';
+				break;
+			default:
+				lineKey   = "ar_line_afterglow";
+				lineText  = "That was... nice. Don't be a stranger.";
+				barkMimic = 'flirt';
+				break;
+		}
+
+		if (nam != 'cirilla' && nam != 'ciri')
+		{
+			barkMimic = 'flirt';
+		}
+
+		npc.EnableDynamicLookAt(player, 6.0);
+		PlayBark(npc);
+		return true;
+	}
+}
+
+class MCM_AR_JealousyAftermath extends MCM_RomanceInteraction
+{
+	default id              = 'ar_jealousy_aftermath';
+	default targetNpc       = '';
+	default minAffinity     = 0;
+	default cooldownSeconds = 600.0;
+	default triggerType     = RTT_OneLiner;
+	default weight          = 7;
+	default isTimeCritical  = true;
+	default barkVoiceset    = 'greeting_geralt';
+	default lineText        = "I saw that. You could at least pretend to be discreet.";
+	default lineKey         = "ar_line_jealousy_aftermath";
+
+	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
+	{
+		var core : MCM_AutonomousRomanceCore;
+		core = MCM_AR_GetCore();
+		if (!MCM_AR_GetConfig().IsJealousyModeOn()) return "jealousy_off";
+		if (!core || !ctx.hasRivals) return "no_rivals";
+		if (theGame.GetEngineTimeAsSeconds() - core.lastSceneOkTime > 300.0) return "no_recent_scene";
+		if (!MCM_AR_AreRivals(npc.scmcc.data.nam, core.lastSceneOkNpc)) return "not_rival";
+		return "";
+	}
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		npc.EnableDynamicLookAt(player, 6.0);
+		PlayBark(npc);
+		return true;
+	}
+}
+
+// --- Rosa var Attre & Tomira ---
+
+class MCM_AR_Rosa_OneLinerFlirt extends MCM_RomanceInteraction
+{
+	default id              = 'rosa_oneliner_flirt';
+	default targetNpc       = 'rosa_var_attre';
+	default minAffinity     = 0;
+	default cooldownSeconds = 300.0;
+	default triggerType     = RTT_OneLiner;
+	default weight          = 10;
+	default barkMimic       = 'flirt';
+	default barkVoiceset    = 'greeting_geralt';
+	default lineText        = "Careful, witcher. I bruise egos for sport.";
+	default lineKey         = "ar_line_rosa_oneliner_flirt";
+
+	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
+	{
+		if (ctx.isNight) return "night";
+		return "";
+	}
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		npc.EnableDynamicLookAt(player, 6.0);
+		PlayBark(npc);
+		return true;
+	}
+}
+
+class MCM_AR_Tomira_OneLinerFlirt extends MCM_RomanceInteraction
+{
+	default id              = 'tomira_oneliner_flirt';
+	default targetNpc       = 'prologue_village_herbalist';
+	default minAffinity     = 0;
+	default cooldownSeconds = 300.0;
+	default triggerType     = RTT_OneLiner;
+	default weight          = 10;
+	default barkMimic       = 'flirt';
+	default barkVoiceset    = 'greeting_geralt';
+	default lineText        = "The road suits you, Geralt. My door is open if you tire of it.";
+	default lineKey         = "ar_line_tomira_oneliner_flirt";
+
+	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
+	{
+		if (ctx.isNight) return "night";
+		return "";
+	}
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		npc.EnableDynamicLookAt(player, 6.0);
+		PlayBark(npc);
+		return true;
+	}
+}
+
+class MCM_AR_Rosa_GiftRequest extends MCM_AR_GiftRequest_Base
+{
+	default id              = 'rosa_gift_request';
+	default targetNpc       = 'rosa_var_attre';
+	default lineText        = "Surely a witcher of your standing keeps a decent vintage on him?";
+	default lineKey         = "ar_line_rosa_gift_request";
+	default thanksLineText  = "Acceptable. For once.";
+	default thanksLineKey   = "ar_thanks_rosa";
+	default thanksVoiceset  = 'greeting_geralt';
+
+	public function GetCandidateGifts(out gifts : array<name>)
+	{
+		gifts.Clear();
+		gifts.PushBack('Est Est');
+		gifts.PushBack('Erveluce');
+		gifts.PushBack('Mettina Rose');
+	}
+}
+
+class MCM_AR_Tomira_GiftRequest extends MCM_AR_GiftRequest_Base
+{
+	default id              = 'tomira_gift_request';
+	default targetNpc       = 'prologue_village_herbalist';
+	default lineText        = "I'm running low on spirits for my tinctures. Spare any?";
+	default lineKey         = "ar_line_tomira_gift_request";
+	default thanksLineText  = "This will help more than you know. Thank you, Geralt.";
+	default thanksLineKey   = "ar_thanks_tomira";
+	default thanksVoiceset  = 'greeting_geralt';
+
+	public function GetCandidateGifts(out gifts : array<name>)
+	{
+		gifts.Clear();
+		gifts.PushBack('Alcohest');
+		gifts.PushBack('Dwarven spirit');
+		gifts.PushBack('Temerian rye');
+	}
+}
+
+//=============================================================================
+//  ROSA VAR ATTRE – Tier 3: Universal Kiss
+//=============================================================================
+
+class MCM_AR_Rosa_Kiss extends MCM_RomanceInteraction
+{
+	default id              = 'rosa_kiss';
+	default targetNpc       = 'rosa_var_attre';
+	default minAffinity     = 50;
+	default cooldownSeconds = 1800.0;
+	default triggerType     = RTT_Prompt;
+	default weight          = 5;
+	default barkMimic       = 'flirt';
+	default lineText        = "Geralt... Not so fast. Let me look at you.";
+	default lineKey         = "ar_line_rosa_kiss";
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		var consent : bool;
+		var ok      : bool;
+
+		SoftApproach(npc, player, 2.4);
+		PlayBark(npc);
+
+		if (MCM_AR_GetConfig().RequiresPlayerConsent())
+		{
+			consent = ShowConsentPrompt(AR_T("ar_prompt_rosa_kiss", "[C] Kiss Rosa"), 10.0, npc);
+		}
+		else
+		{
+			consent = WaitForApproach(npc, player, 2.4, 8.0);
+		}
+
+		if (!consent)
+		{
+			EndSoft(npc);
+			if (MCM_AR_GetConfig().RequiresPlayerConsent())
+			{
+				MarkRejected();
+			}
+			return false;
+		}
+
+		HardStage(npc, player, 1.5);
+		ok = PlayKissScene(npc);
+		EndInteraction(npc, player);
+		return ok;
+	}
+}
+
+//=============================================================================
+//  TOMIRA – Tier 3: Universal Kiss
+//=============================================================================
+
+class MCM_AR_Tomira_Kiss extends MCM_RomanceInteraction
+{
+	default id              = 'tomira_kiss';
+	default targetNpc       = 'prologue_village_herbalist';
+	default minAffinity     = 50;
+	default cooldownSeconds = 1800.0;
+	default triggerType     = RTT_Prompt;
+	default weight          = 5;
+	default barkMimic       = 'flirt';
+	default lineText        = "Come here, Geralt. You've earned a moment of peace.";
+	default lineKey         = "ar_line_tomira_kiss";
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		var consent : bool;
+		var ok      : bool;
+
+		SoftApproach(npc, player, 2.4);
+		PlayBark(npc);
+
+		if (MCM_AR_GetConfig().RequiresPlayerConsent())
+		{
+			consent = ShowConsentPrompt(AR_T("ar_prompt_tomira_kiss", "[C] Kiss Tomira"), 10.0, npc);
+		}
+		else
+		{
+			consent = WaitForApproach(npc, player, 2.4, 8.0);
+		}
+
+		if (!consent)
+		{
+			EndSoft(npc);
+			if (MCM_AR_GetConfig().RequiresPlayerConsent())
+			{
+				MarkRejected();
+			}
+			return false;
+		}
+
+		HardStage(npc, player, 1.5);
+		ok = PlayKissScene(npc);
+		EndInteraction(npc, player);
+		return ok;
+	}
+}
+
+//=============================================================================
+//  CIRILLA (CIRI) – Tier 3: Universal Hug (Warm Family Embrace)
+//=============================================================================
+
+class MCM_AR_Ciri_Hug extends MCM_RomanceInteraction
+{
+	default id              = 'ciri_hug';
+	default targetNpc       = 'cirilla';
+	default minAffinity     = 30;
+	default cooldownSeconds = 1200.0;
+	default triggerType     = RTT_Prompt;
+	default weight          = 8;
+	default barkMimic       = 'smile';
+	default lineText        = "Geralt... Good to have you beside me.";
+	default lineKey         = "ar_line_ciri_hug";
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		var consent : bool;
+		var ok      : bool;
+
+		SoftApproach(npc, player, 2.4);
+		PlayBark(npc);
+
+		if (MCM_AR_GetConfig().RequiresPlayerConsent())
+		{
+			consent = ShowConsentPrompt(AR_T("ar_prompt_ciri_hug", "[C] Hug Ciri"), 10.0, npc);
+		}
+		else
+		{
+			consent = WaitForApproach(npc, player, 2.4, 8.0);
+		}
+
+		if (!consent)
+		{
+			EndSoft(npc);
+			if (MCM_AR_GetConfig().RequiresPlayerConsent())
+			{
+				MarkRejected();
+			}
+			return false;
+		}
+
+		HardStage(npc, player, 1.5);
+		ok = PlayHugScene(npc);
+		EndInteraction(npc, player);
+		return ok;
 	}
 }
 

@@ -1,0 +1,236 @@
+;meta[language=esmx]
+; id      |key(hex)|key(str)| text
+2118800001|        |panel_AutonomousRomance|Autonomous Romance
+2118800002|        |panel_MCM_AR|Autonomous Romance
+2118800003|        |panel_MCME_AutonomousRomance|Autonomous Romance
+2118800004|        |preset_Mods.AutonomousRomance|Preajustes
+2118800005|        |preset_AutonomousRomance|Preajustes
+2118800006|        |preset_MCM_AR|Preajustes
+2118800007|        |preset_value_mcm_ar_preset_default|Estándar (Moderado - 12 min)
+2118800008|        |preset_value_mcm_ar_preset_active|Activo (Frecuente - 5 min)
+2118800009|        |preset_value_mcm_ar_preset_relaxed|Relajado (Baja frecuencia - 20 min)
+2118800010|        |preset_value_mcm_ar_preset_sandbox|Sandbox (Todo desbloqueado / Pruebas)
+2118800011|        |preset_value_mcm_ar_preset_disabled|Desactivado
+2118800012|        |option_mcm_ar_opt_enabled|Activar Autonomous Romance
+2118800013|        |option_MCM_AR_Enabled|Activar Autonomous Romance
+2118800014|        |option_mcm_ar_opt_cooldown|Enfriamiento entre iniciativas (segundos)
+2118800015|        |option_MCM_AR_CooldownSlider|Enfriamiento entre iniciativas (segundos)
+2118800016|        |option_mcm_ar_opt_affinity|Multiplicador de afinidad (5=0.5x | 10=1.0x | 20=2.0x | 50=5.0x)
+2118800017|        |option_MCM_AR_AffinityMult|Multiplicador de afinidad (5=0.5x | 10=1.0x | 20=2.0x | 50=5.0x)
+2118800018|        |option_mcm_ar_opt_jealousy|Modo celos (On=Celos / Off=Poliamor)
+2118800019|        |option_MCM_AR_JealousyMode|Modo celos (On=Celos / Off=Poliamor)
+2118800020|        |option_mcm_ar_opt_force|Sandbox: Desbloquear todos los niveles de romance (omite afinidad)
+2118800021|        |option_MCM_AR_ForceRomance|Sandbox: Desbloquear todos los niveles de romance (omite afinidad)
+2118800022|        |option_mcm_ar_opt_consent|Requerir consentimiento del jugador [C] para escenas íntimas
+2118800023|        |option_MCM_AR_RequireConsent|Requerir consentimiento del jugador [C] para escenas íntimas
+2118800024|        |option_mcm_ar_opt_debug|Depuración: Mostrar mensajes HUD en tiempo real
+2118800025|        |option_MCM_AR_DebugHud|Depuración: Mostrar mensajes HUD en tiempo real
+2118800026|        |option_mcm_ar_opt_tick|Intervalo de decisión (segundos)
+2118800027|        |option_MCM_AR_TickInterval|Intervalo de decisión (segundos)
+2118800028|        |ar_prompt_yen_closer|[C] Acércate a Yennefer
+2118800029|        |ar_prompt_yen_intimate|[C] Quédate a solas con Yennefer
+2118800030|        |ar_prompt_triss_stay|[C] Quédate con Triss
+2118800031|        |ar_prompt_triss_kiss|[C] Besa a Triss
+2118800032|        |ar_prompt_triss_intimate|[C] Quédate a solas con Triss
+2118800033|        |ar_prompt_keira_invite|[C] Acepta la invitación de Keira
+2118800034|        |ar_prompt_keira_intimate|[C] Quédate a solas con Keira
+2118800035|        |ar_prompt_shani_stay|[C] Quédate con Shani
+2118800036|        |ar_prompt_shani_intimate|[C] Quédate a solas con Shani
+2118800037|        |ar_prompt_anarietta_escort|[C] Acompaña a la duquesa
+2118800038|        |ar_prompt_anarietta_intimate|[C] Quédate a solas con la duquesa
+2118800039|        |ar_prompt_vivienne_stay|[C] Quédate con Vivienne
+2118800040|        |ar_prompt_vivienne_intimate|[C] Quédate a solas con Vivienne
+2118800041|        |ar_prompt_cerys_stay|[C] Quédate con Cerys
+2118800042|        |ar_prompt_cerys_intimate|[C] Quédate a solas con Cerys
+2118800043|        |ar_prompt_consent_hint|(mantén [C] ~1s o pulsa dos veces)
+2118800044|        |ar_prompt_gift|[C] Regala {1} a {2}
+2118800045|        |ar_msg_healed|{1} te ha curado (+{2} PS)
+2118800046|        |ar_msg_item_gone|La bebida ya no está en tu inventario.
+2118800047|        |ar_msg_remove_fail|No se pudo quitar {1} de tu inventario.
+2118800048|        |ar_msg_gift_given|Has regalado {1} a {2} (+3 afinidad)
+2118800049|        |ar_msg_naughty_near|El ambiente es propicio para la intimidad...
+2118800050|        |ar_msg_companion|Compañera
+2118800051|        |ar_menu_outfit|Atuendo: 
+2118800052|        |ar_outfit_normal|Normal
+2118800053|        |ar_outfit_underwear|Ropa interior
+2118800054|        |ar_outfit_nude|Desnuda
+2118800055|        |ar_line_yen_oneliner_flirt|Quizá sea raro, pero me gusta verte trabajar.
+2118800056|        |ar_line_yen_postcombat_care|La próxima vez quédate detrás de mí, ¿sí? Prefiero defenderte a tener que curarte después.
+2118800057|        |ar_line_yen_night_invitation|Ven, Geralt.
+2118800058|        |ar_line_yen_campfire_evening|Espléndido. Por fin tenemos ocasión de hablar.
+2118800059|        |ar_line_yen_intimate_invite|Que lamento no haberlo intentado antes. Mucho antes.
+2118800060|        |ar_line_yen_jealousy_snark|Vamos, Geralt. Te conozco. Lo suficiente como para saber exactamente qué pasa entre Triss y tú.
+2118800061|        |ar_line_yen_jealousy_snark2|Si crees que no veo lo que ocurre entre tú y esa pelirroja... te equivocas, Geralt.
+2118800062|        |ar_line_yen_tavern_wine|¿Geralt?
+2118800063|        |ar_line_triss_oneliner_flirt|Me gusta tenerte cerca, Geralt.
+2118800064|        |ar_line_triss_postcombat_hug|Vaya, Geralt... ¿en qué lío te has metido esta vez?
+2118800065|        |ar_line_triss_night_whisper|Mmmm, Geralt...
+2118800066|        |ar_line_triss_campfire_warmth|Quédate un rato junto al fuego, Geralt.
+2118800067|        |ar_line_triss_kiss_invite|Ven aquí, Geralt.
+2118800068|        |ar_line_triss_intimate_invite|Mmmm, Geralt...
+2118800069|        |ar_line_triss_jealousy_snark|¿De verdad quieres hablar de eso? ¿Quizá debería llamar a Yennefer? No querrá perderse nada de esto.
+2118800070|        |ar_line_keira_oneliner_flirt|Vaya, definitivamente no eres un niño. Eres un brujo fuerte y sereno que seguro ayudará a una dama en apuros.
+2118800071|        |ar_line_keira_postcombat_heal|Quédate quieto, déjame ver esa herida.
+2118800072|        |ar_line_keira_night_proposal|Me atrevo a decir que esta, una vez abierta, te encantaría... En fin, si cambias de idea, ven a verme.
+2118800073|        |ar_line_keira_campfire_witch|Quizá... ¿quizá podrías quedarte un poco más? Aún hay un pequeño favor que podrías hacerme.
+2118800074|        |ar_line_keira_intimate_invite|Me atrevo a decir que esta, una vez abierta, te encantaría... En fin, si cambias de idea, ven a verme.
+2118800075|        |ar_line_shani_oneliner_flirt|Creo que estás encantador.
+2118800076|        |ar_line_shani_postcombat_medic|¿Necesitas ayuda?
+2118800077|        |ar_line_shani_night_relax|Te vendría bien relajarte de vez en cuando.
+2118800078|        |ar_line_shani_intimate_invite|Te vendría bien relajarte de vez en cuando.
+2118800079|        |ar_line_yen_gift_request|Una copa de buen vino me vendría de maravilla, Geralt.
+2118800080|        |ar_line_triss_gift_request|Geralt, ¿no tendrás por casualidad algo de vino?
+2118800081|        |ar_line_keira_gift_request|Ahora mismo me vendría muy bien un trago de buen vino.
+2118800082|        |ar_line_shani_gift_request|Qué día tan largo... ¿Tienes algo de beber?
+2118800083|        |ar_line_anarietta_oneliner_flirt|Un vino excelente. Tienes buen gusto.
+2118800084|        |ar_line_anarietta_postcombat_pride|Hay algo que me gustaría saber... ¿Cómo puedes estar tan malditamente tranquilo?
+2118800085|        |ar_line_anarietta_night_royal|Ven, brujo.
+2118800086|        |ar_line_anarietta_intimate_invite|Ven, brujo.
+2118800087|        |ar_line_vivienne_oneliner_flirt|Un buen día para cabalgar, ¿no crees?
+2118800088|        |ar_line_vivienne_campfire_mystery|Ven.
+2118800089|        |ar_line_vivienne_night_invitation|¿Me acompañas a pasear, Geralt?
+2118800090|        |ar_line_vivienne_intimate_invite|La noche nos es propicia, Geralt.
+2118800091|        |ar_line_cerys_oneliner_flirt|¡Enséñame de lo que eres capaz, matamonstruos!
+2118800092|        |ar_line_cerys_postcombat_skellige|¿Sigues en pie? Bien. Skellige no necesita más viudas.
+2118800093|        |ar_line_cerys_night_invitation|¡Geralt! ¡Ven! ¡Creo que tengo una idea!
+2118800094|        |ar_line_cerys_intimate_invite|¡Geralt! ¡Ven! ¡Creo que tengo una idea!
+2118800095|        |ar_line_anarietta_gift_request|Un vino excelente. Tienes buen gusto.
+2118800096|        |ar_line_vivienne_gift_request|¿Compartirías una copa conmigo, brujo?
+2118800097|        |ar_line_cerys_gift_request|¿Llevas algo fuerte en esa mochila, brujo?
+2118800098|        |ar_line_philippa_gift_request|Sírveme algo decente, Geralt.
+2118800099|        |ar_line_syanna_gift_request|¿Tienes algo de beber, brujo? Caminar da sed.
+2118800100|        |ar_line_salma_gift_request|¿Llevas encima algún vino dulce?
+2118800101|        |ar_line_ves_gift_request|¿Tienes algún licor para quitarme el polvo del camino?
+2118800102|        |ar_thanks_yen|Gracias, Geralt.
+2118800103|        |ar_thanks_triss|Gracias, es maravilloso.
+2118800104|        |ar_thanks_keira|Mmm, sí que sabes tratar a una dama.
+2118800105|        |ar_thanks_shani|Justo lo que necesitaba, gracias Geralt.
+2118800106|        |ar_thanks_anarietta|Tiene mi más sincera gratitud, brujo.
+2118800107|        |ar_thanks_vivienne|Eres muy amable, Geralt.
+2118800108|        |ar_thanks_cerys|¡Ja! ¡De eso hablaba!
+2118800109|        |ar_thanks_philippa|Aceptable. Has aprendido modales.
+2118800110|        |ar_thanks_syanna|Gracias. Lo necesitaba.
+2118800111|        |ar_thanks_salma|Mmm, delicioso. Gracias.
+2118800112|        |ar_thanks_ves|Buen trago. Te lo agradezco, Geralt.
+2118800113|        |ar_msg_travel_aff|Tu vínculo con {1} crece por el camino (+1)
+2118800114|        |ar_line_triss_tavern_drink|¿Otra ronda? Esta la pago yo.
+2118800115|        |ar_line_keira_tavern_drink|¿Una copa, Geralt? Hasta una hechicera necesita desconectar.
+2118800116|        |ar_line_shani_tavern_drink|Siéntate y bebe. Receta médica.
+2118800117|        |ar_line_anarietta_tavern_drink|La duquesa se permite este único capricho.
+2118800118|        |ar_line_vivienne_tavern_drink|Un momento de paz y buen vino. Dones escasos.
+2118800119|        |ar_line_cerys_tavern_drink|El hidromiel de Skellige supera a este brebaje, pero la compañía ayuda.
+2118800120|        |ar_line_yen_night_filler|La noche nos sienta bien, brujo.
+2118800121|        |ar_line_triss_night_filler|Qué silencio... A esta hora el mundo me gusta más.
+2118800122|        |ar_line_keira_night_filler|¿Tú tampoco puedes dormir? Las noches de aldea son muy aburridas.
+2118800123|        |ar_line_shani_night_filler|El trabajo de una médica no termina al atardecer.
+2118800124|        |ar_line_anarietta_night_filler|Las noches de Toussaint se hicieron para pasear.
+2118800125|        |ar_line_vivienne_night_filler|Antes temía la noche. Ya no.
+2118800126|        |ar_line_cerys_night_filler|Las noches de Skellige son más frías. Esto no es nada.
+2118800127|        |mcm_ar_opt_barkpreset|Charla de compañeras (1=Silencio, 2=Normal, 3=Habladoras)
+2118800128|        |ar_line_weather_bark|Qué tiempo... al menos lo pasamos juntos.
+2118800129|        |ar_line_horse_bark|Cabalgar contigo es mejor que caminar sola.
+2118800130|        |ar_line_interior_bark|Qué bien resguardarse del viento un rato.
+2118800131|        |ar_line_boat_bark|Agua, viento y tú. Podría ser peor.
+2118800132|        |ar_line_afterglow|Ha sido... agradable. No te hagas el extraño.
+2118800133|        |ar_line_jealousy_aftermath|Lo vi. Podrías al menos fingir ser discreto.
+2118800134|        |ar_line_rosa_oneliner_flirt|Cuidado, brujo. Destrozo egos por deporte.
+2118800135|        |ar_line_tomira_oneliner_flirt|El camino te sienta bien, Geralt. Mi puerta está abierta si te cansas de él.
+2118800136|        |ar_line_rosa_gift_request|Un brujo de tu categoría seguro que lleva un buen vino encima, ¿no?
+2118800137|        |ar_thanks_rosa|Aceptable. Por una vez.
+2118800138|        |ar_line_tomira_gift_request|Me quedo sin alcohol para mis tinturas. ¿Me prestas un poco?
+2118800139|        |ar_thanks_tomira|Esto ayudará más de lo que crees. Gracias, Geralt.
+2118800140|        |option_mcm_ar_opt_barkpreset|Charla de compañeras (1=Silencio, 2=Normal, 3=Habladoras)
+2118800141|        |option_MCM_AR_BarkPreset|Charla de compañeras (1=Silencio, 2=Normal, 3=Habladoras)
+2118800142|        |preset_Mods_AutonomousRomance|Autonomous Romance v1.1.0
+2118800143|        |ar_prompt_rosa_kiss|[C] Besar a Rosa
+2118800144|        |ar_line_rosa_kiss|Geralt... No tan rápido. Déjame mirarte.
+2118800145|        |ar_afterglow_rosa|Nada mal. Aunque mi esgrima sigue siendo más afilada que la tuya.
+2118800146|        |ar_prompt_tomira_kiss|[C] Besar a Tomira
+2118800147|        |ar_line_tomira_kiss|Ven aquí, Geralt. Te has ganado un momento de paz.
+2118800148|        |ar_afterglow_tomira|Más dulce que cualquier hierba de mi jardín. Cuídate en el camino.
+2118800149|        |ar_prompt_ciri_hug|[C] Abrazar a Ciri
+2118800150|        |ar_line_ciri_hug|Geralt... Me alegro de tenerte a mi lado.
+2118800151|        |ar_afterglow_ciri|Es bueno estar juntos de nuevo, Geralt.
+2118800152|        |ar_afterglow_yen|Una agradable distracción. Sigamos adelante, Geralt.
+2118800153|        |ar_afterglow_triss|Lo echaba de menos... Quédate cerca, ¿vale?
+2118800154|        |ar_afterglow_keira|Mmm... Desde luego no has perdido el toque, brujo.
+2118800155|        |ar_afterglow_shani|Eso ha hecho este viaje mucho mejor, Geralt.
+2118800156|        |ar_afterglow_anarietta|Un momento encantador. Ahora, atendamos a nuestros deberes.
+2118800157|        |ar_afterglow_vivienne|Gracias, Geralt. Traes calidez a mi corazón.
+2118800158|        |ar_afterglow_cerys|¡Ja! Nada mal, brujo, nada mal.
+2118800159|        |ar_line_syanna_oneliner_flirt|¿Sigues mirando, Geralt? Haz un retrato, dura más.
+2118800160|        |ar_line_syanna_postcombat|Nada mal con esa espada de plata. Por un segundo casi me sentí a salvo.
+2118800161|        |ar_prompt_syanna_kiss|[C] Besar a Syanna
+2118800162|        |ar_line_syanna_kiss|Ven aquí, Geralt. No te hagas el tímido ahora.
+2118800163|        |ar_prompt_syanna_intimate|[C] Quedarse a solas con Syanna
+2118800164|        |ar_line_syanna_intimate_invite|Recuerdo las nubes... y lo que hicimos sobre ellas. ¿Quieres recordármelo?
+2118800165|        |ar_afterglow_syanna|No creí que lo tuvieras dentro, brujo. Agradable sorpresa.
+2118800166|        |ar_line_philippa_oneliner_flirt|Silencio, Geralt. Pensar nunca fue tu fuerte.
+2118800167|        |ar_line_philippa_care|¿Sigues respirando? Bien. Eres mucho más útil de una pieza.
+2118800168|        |ar_prompt_philippa_kiss|[C] Besar a Philippa
+2118800169|        |ar_line_philippa_kiss|Geralt. Acércate... y no me hagas repetirme.
+2118800170|        |ar_afterglow_philippa|Satisfactorio, Geralt. No nos acostumbremos a entretenernos.
+2118800171|        |ar_line_ves_oneliner_flirt|Ojos al frente, brujo. Vernon tiene bastantes exploradores sin que vigiles mi espalda.
+2118800172|        |ar_line_ves_campfire|Nada como una fogata y una hoja afilada. Siéntate, recupera el aliento.
+2118800173|        |ar_prompt_ves_kiss|[C] Besar a Ves
+2118800174|        |ar_line_ves_kiss|Tranquilo ahora. Sin comandantes, sin guerra... solo nosotros.
+2118800175|        |ar_afterglow_ves|¿No eres blando, verdad? Bien. De vuelta al camino.
+2118800176|        |ar_line_salma_oneliner_flirt|Tu aura... arde más cálida que la de cualquier mortal, brujo.
+2118800177|        |ar_line_salma_allure|¿Cansado, lobo blanco? Deja que mi aroma calme tus pensamientos.
+2118800178|        |ar_prompt_salma_kiss|[C] Besar a Salma
+2118800179|        |ar_line_salma_kiss|Ven, dulce cazador. Un toque no te hará daño...
+2118800180|        |ar_afterglow_salma|Mmm... Delicioso. Siempre sabes cómo complacerme.
+2118800181|        |ar_line_priscilla_oneliner_flirt|El camino contigo parece una balada que aún está por escribirse.
+2118800182|        |ar_line_priscilla_care|Descansa un momento, Geralt. Incluso los héroes deben pausar entre estrofas.
+2118800183|        |ar_prompt_priscilla_kiss|[C] Besar a Priscilla
+2118800184|        |ar_line_priscilla_kiss|Geralt... Quédate cerca. Deja que este momento perdure.
+2118800185|        |ar_afterglow_priscilla|Como un verso de una balada olvidada. Gracias, Geralt.
+2118800186|        |ar_line_priscilla_gift_request|Se me seca la garganta con el camino. ¿Llevas algún buen vino, Geralt?
+2118800187|        |ar_thanks_priscilla|Exquisito. Mi voz te lo agradece, Geralt.
+2118800188|        |ar_line_edna_oneliner_flirt|Mi hermana cree que es la única que aprecia tu rudo encanto.
+2118800189|        |ar_line_edna_care|Pareces agotado, brujo. La etiqueta de la corte nilfgaardiana es más fácil que tu vida.
+2118800190|        |ar_prompt_edna_kiss|[C] Besar a Edna
+2118800191|        |ar_line_edna_kiss|Deja que Rosa practique sus paradas. Ven aquí, Geralt.
+2118800192|        |ar_afterglow_edna|Audaz, brujo. Mucho más audaz de lo que cree mi hermana.
+2118800193|        |ar_line_edna_gift_request|¿Por casualidad llevas un vino que merezca la pena en esa bolsa de cuero?
+2118800194|        |ar_thanks_edna|Mucho mejor de lo que esperaba. Gracias, brujo.
+2118800195|        |ar_line_fringilla_oneliner_flirt|¿Sigues mirándome con esa cautelosa mirada nilfgaardiana, Geralt?
+2118800196|        |ar_line_fringilla_care|La magia calienta el acero frío, brujo. No te esfuerces tanto.
+2118800197|        |ar_prompt_fringilla_kiss|[C] Besar a Fringilla
+2118800198|        |ar_line_fringilla_kiss|La Logia no está mirando, Geralt. Acércate.
+2118800199|        |ar_afterglow_fringilla|Un raro momento de ternura. Lo recordaré.
+2118800200|        |ar_line_fringilla_gift_request|Una gota de buen vino del sur me despejaría la mente. ¿Tienes alguno?
+2118800201|        |ar_thanks_fringilla|Me recuerda a mi hogar. Gracias, Geralt.
+2118800202|        |ar_line_margarita_oneliner_flirt|Aretuza me enseñó disciplina, Geralt. Tú me tientas a olvidarla.
+2118800203|        |ar_line_margarita_care|Cargas demasiadas heridas, viejo amigo. Déjate respirar.
+2118800204|        |ar_prompt_margarita_kiss|[C] Besar a Margarita
+2118800205|        |ar_line_margarita_kiss|Ven aquí, Geralt. Ambos hemos soportado suficiente frío.
+2118800206|        |ar_afterglow_margarita|El calor es valioso en tiempos como estos. Gracias.
+2118800207|        |ar_line_margarita_gift_request|Tras las mazmorras de Oxenfurt, cualquier licor cálido es una bendición. ¿Tienes un poco?
+2118800208|        |ar_thanks_margarita|Calor... verdadero calor. Gracias, Geralt.
+2118800209|        |ar_line_orianna_oneliner_flirt|Tu sangre huele rica, brujo... pero te prefiero vivo y conversando.
+2118800210|        |ar_line_orianna_care|Descansa, Geralt. Incluso el corazón de un brujo debe cansarse bajo tal tensión.
+2118800211|        |ar_prompt_orianna_kiss|[C] Besar a Orianna
+2118800212|        |ar_line_orianna_kiss|Acércate, brujo. Déjame saborear este momento tranquilo contigo.
+2118800213|        |ar_afterglow_orianna|Exquisito... Un sabor al que fácilmente podría acostumbrarme.
+2118800214|        |ar_line_orianna_gift_request|¿Posees una cosecha con suficiente profundidad para intrigar a mi paladar?
+2118800215|        |ar_thanks_orianna|Exquisito. Sigues superando mis expectativas.
+2118800216|        |ar_afterglow_walk_yen|¿Sigues pensando en eso, Geralt? No quites los ojos del camino.
+2118800217|        |ar_afterglow_walk_triss|El corazón todavía me late con fuerza... Es bueno estar contigo.
+2118800218|        |ar_afterglow_walk_keira|Mmm, eso sin duda me devolvió el color a las mejillas.
+2118800219|        |ar_afterglow_walk_shani|Un momento así hace que todo el camino se sienta más ligero.
+2118800220|        |ar_afterglow_walk_anarietta|Un intermedio encantador, Geralt. No descuidemos lo que nos espera.
+2118800221|        |ar_afterglow_walk_vivienne|Siento los pensamientos más ligeros ahora... Gracias, Geralt.
+2118800222|        |ar_afterglow_walk_cerys|¡Ja! ¿No se te traba el paso, Geralt?
+2118800223|        |ar_afterglow_walk_rosa|Cuidado con tropezar, brujo. Se nota que traes la cabeza en otro lado.
+2118800224|        |ar_afterglow_walk_tomira|El campo no parece tan duro teniéndote a mi lado.
+2118800225|        |ar_afterglow_walk_syanna|Me sorprende que todavía camines derecho, brujo.
+2118800226|        |ar_afterglow_walk_philippa|Distracción aceptable. Ahora mantén la guardia en alto.
+2118800227|        |ar_afterglow_walk_ves|No te me distraigas. Faltan muchas leguas de camino.
+2118800228|        |ar_afterglow_walk_salma|Tu calor se queda conmigo, brujo... Exquisito.
+2118800229|        |ar_afterglow_walk_priscilla|Una melodía a mitad de la nada. Gracias, Geralt.
+2118800230|        |ar_afterglow_walk_edna|¿Sigues sonriendo, brujo? Apenas fue una probadita.
+2118800231|        |ar_afterglow_walk_fringilla|Una breve pausa en una guerra amarga. Sigamos adelante.
+2118800232|        |ar_afterglow_walk_margarita|Un consuelo raro en un camino interminable.
+2118800233|        |ar_afterglow_walk_orianna|Ese sabor permanece delicioso. Veamos qué más trae el camino.
+2118800234|        |ar_afterglow_walk_ciri|Se siente bien caminar a tu lado, Geralt. Como en los viejos tiempos.

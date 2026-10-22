@@ -102,6 +102,27 @@ class MCM_AR_ConfigWrapper
 	{
 		return GetBool('MCM_AR', 'MCM_AR_DebugHud', true);
 	}
+
+	// Preset gadatliwosci barkow: 1=Quiet, 2=Default, 3=Chatty (suwak 1-3)
+	public function GetBarkPreset() : int
+	{
+		var val : float;
+		val = GetFloat('MCM_AR', 'MCM_AR_BarkPreset', 2.0);
+		if (val <= 1.0) return 1;
+		if (val >= 3.0) return 3;
+		return 2;
+	}
+
+	public function EnsureMCMDefaults()
+	{
+		var wrapper : CInGameConfigWrapper;
+		wrapper = theGame.GetInGameConfigWrapper();
+		if (!wrapper) return;
+		if (StrLen(wrapper.GetVarValue('MCM_AR', 'MCM_AR_BarkPreset')) == 0)
+		{
+			wrapper.SetVarValue('MCM_AR', 'MCM_AR_BarkPreset', 2);
+		}
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -118,6 +139,7 @@ function MCM_AR_GetConfig() : MCM_AR_ConfigWrapper
 	if (!mcm_ar_config)
 	{
 		mcm_ar_config = new MCM_AR_ConfigWrapper in this;
+		mcm_ar_config.EnsureMCMDefaults();
 	}
 	return mcm_ar_config;
 }
@@ -307,24 +329,72 @@ class MCM_RomanceAffinityResolver
 				if (FactsQuerySum('q206_csi_completed') > 0)  score += 20;
 				break;
 
+			// ----- Ciri -----
+			case 'cirilla':
+				score += 50;
+				if (FactsQuerySum('q403_ciri_met') > 0) score += 20;
+				break;
+
 			// ----- Syanna -----
 			case 'syanna':
 				if (FactsQuerySum('q705_syanna_correct') > 0) score += 40;
+				if (FactsQuerySum('q704_syanna_sex') > 0 || FactsQuerySum('q704_sex_with_syanna') > 0) score += 30;
 				break;
 
 			// ----- Filippa -----
 			case 'philippa_eilhart':
+			case 'filippa':
 				if (FactsQuerySum('sq302_philippa') > 0)      score += 30;
 				break;
 
 			// ----- Salma -----
 			case 'mh303_succbus_v2':
+			case 'salma':
 				if (FactsQuerySum('mh303_succubus_spared') > 0) score += 30;
 				break;
 
 			// ----- Ves -----
 			case 'ves':
 				if (FactsQuerySum('sq312_fact_ves_alive') > 0) score += 40;
+				break;
+
+			// ----- Priscilla -----
+			case 'pryscilla':
+			case 'priscilla':
+				if (FactsQuerySum('q305_dandelion_rescued') > 0) score += 30;
+				break;
+
+			// ----- Edna var Attre -----
+			case 'edna_var_attre':
+				if (FactsQuerySum('sq302_completed') > 0) score += 20;
+				break;
+
+			// ----- Fringilla Vigo -----
+			case 'fringilla_vigo':
+			case 'fringilla':
+				if (FactsQuerySum('q501_lodge_gathered') > 0) score += 30;
+				break;
+
+			// ----- Margarita -----
+			case 'margarita':
+			case 'margaritta':
+				if (FactsQuerySum('q310_margarita_rescued') > 0) score += 30;
+				break;
+
+			// ----- Orianna -----
+			case 'vampire_diva':
+			case 'oriana':
+			case 'orianna':
+				if (FactsQuerySum('q701_wine_festival') > 0) score += 25;
+				break;
+
+			case 'rosa_var_attre':
+				if (FactsQuerySum('sq302_completed') > 0)     score += 25;
+				if (FactsQuerySum('sq302_rosa_defeated') > 0) score += 15;
+				break;
+
+			case 'prologue_village_herbalist':
+				if (FactsQuerySum('q103_tomira_saved_lena') > 0) score += 20;
 				break;
 		}
 

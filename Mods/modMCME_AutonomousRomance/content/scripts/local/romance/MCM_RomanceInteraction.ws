@@ -35,6 +35,11 @@ class MCM_RomanceContext
 	// Czy w zasiegu 30m jest "sweet spot" MCME (NaughtyPoint) –
 	// zaproszenia intymne padają zanim staniemy na punkcie (scena: <=20m)
 	public var isNearNaughtySpot : bool;
+	// Kontekstowe T1: pogoda silnikowa (WT_*), jazda konna, łódź, wnętrze
+	public var weatherName     : name;
+	public var playerMounted   : bool;
+	public var playerOnBoat    : bool;
+	public var isInInterior    : bool;
 }
 
 // ---------------------------------------------------------------------------
@@ -49,6 +54,8 @@ class MCM_RomanceInteraction
 	public var cooldownSeconds : float;
 	public var triggerType     : ERomanceTriggerType;
 	public var weight          : int;    // priorytet losowania (wyższy = częściej)
+	public var isTimeCritical  : bool;   // okno czasowe: prio w kanale ambient, omija los presetu
+	default isTimeCritical = false;
 
 	// Treść barku – data-driven (klasa akcji ustawia default, retune bez kodu)
 	public var lineId          : int;    // voiced line id (0 = tylko tekst HUD)
@@ -170,6 +177,7 @@ class MCM_RomanceInteraction
 	{
 		var vsPlayed : bool;
 		var txt      : string;
+		var core     : MCM_AutonomousRomanceCore;
 
 		if (!npc) return;
 		if (IsNameValid(barkMimic))
@@ -178,8 +186,11 @@ class MCM_RomanceInteraction
 		}
 		// Napis HUD: w3strings (ar_line_*) w jezyku gry, fallback EN.
 		txt = AR_T(lineKey, lineText);
-		// Voiceset ma pierwszeństwo dla audio (zawsze głos tego NPC)
-		if (IsNameValid(barkVoiceset))
+		core = MCM_AR_GetCore();
+		// Voiceset ma pierwszeństwo dla audio (zawsze głos tego NPC).
+		// Dla NPC z cache voiceset-miss (np. Rosa/Tomira) pomijamy probe -
+		// ten sam efekt (napis), zero spamu warningow w logu.
+		if (IsNameValid(barkVoiceset) && (!core || !core.MCM_AR_IsVoicesetMissing(npc.scmcc.data.nam)))
 		{
 			vsPlayed = npc.PlayVoiceset(100, barkVoiceset);
 			if (vsPlayed)
@@ -193,8 +204,10 @@ class MCM_RomanceInteraction
 			else
 			{
 				// Cicha degradacja (ARCHITECTURE §15.1): voicesetu brak
-				// w danych audio tego NPC -> fallback na lineId + HUD
-				MCM_AR_Log("[AR] voiceset missing '" + NameToString(barkVoiceset) + "' on " + NameToString(npc.scmcc.data.nam) + " - fallback lineId");
+				// w danych audio tego NPC -> fallback na lineId + HUD.
+				// Log tylko przy 1. missie, potem NPC trafia do cache.
+				MCM_AR_Log("[AR] voiceset missing '" + NameToString(barkVoiceset) + "' on " + NameToString(npc.scmcc.data.nam) + " - fallback lineId (cached)");
+				if (core) core.MCM_AR_MarkVoicesetMissing(npc.scmcc.data.nam);
 				if (lineId > 0 || StrLen(txt) > 0)
 				{
 					PlayOneLiner(npc, lineId, txt);
@@ -303,6 +316,26 @@ class MCM_RomanceInteraction
 		{
 			npc.scmcc.PlayAnimSimple(animName);
 		}
+	}
+
+	// Bezpieczne odtworzenie animacji picia (toast/degustacja wina/kufla)
+	protected latent function PlayDrinkingAnimation(npc : CNewNPC) : bool
+	{
+		var played : bool;
+		if (!npc) return false;
+
+		// Próba animacji degustacji wina / picia
+		played = MCM_AR_ProbeAnim(npc, 'woman_wine_tasting');
+		if (!played)
+		{
+			played = MCM_AR_ProbeAnim(npc, 'man_work_drinking');
+		}
+		if (played)
+		{
+			Sleep(2.2); // Czas trwania gestu wzniesienia toastu / napicia się
+			return true;
+		}
+		return false;
 	}
 
 	// -------------------------------------------------------------------
@@ -580,46 +613,60 @@ class MCM_RomanceInteraction
 		var evHeld       : bool;
 		var actHeld      : bool;
 		var prevEvHeld   : bool;
+		var consentTag   : string;
+		var consentKeys  : array<EInputKey>;
+		var holdStartT   : float;
+		var lastProbe    : float;
 
-		// step 0.05: dokladniejszy hold. Tapniecia liczy eventowo listener
-		// OnMCM_AR_ConsentKey (FactsAdd) - przetrwa klikniecia <50ms,
-		// ktore polling moglby zgubic.
+		if (timeoutSec < 20.0) timeoutSec = 20.0;
 		step = 0.05;
-		elapsed = 0.0;
 		heldFor = 0.0;
 		lastShow = 0.0;
 		lastTapAt = -99.0;
+		holdStartT = -99.0;
 		tapsSeen = 0;
 		vkTaps = 0;
 		pressedFresh = false;
+		lastProbe = 0.0;
+		tStart = theGame.GetEngineTimeAsSeconds();
+		elapsed = 0.0;
 
 		// W trybie dev odczytuje stan VK bezpośrednio przez TW3SE.
 		devVK = MCM_AR_DevActive();
 		vkC = MCM_AR_DevConfigKey('ar_consent_key');
 		if (vkC == 0) vkC = 0x43;
-		prevAction = IsPressed(theInput.GetAction('SwordSheathe'), true);
-		// Inicjalizacja stanem faktycznym: klawisz wcisniety juz PRZED
-		// promptem nie moze wygenerowac sztucznego pierwszego zbocza.
+		prevAction = IsPressed(theInput.GetAction('MCM_AR_Consent'), true)
+		          || IsPressed(theInput.GetAction('SwordSheathe'), true);
+		pl = GetWitcherPlayer();
+		if (pl)
+		{
+			pl.mcm_ar_consentHeldC = false;
+			pl.mcm_ar_consentHeldS = false;
+			pl.mcm_ar_consentPressAt = -1.0;
+		}
 		if (devVK)
 		{
 			prevDown = MCM_AR_DevKeyDown(vkC);
-			MCM_AR_DevLog("consent: devVK on, vk=" + vkC);
+			MCM_AR_DevLog("consent: devVK on, vk=" + vkC +
+			              " ctx=" + theInput.GetContext());
 		}
 		else
 		{
 			prevDown = false;
-			// Czysty stan eventowy: hold sprzed promptu nie liczy sie
-			// (listener uzbraja pressAt dopiero po fakcie awaiting).
-			// thePlayer jest const - mutacja pol przez lokalny handle.
-			pl = GetWitcherPlayer();
-			if (pl)
-			{
-				pl.mcm_ar_consentHeld = false;
-				pl.mcm_ar_consentPressAt = -1.0;
-			}
-			tStart = theGame.GetEngineTimeAsSeconds();
 		}
-		fullPrompt = promptText + "  " + AR_T("ar_prompt_consent_hint", "(hold [C] ~1s or tap twice)");
+		theInput.GetCurrentKeysForActionStr("MCM_AR_Consent", consentKeys);
+		if (consentKeys.Size() > 0 && consentKeys[0] != IK_None)
+		{
+			consentTag = "MCM_AR_Consent";
+		}
+		else
+		{
+			consentTag = "SwordSheathe";
+		}
+		fullPrompt = ReplaceTagsToIcons(StrReplace(
+			promptText + "  " + AR_T("ar_prompt_consent_hint", "(hold [C] ~1s or tap twice)"),
+			"[C]",
+			"<<" + consentTag + ">>"));
 
 		FactsRemove('mcme_ar_consent_given');
 		FactsAdd('mcme_ar_consent_given', 0);
@@ -627,12 +674,12 @@ class MCM_RomanceInteraction
 		FactsAdd('mcme_ar_awaiting_consent', 1);
 
 		thePlayer.DisplayHudMessage(fullPrompt);
-		MCM_AR_Log("[AR] Consent prompt shown, waiting max " + (int)timeoutSec + "s for hold/2x tap [C]");
+		MCM_AR_Log("[AR] Consent prompt shown, waiting max " + (int)timeoutSec + "s for hold/2x tap (consent key)");
 
 		while (elapsed < timeoutSec)
 		{
 			Sleep(step);
-			elapsed += step;
+			elapsed = theGame.GetEngineTimeAsSeconds() - tStart;
 
 			if (elapsed - lastShow >= 2.0)
 			{
@@ -650,24 +697,33 @@ class MCM_RomanceInteraction
 				return false;
 			}
 
-			// Ścieżka A (HOLD): weryfikacja przytrzymania klawisza po wyświetleniu promptu.
-			actHeld = IsPressed(theInput.GetAction('SwordSheathe'), true);
+			actHeld = IsPressed(theInput.GetAction('MCM_AR_Consent'), true)
+			       || IsPressed(theInput.GetAction('SwordSheathe'), true);
+			evHeld = (thePlayer.mcm_ar_consentHeldC || thePlayer.mcm_ar_consentHeldS)
+			      && thePlayer.mcm_ar_consentPressAt >= tStart;
 			if (devVK)
 			{
-				nowDown = MCM_AR_DevKeyDown(vkC);
-				// cien: loguj tylko ZMIANY stanu akcji vs VK
+				nowDown = MCM_AR_DevKeyDown(vkC) || evHeld;
 				if (actHeld != prevAction)
 				{
 					MCM_AR_DevLog("consent cien: action=" + actHeld +
-					              " vk=" + nowDown + " @" + elapsed + "s");
+					              " vk=" + MCM_AR_DevKeyDown(vkC) +
+					              " ev=" + evHeld + " @" + elapsed + "s");
+				}
+				if (elapsed - lastProbe >= 1.0)
+				{
+					lastProbe = elapsed;
+					MCM_AR_DevLog("consent probe: ctx=" + theInput.GetContext() +
+					              " vk=" + MCM_AR_DevKeyDown(vkC) +
+					              " cAct=" + theInput.GetActionValue('MCM_AR_Consent') +
+					              " ssAct=" + theInput.GetActionValue('SwordSheathe') +
+					              " ev=" + FactsQuerySum('mcme_ar_consent_given') +
+					              " hld=" + evHeld);
 				}
 			}
 			else
 			{
-				// Weryfikacja stanu klawisza (zdarzenie listenera oraz stan akcji).
-				evHeld = thePlayer.mcm_ar_consentHeld &&
-				         thePlayer.mcm_ar_consentPressAt >= tStart;
-				nowDown = evHeld && actHeld;
+				nowDown = evHeld;
 				// cien: dywergencja event-vs-action.value trafia do loga
 				if (evHeld != prevEvHeld && evHeld != actHeld)
 				{
@@ -680,11 +736,12 @@ class MCM_RomanceInteraction
 			if (nowDown && !prevDown)
 			{
 				pressedFresh = true;
+				holdStartT = elapsed;
 				if (devVK) vkTaps += 1;
 			}
 			if (nowDown && pressedFresh)
 			{
-				heldFor += step;
+				heldFor = elapsed - holdStartT;
 				if (heldFor >= 1.0)
 				{
 					FactsRemove('mcme_ar_awaiting_consent');
@@ -696,20 +753,14 @@ class MCM_RomanceInteraction
 			else if (!nowDown)
 			{
 				heldFor = 0.0;
+				pressedFresh = false;
 			}
 			prevDown = nowDown;
 
-			// Sciezka B - DOUBLE-TAP: w dev licznik zbocz VK, w release
-			// licznik pressow z listenera OnMCM_AR_ConsentKey (FactsAdd).
-			// Drugi press w <0.7s = accept; delta>=2 miedzy pollami =
-			// masher - tez liczymy jako decyzje.
-			if (devVK)
+			nowTaps = FactsQuerySum('mcme_ar_consent_given');
+			if (devVK && vkTaps > nowTaps)
 			{
 				nowTaps = vkTaps;
-			}
-			else
-			{
-				nowTaps = FactsQuerySum('mcme_ar_consent_given');
 			}
 			if (nowTaps > tapsSeen)
 			{
@@ -725,12 +776,11 @@ class MCM_RomanceInteraction
 			}
 		}
 
+		tapsSeen = FactsQuerySum('mcme_ar_consent_given');
 		FactsRemove('mcme_ar_awaiting_consent');
 		FactsRemove('mcme_ar_consent_given');
-		// presses=wybrane zrodlo (dev: VK edges), evpresses=zawsze licznik
-		// eventowy listenera - porownanie pokazuje czy akcja w ogole strzela.
 		MCM_AR_Log("[AR] Consent timeout (" + (int)timeoutSec + "s) - refused, presses=" +
-		           nowTaps + " evpresses=" + FactsQuerySum('mcme_ar_consent_given'));
+		           nowTaps + " evpresses=" + tapsSeen + " vktaps=" + vkTaps);
 		return false;
 	}
 
@@ -1031,10 +1081,12 @@ class MCM_RomanceInteraction
 			MCM_AR_Log("[AR] autoPick NOT armed: core NULL");
 		}
 
+		npc.AddTag('mcme_companion');
 		theGame.GetStorySceneSystem().PlayScene(scene, "Input");
 		MCM_AR_Log("[AR] PlayDialogueScene: " + scenePath + " for " + npc.scmcc.data.nam);
 
 		ok = WaitForSceneEnd(npc, 60.0);
+		npc.RemoveTag('mcme_companion');
 
 		if (core)
 		{
@@ -1046,13 +1098,187 @@ class MCM_RomanceInteraction
 	}
 
 	// -------------------------------------------------------------------
+	// Filar 1: Universal Kiss & Hug Dispatcher (v2.0)
+	// Odpala czysta scene w2scene pozbawiona PChoice z tagiem 'mcme_companion'.
+	// Po zakonczeniu wywoluje unikalna reakcje towarzyszki w jezyku gry.
+	// -------------------------------------------------------------------
+	public latent function PlayKissScene(npc : CNewNPC) : bool
+	{
+		var ok : bool;
+		var scenePath : string;
+
+		scenePath = "dlc\\mod_spawn_companions\\dialogue\\trissFollowWithKiss.w2scene";
+		ok = PlayDialogueScene(npc, scenePath, false);
+		if (ok)
+		{
+			PlayPostKissReaction(npc);
+		}
+		return ok;
+	}
+
+	public latent function PlayHugScene(npc : CNewNPC) : bool
+	{
+		var ok : bool;
+		var scenePath : string;
+
+		scenePath = "dlc\\mod_spawn_companions\\dialogue\\ciriFollowWithHug.w2scene";
+		ok = PlayDialogueScene(npc, scenePath, false);
+		if (ok)
+		{
+			PlayPostHugReaction(npc);
+		}
+		return ok;
+	}
+
+	protected function PlayPostKissReaction(npc : CNewNPC)
+	{
+		var nam  : name;
+		var text : string;
+
+		if (!npc || !npc.scmcc || !npc.scmcc.data) return;
+		nam = npc.scmcc.data.nam;
+
+		switch (nam)
+		{
+			case 'yennefer':
+				text = AR_T("ar_afterglow_yen", "Now that's a welcome distraction. Let's keep moving, Geralt.");
+				break;
+			case 'triss':
+				text = AR_T("ar_afterglow_triss", "I've missed that... Stay close, all right?");
+				break;
+			case 'keira_metz':
+			case 'keira':
+				text = AR_T("ar_afterglow_keira", "Mmm... You certainly haven't lost your touch, witcher.");
+				break;
+			case 'shani':
+				text = AR_T("ar_afterglow_shani", "That made this journey so much better, Geralt.");
+				break;
+			case 'anna_henrietta':
+				text = AR_T("ar_afterglow_anarietta", "A delightful moment. Now, let us attend to our duties.");
+				break;
+			case 'sq701_vivienne':
+			case 'vivienne':
+				text = AR_T("ar_afterglow_vivienne", "Thank you, Geralt. You bring warmth to my heart.");
+				break;
+			case 'becca':
+			case 'cerys':
+				text = AR_T("ar_afterglow_cerys", "Hah! Not bad, witcher, not bad at all.");
+				break;
+			case 'rosa_var_attre':
+				text = AR_T("ar_afterglow_rosa", "Not bad. Though my fencing form is still sharper than yours.");
+				break;
+			case 'prologue_village_herbalist':
+			case 'tomira':
+				text = AR_T("ar_afterglow_tomira", "Sweeter than any herb in my garden. Take care on the road.");
+				break;
+			case 'syanna':
+				text = AR_T("ar_afterglow_syanna", "Didn't think you had it in you, witcher. Nice surprise.");
+				break;
+			case 'philippa_eilhart':
+			case 'filippa':
+				text = AR_T("ar_afterglow_philippa", "Satisfactory, Geralt. Let's not make a habit of lingering.");
+				break;
+			case 'ves':
+				text = AR_T("ar_afterglow_ves", "Not soft, are you? Good. Back to the road.");
+				break;
+			case 'mh303_succbus_v2':
+			case 'salma':
+				text = AR_T("ar_afterglow_salma", "Mmm... Delicious. You always know how to please.");
+				break;
+			case 'pryscilla':
+			case 'priscilla':
+				text = AR_T("ar_afterglow_priscilla", "Like a verse from a forgotten ballad. Thank you, Geralt.");
+				break;
+			case 'edna_var_attre':
+				text = AR_T("ar_afterglow_edna", "Bold, witcher. Much bolder than my sister thinks.");
+				break;
+			case 'fringilla_vigo':
+			case 'fringilla':
+				text = AR_T("ar_afterglow_fringilla", "A rare moment of tenderness. I will remember it.");
+				break;
+			case 'margarita':
+			case 'margaritta':
+				text = AR_T("ar_afterglow_margarita", "Warmth is precious in times like these. Thank you.");
+				break;
+			case 'vampire_diva':
+			case 'oriana':
+			case 'orianna':
+				text = AR_T("ar_afterglow_orianna", "Exquisite... A taste I could easily grow fond of.");
+				break;
+			default:
+				text = AR_T("ar_line_afterglow", "That was... nice. Don't be a stranger.");
+				break;
+		}
+
+		PlayOneLiner(npc, 0, text);
+	}
+
+	protected function PlayPostHugReaction(npc : CNewNPC)
+	{
+		var text : string;
+		if (!npc) return;
+		text = AR_T("ar_afterglow_ciri", "It's good to be together again, Geralt.");
+		PlayOneLiner(npc, 0, text);
+	}
+
+	// -------------------------------------------------------------------
 	// Scena intymna w punkcie intymnym (NaughtyPoint).
 	// -------------------------------------------------------------------
 	protected function HasIntimateScene(npc : CNewNPC) : bool
 	{
-		if (!npc || !npc.scmcc || !npc.scmcc.specialData) return false;
-		if (StrLen(npc.scmcc.specialData.naughtyScene) > 0) return true;
-		return StrLen(NaughtyScenePath(npc.scmcc.data.nam)) > 0;
+		return StrLen(ResolveIntimateScenePath(npc)) > 0;
+	}
+
+	// Cache path->exists: GetExtraBlockReason odpala sie na kazdym eval-ticku,
+	// a LoadResource na brakujacym DLC-bundle stalby w miejscu za kazdym razem.
+	protected var sceneExistsKeys : array<string>;
+	protected var sceneExistsVals : array<bool>;
+
+	protected function MCM_AR_SceneExists(path : string) : bool
+	{
+		var i     : int;
+		var scene : CStoryScene;
+
+		for (i = 0; i < sceneExistsKeys.Size(); i += 1)
+		{
+			if (sceneExistsKeys[i] == path)
+			{
+				return sceneExistsVals[i];
+			}
+		}
+		sceneExistsKeys.PushBack(path);
+		scene = (CStoryScene)LoadResource(path, true);
+		if (!scene)
+		{
+			sceneExistsVals.PushBack(false);
+			return false;
+		}
+		sceneExistsVals.PushBack(true);
+		return true;
+	}
+
+	// Rozdzielczosc sciezki sceny intymnej identyczna z PlayIntimateScene:
+	// specialData.naughtyScene gdy ustawiona, inaczej NaughtyScenePath(nam).
+	protected function ResolveIntimateScenePath(npc : CNewNPC) : string
+	{
+		if (!npc || !npc.scmcc || !npc.scmcc.data) return "";
+		if (npc.scmcc.specialData && StrLen(npc.scmcc.specialData.naughtyScene) > 0)
+		{
+			return npc.scmcc.specialData.naughtyScene;
+		}
+		return NaughtyScenePath(npc.scmcc.data.nam);
+	}
+
+	// Powod blokady T4 dla ar_eval: "" = scena ok, "no_scene" = brak sciezki,
+	// "no_dlc_scene" = sciezka znana ale plik nie istnieje (DLC/submod off).
+	protected function IntimateSceneBlockReason(npc : CNewNPC) : string
+	{
+		var path : string;
+
+		path = ResolveIntimateScenePath(npc);
+		if (path == "") return "no_scene";
+		if (!MCM_AR_SceneExists(path)) return "no_dlc_scene";
+		return "";
 	}
 
 	// Ścisły zasięg dla scen intymnych: PreDialogue wymaga punktu <=16m
@@ -1079,8 +1305,11 @@ class MCM_RomanceInteraction
 		{
 			case 'anna_henrietta': return "dlc\mod_spawn_companions\naughty\anarietta\anywhere.w2scene";
 			// 'vivienne' = forma ludzka (vivienne_bird = przekleta forma ptasia)
-			case 'sq701_vivienne': return "dlc\mod_spawn_companions\naughty\vivienne\anywhere.w2scene";
-			case 'becca':          return "dlc\mod_spawn_companions\naughty\cerys\anywhere.w2scene";
+			case 'sq701_vivienne':
+			case 'vivienne':       return "dlc\mod_spawn_companions\naughty\vivienne\anywhere.w2scene";
+			case 'becca':
+			case 'cerys':          return "dlc\mod_spawn_companions\naughty\cerys\anywhere.w2scene";
+			case 'syanna':         return "dlc\mod_spawn_companions\naughty\syanna\anywhere.w2scene";
 		}
 		return "";
 	}
@@ -1386,9 +1615,10 @@ class MCM_AR_GiftRequest_Base extends MCM_RomanceInteraction
 			MCM_AR_GetAffinity().AddAffinityPoints(targetNpc, 3);
 		}
 
-		// Reakcja: look-at, mimika, podziękowanie
+		// Reakcja: look-at, mimika, animacja picia, podziękowanie
 		npc.EnableDynamicLookAt(player, 6.0);
 		PlayMimic(npc, 'flirt');
+		PlayDrinkingAnimation(npc);
 
 		if (thanksLineId > 0 || StrLen(thanksLineText) > 0)
 		{
@@ -1454,6 +1684,45 @@ class MCM_RomanceActionRegistry
 		}
 	}
 
+	public latent function TryExecuteSpecificAction(actionId : name, npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		var i       : int;
+		var action  : MCM_RomanceInteraction;
+		var res     : bool;
+		var npcName : name;
+		var core    : MCM_AutonomousRomanceCore;
+
+		if (!npc || !npc.scmcc || !npc.scmcc.data) return false;
+		npcName = npc.scmcc.data.nam;
+
+		for (i = 0; i < actions.Size(); i += 1)
+		{
+			action = actions[i];
+			if (!action) continue;
+			if (action.id == actionId)
+			{
+				action.MarkAttempted();
+				res = action.Execute(npc, player, ctx);
+				if (res)
+				{
+					action.MarkExecuted();
+					affinity.AddAffinityPoints(npcName, 1);
+					if (action.triggerType == RTT_Scene || action.triggerType == RTT_Prompt)
+					{
+						core = MCM_AR_GetCore();
+						if (core)
+						{
+							core.lastSceneOkNpc  = npcName;
+							core.lastSceneOkTime = theGame.GetEngineTimeAsSeconds();
+						}
+					}
+				}
+				return res;
+			}
+		}
+		return false;
+	}
+
 	// -----------------------------------------------------------------------
 	// Główna pętla selekcji i wykonania
 	// -----------------------------------------------------------------------
@@ -1466,6 +1735,7 @@ class MCM_RomanceActionRegistry
 		var i           : int;
 		var npcName     : name;
 		var result      : bool;
+		var core        : MCM_AutonomousRomanceCore;
 
 		eligibleCount = 0;
 		if (!MCM_AR_GetConfig().IsEnabled()) return false;
@@ -1528,11 +1798,86 @@ class MCM_RomanceActionRegistry
 					eligible[i].MarkExecuted();
 					// Przyznaj punkty zażyłości
 					affinity.AddAffinityPoints(npcName, 1);
+					// Stempelek dla afterglow/konfrontacji zazdrości (T3/T4)
+					if (eligible[i].triggerType == RTT_Scene || eligible[i].triggerType == RTT_Prompt)
+					{
+						core = MCM_AR_GetCore();
+						core.lastSceneOkNpc  = npcName;
+						core.lastSceneOkTime = theGame.GetEngineTimeAsSeconds();
+					}
 				}
 				return result;
 			}
 		}
 
+		return false;
+	}
+
+	// -----------------------------------------------------------------------
+	// Akcje okienkowe (isTimeCritical) – lustro TryExecute dla kanalu ambient,
+	// ale bez wazonego losu: bierze eligible o najwyzszym weight (remis: pierwsza).
+	// -----------------------------------------------------------------------
+	public latent function TryExecuteTimeCritical(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		var action  : MCM_RomanceInteraction;
+		var best    : MCM_RomanceInteraction;
+		var i       : int;
+		var npcName : name;
+		var result  : bool;
+
+		if (!MCM_AR_GetConfig().IsEnabled()) return false;
+
+		npcName = npc.scmcc.data.nam;
+
+		for (i = 0; i < actions.Size(); i += 1)
+		{
+			action = actions[i];
+			if (!action) continue;
+			if (!action.isTimeCritical) continue;
+			if (action.triggerType != RTT_OneLiner) continue;
+			if (IsNameValid(action.targetNpc) && action.targetNpc != npcName) continue;
+			if (!action.CanExecute(npc, player, ctx)) continue;
+
+			if (!best || action.weight > best.weight)
+			{
+				best = action;
+			}
+		}
+
+		if (!best) return false;
+
+		best.MarkAttempted();
+		MCM_AR_Log("[AR] ambient(prio) -> " + best.id + " (" + NameToString(npcName) + ")");
+		result = best.Execute(npc, player, ctx);
+		if (result)
+		{
+			best.MarkExecuted();
+			affinity.AddAffinityPoints(npcName, 1);
+		}
+		return result;
+	}
+
+	// Lekki check bez Execute – ProcessAmbient uzywa go do ominięcia losu
+	// presetu gadatliwosci, gdy w oknie czeka akcja isTimeCritical.
+	public function HasTimeCriticalEligible(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		var action  : MCM_RomanceInteraction;
+		var i       : int;
+		var npcName : name;
+
+		if (!MCM_AR_GetConfig().IsEnabled()) return false;
+
+		npcName = npc.scmcc.data.nam;
+
+		for (i = 0; i < actions.Size(); i += 1)
+		{
+			action = actions[i];
+			if (!action) continue;
+			if (!action.isTimeCritical) continue;
+			if (action.triggerType != RTT_OneLiner) continue;
+			if (IsNameValid(action.targetNpc) && action.targetNpc != npcName) continue;
+			if (action.CanExecute(npc, player, ctx)) return true;
+		}
 		return false;
 	}
 
@@ -1574,25 +1919,60 @@ class MCM_RomanceActionRegistry
 public var mcm_ar_consentPressAt : float;
 
 @addField(CR4Player)
-public var mcm_ar_consentHeld : bool;
+public var mcm_ar_consentHeldC : bool;
+
+@addField(CR4Player)
+public var mcm_ar_consentHeldS : bool;
 
 @addMethod(CR4Player)
 event OnMCM_AR_ConsentKey(action : SInputAction)
 {
+	var now : float;
+
+	// Diagnostyka eventowa (dev): kazde wywolanie listenera - pokazuje
+	// czy eventy w ogole dochodza do CR4Player i co niosa.
+	if (MCM_AR_DevActive())
+	{
+		MCM_AR_DevLog("consent ev: " + NameToString(action.aName) +
+		              " v=" + action.value + " lv=" + action.lastFrameValue +
+		              " awaiting=" + FactsQuerySum('mcme_ar_awaiting_consent'));
+	}
+
 	if (IsPressed(action))
 	{
 		if (FactsQuerySum('mcme_ar_awaiting_consent') > 0)
 		{
-			// Eventowy licznik pressow - ShowConsentPrompt liczy delte
-			// i okno 0.7s; przetrwa klikniecia <50ms bez pollingu
-			FactsAdd('mcme_ar_consent_given', 1);
-			mcm_ar_consentPressAt = theGame.GetEngineTimeAsSeconds();
-			mcm_ar_consentHeld = true;
+			now = theGame.GetEngineTimeAsSeconds();
+			if (now - mcm_ar_consentPressAt > 0.12)
+			{
+				FactsAdd('mcme_ar_consent_given', 1);
+			}
+			mcm_ar_consentPressAt = now;
+			if (action.aName == 'MCM_AR_Consent')
+			{
+				mcm_ar_consentHeldC = true;
+			}
+			else
+			{
+				mcm_ar_consentHeldS = true;
+			}
+			if (MCM_AR_DevActive())
+			{
+				MCM_AR_DevLog("consent ev: pressed " + NameToString(action.aName) +
+				              " total=" + (FactsQuerySum('mcme_ar_consent_given')));
+			}
 		}
 	}
 	else if (IsReleased(action))
 	{
-		mcm_ar_consentHeld = false;
+		if (action.aName == 'MCM_AR_Consent')
+		{
+			mcm_ar_consentHeldC = false;
+		}
+		else
+		{
+			mcm_ar_consentHeldS = false;
+		}
 	}
 }
 
@@ -1600,6 +1980,12 @@ event OnMCM_AR_ConsentKey(action : SInputAction)
 // USUNIETO @wrapMethod(CNewNPC) OnInteraction - powodowal shadowing wrappera z modMCME_RemasteredNPCHooks.ws
 // i calkowicie blokowal klawisz [E] (rozmowe z towarzyszkami)!
 
+
+// Pary rywalizujące ze sobą o Geralta (kanoniczny trójkąt)
+function MCM_AR_AreRivals(a : name, b : name) : bool
+{
+	return (a == 'yennefer' && b == 'triss') || (a == 'triss' && b == 'yennefer');
+}
 
 // Przyjazna nazwa wyświetlana na ekranie HUD dla towarzyszek
 function MCM_AR_GetCompanionDisplayName(npc : CNewNPC) : string
@@ -1637,9 +2023,18 @@ function MCM_AR_GetCompanionDisplayName(npc : CNewNPC) : string
 		case 'corinne':          return "Corinne";
 		case 'frida':            return "Frida";
 		case 'rosa_var_attre':   return "Rosa var Attre";
+		case 'prologue_village_herbalist':
+			return "Tomira";
 		case 'edna_var_attre':   return "Edna var Attre";
-		case 'margarita':        return "Margarita";
+		case 'margarita':
+		case 'margaritta':       return "Margarita";
+		case 'fringilla_vigo':
 		case 'fringilla':        return "Fringilla";
+		case 'pryscilla':
+		case 'priscilla':        return "Priscilla";
+		case 'vampire_diva':
+		case 'oriana':
+		case 'orianna':          return "Orianna";
 		case 'cantarella':       return "Cantarella";
 		case 'tamara':           return "Tamara";
 		default:
@@ -1678,13 +2073,20 @@ function MCM_AR_ProbeAnim(npc : CNewNPC, animName : name) : bool
 @wrapMethod(CR4HudModuleDialog)
 function OnDialogChoicesSet(choices : array<SSceneChoice>, alternativeUI : bool)
 {
+	var core : MCM_AutonomousRomanceCore;
+
+	if (thePlayer)
+	{
+		core = thePlayer.mcm_ar_core;
+	}
+
 	wrappedMethod(choices, alternativeUI);
 
-	if (thePlayer && thePlayer.mcm_ar_core)
+	if (core)
 	{
 		if (choices.Size() > 0)
 		{
-			thePlayer.mcm_ar_core.MCM_AR_OnDialogChoices(choices);
+			core.MCM_AR_OnDialogChoices(choices);
 		}
 		else
 		{
@@ -1701,14 +2103,18 @@ function OnDialogChoicesSet(choices : array<SSceneChoice>, alternativeUI : bool)
 @wrapMethod(CR4HudModuleDialog)
 function SendDialogChoicesToUI(choices : array<SSceneChoice>, allowContentMissingDialog : bool)
 {
+	var core : MCM_AutonomousRomanceCore;
+
+	if (thePlayer)
+	{
+		core = thePlayer.mcm_ar_core;
+	}
+
 	wrappedMethod(choices, allowContentMissingDialog);
 
-	if (thePlayer && thePlayer.mcm_ar_core)
+	if (core && choices.Size() > 0)
 	{
-		if (choices.Size() > 0)
-		{
-			thePlayer.mcm_ar_core.MCM_AR_OnDialogChoices(choices);
-		}
+		core.MCM_AR_OnDialogChoices(choices);
 	}
 }
 
