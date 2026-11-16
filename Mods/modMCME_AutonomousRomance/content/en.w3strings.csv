@@ -36,9 +36,8 @@
 2118800034|        |ar_prompt_keira_intimate|[C] Stay alone with Keira
 2118800035|        |ar_prompt_shani_stay|[C] Stay with Shani
 2118800036|        |ar_prompt_shani_intimate|[C] Stay alone with Shani
-2118800037|        |ar_prompt_anarietta_escort|[C] Accompany the Duchess
+2118800037|        |ar_prompt_intimate_invite|Spend an intimate moment together [C]
 2118800038|        |ar_prompt_anarietta_intimate|[C] Stay alone with the Duchess
-2118800039|        |ar_prompt_vivienne_stay|[C] Stay with Vivienne
 2118800040|        |ar_prompt_vivienne_intimate|[C] Stay alone with Vivienne
 2118800041|        |ar_prompt_cerys_stay|[C] Stay with Cerys
 2118800042|        |ar_prompt_cerys_intimate|[C] Stay alone with Cerys
@@ -84,11 +83,9 @@
 2118800082|        |ar_line_shani_gift_request|A long day... Do you have anything to drink?
 2118800083|        |ar_line_anarietta_oneliner_flirt|An excellent wine. You've good taste.
 2118800084|        |ar_line_anarietta_postcombat_pride|There's something I'd like to know... How can you be so damned calm?
-2118800085|        |ar_line_anarietta_night_royal|Come, witcher.
 2118800086|        |ar_line_anarietta_intimate_invite|Come, witcher.
 2118800087|        |ar_line_vivienne_oneliner_flirt|A fine day for a ride, don't you think?
 2118800088|        |ar_line_vivienne_campfire_mystery|Come.
-2118800089|        |ar_line_vivienne_night_invitation|Will you walk with me, Geralt?
 2118800090|        |ar_line_vivienne_intimate_invite|The night is kind to us, Geralt.
 2118800091|        |ar_line_cerys_oneliner_flirt|Show me what you've got, monster slayer!
 2118800092|        |ar_line_cerys_postcombat_skellige|Still standing? Good. Skellige needs no widows.
@@ -141,7 +138,7 @@
 2118800139|        |ar_thanks_tomira|This will help more than you know. Thank you, Geralt.
 2118800140|        |option_mcm_ar_opt_barkpreset|Companion chatter (1=Quiet, 2=Default, 3=Chatty)
 2118800141|        |option_MCM_AR_BarkPreset|Companion chatter (1=Quiet, 2=Default, 3=Chatty)
-2118800142|        |preset_Mods_AutonomousRomance|Autonomous Romance v2.0.0
+2118800142|        |preset_Mods_AutonomousRomance|Autonomous Romance v2.3.0
 2118800143|        |ar_prompt_rosa_kiss|[C] Kiss Rosa
 2118800144|        |ar_line_rosa_kiss|Geralt... Not so fast. Let me look at you.
 2118800145|        |ar_afterglow_rosa|Not bad. Though my fencing form is still sharper than yours.
@@ -254,3 +251,41 @@
 2118800252|        |ar_line_fringilla_intimate_invite|Even a Nilfgaardian needs warmth. Somewhere private, Geralt.
 2118800253|        |ar_prompt_margarita_intimate|[C] Stay alone with Margarita
 2118800254|        |ar_line_margarita_intimate_invite|Aretuza taught me discipline, not abstinence. Come.
+2118800255|        |ar_line_triss_dance|Fine. One dance. You watch, though.
+2118800256|        |ar_line_keira_dance|Life's too short for standing around, Geralt.
+2118800257|        |ar_line_shani_dance|Careful, I step on toes. Kidding. Mostly.
+2118800258|        |ar_line_tomira_dance|Ha! This is how we dance back in my village!
+2118800259|        |ar_line_ciri_dance|Watch and learn - my teachers charged more than you make in a year.
+2118800260|        |ar_line_priscilla_dance|A stage? I don't need one. Watch this.
+2118800261|        |ar_line_cerys_dance|Hah! On Skellige even the sheep dance. Keep up!
+2118800262|        |ar_line_ves_dance|Footwork first, witcher. Watch.
+2118800263|        |ar_line_yen_dance_refuse|You expect me to prance like a Passiflora girl? Think again.
+2118800264|        |ar_line_philippa_dance_refuse|I don't dance, Geralt. I orchestrate.
+2118800265|        |ar_line_ciri_dance_refuse|Me? Dance for you? Dream on, Geralt.
+2118800268|        |ar_line_dt_end|Feeling better?
+2118800269|        |ar_line_dt_wake|Morning. Sleep well?
+2118800272|        |ar_prompt_yen_kiss|[C] Kiss Yennefer
+2118800273|        |ar_line_yen_kiss|Geralt... Come closer.
+2118800274|        |ar_prompt_keira_kiss|[C] Kiss Keira
+2118800275|        |ar_line_keira_kiss|Don't make me ask twice, witcher.
+2118800276|        |ar_line_ves_dance_refuse|I'm a soldier, Geralt. If you want dancing, find a bard.
+2118800277|        |ar_line_ves_tavern_drink|Pour one for Temeria. Then one for us.
+2118800278|        |ar_line_rosa_night_filler|Night air settles the bones. Sleep well, Geralt.
+2118800279|        |ar_line_tomira_night_filler|The herbs dream too, you know. Rest now.
+2118800280|        |ar_line_ciri_night_filler|I'll take first watch. Sleep, Geralt.
+2118800281|        |ar_line_syanna_night_filler|The dark hours belong to me, witcher. Yours to share.
+2118800282|        |ar_line_philippa_night_filler|Sleep while you can. Roads don't care about tiredness.
+2118800283|        |ar_line_ves_night_filler|Temeria never sleeps. Neither do I, not really.
+2118800284|        |ar_line_salma_night_filler|Night is my element, darling. Come closer... later.
+2118800285|        |ar_line_priscilla_night_filler|A night like this was made for a song. And you.
+2118800286|        |ar_line_edna_night_filler|Even killers need sleep. Even me. Don't tell the guild.
+2118800287|        |ar_line_fringilla_night_filler|The moon teaches patience. The night teaches silence.
+2118800288|        |ar_line_margarita_night_filler|Nights at sea taught me to sleep anywhere. This is nicer.
+2118800289|        |ar_line_orianna_night_filler|The night is a lady's dominion. Mine, in particular.
+2118800290|        |ar_line_generic_flirt_1|Riding with you beats riding alone. Don't let it go to your head.
+2118800291|        |ar_line_generic_flirt_2|You talk to me while your eyes stay on the treeline. I find that rather charming.
+2118800292|        |ar_line_generic_flirt_3|Careful with the charm, witcher. I might start believing it.
+2118800293|        |ar_line_generic_flirt_4|Long day ahead. Good thing the company isn't half bad.
+2118800294|        |ar_line_generic_care|Still breathing? Good. Sit and catch your wind. I'll watch the road.
+2118800295|        |ar_prompt_generic_kiss|[C] Kiss her
+2118800296|        |ar_line_generic_kiss|Come here, witcher. The moment is right.
