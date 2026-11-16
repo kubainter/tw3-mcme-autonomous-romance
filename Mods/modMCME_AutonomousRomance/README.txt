@@ -169,7 +169,7 @@ INSTALLATION & REMOVAL
        on gamepad are detected via the standard sword-sheathe binding.
 
        The mod also ships an optional dedicated binding file
-       (MCME_AR.input.settings.txt) that registers a separate MCM_AR_Consent
+       (input.settings.txt) that registers a separate MCM_AR_Consent
        action:
        - The Witcher 3 Mod Manager: merges it automatically on install.
        - Vortex / manual install: copy the file's contents into
