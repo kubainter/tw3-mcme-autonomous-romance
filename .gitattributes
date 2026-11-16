@@ -1,0 +1,8 @@
+* text=auto eol=lf
+
+*.w3strings binary
+*.bundle binary
+*.store binary
+*.zip binary
+*.png binary
+*.jpg binary

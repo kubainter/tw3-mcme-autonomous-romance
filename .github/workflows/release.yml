@@ -1,0 +1,51 @@
+name: release
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  release:
+    name: build and publish release
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Gate - tag matches latest changelog version
+        shell: pwsh
+        run: |
+          $tag = $env:GITHUB_REF_NAME.TrimStart('v')
+          $md = Get-Content CHANGELOG.md -Raw -Encoding UTF8
+          $latest = $null
+          if ($md -match '(?m)^## \[(\d+\.\d+\.\d+)\]') { $latest = $Matches[1] }
+          if (-not $latest) { Write-Host "::error::brak naglowka ## [X.Y.Z] w CHANGELOG.md"; exit 1 }
+          if ($latest -ne $tag) {
+            Write-Host "::error::tag $env:GITHUB_REF_NAME nie zgadza sie z najnowsza wersja w changelogu ($latest)"
+            exit 1
+          }
+          Write-Host "tag $env:GITHUB_REF_NAME == changelog $latest"
+
+      - name: Build release package
+        shell: pwsh
+        run: ./scripts/package_release.ps1 -Version $env:GITHUB_REF_NAME -OutDir out
+
+      - name: Verify package contents
+        shell: pwsh
+        run: ./scripts/ci_verify_package.ps1 -ZipPath "out\MCME_AutonomousRomance_$env:GITHUB_REF_NAME.zip"
+
+      - name: Publish GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $md = Get-Content CHANGELOG.md -Raw -Encoding UTF8
+          $notes = "Release $env:GITHUB_REF_NAME"
+          if ($md -match '(?s)\[Nexus Mods Changelog Snippet\].*?```text\s*\r?\n(.*?)```') {
+            $lines = ($Matches[1] -split "`r?`n")
+            $cut = $null
+            for ($i = 0; $i -lt $lines.Count; $i++) { if (-not $lines[$i].Trim()) { $cut = $i; break } }
+            $notes = if ($null -ne $cut -and $cut -gt 0) { ($lines[0..($cut - 1)] -join "`n").Trim() } else { $Matches[1].Trim() }
+          }
+          gh release create $env:GITHUB_REF_NAME "out\MCME_AutonomousRomance_$env:GITHUB_REF_NAME.zip" --title "MCME Autonomous Romance $env:GITHUB_REF_NAME" --notes $notes
