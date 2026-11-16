@@ -173,7 +173,7 @@ function MCM_AR_FindCompanion(npcStr : string) : CNewNPC
 	var targetNorm : string;
 	var candNorm   : string;
 
-	theGame.GetNPCsByTag('GeraltsBFF', companions);
+	MCM_AR_GetActiveCompanions(companions);
 
 	// W3Script nie ma StringToName - porownanie tekstowe po aliasach
 	if (StrLen(npcStr) > 0)
@@ -297,6 +297,14 @@ exec function ar_gift(optional npcStr : string)
 	if (!IsNameValid(best))
 	{
 		thePlayer.DisplayHudMessage("[AR] No gift in inventory (wine/alcohol).");
+		return;
+	}
+
+	// GotoState na aktywny stan ubilby trwajacego latenta (osierocony lock) -
+	// wymuszenie tylko z Idle.
+	if (core.GetCurrentStateName() != 'Idle')
+	{
+		thePlayer.DisplayHudMessage("[AR] Another interaction is in progress - try again in a moment.");
 		return;
 	}
 

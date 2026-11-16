@@ -1,21 +1,8 @@
-// ==========================================================================
-// MCM_RomanceTw3seDev.ws — warstwa DEV na TW3SE (Witcher 3 Script Extender).
-//
-// JEDYNY plik moda z 'import function TW3SE_*'. Reszta kodu woła WYLACZNIE
-// wrappery MCM_AR_Dev* — sciana izolacji: importy sa wiazane w kompilacji,
-// wiec kazdy .ws z natywa nie skompiluje sie u gracza bez TW3SE.
-// W release package_release.ps1 podmienia ten plik na
-// repo\scripts\tw3se\MCM_RomanceTw3seDev.stub.ws (te same sygnatury, zero
-// importow). precheck_syntax.ps1 pilnuje parzystosci sygnatur dev<->stub
-// i tego, ze zaden inny plik nie zawiera 'TW3SE_'.
-//
-// Wymagania dev: bin\x64_dx12\tw3se z dinput8.dll + tw3se.dll,
-// tw3se.config -> natives = on (inaczej TEN plik nie skompiluje sie).
-//
-// ReloadScripts: zabija wszystkie latent-funkcje natychmiast (cleanup po
-// Sleep sie nie wykona -> osierocone fakty). Po reloadzie OBOWIAZKOWO
-// uruchom ar_devreset.
-// ==========================================================================
+// MCM_RomanceTw3seDev.ws — warstwa DEV na TW3SE.
+// JEDYNY plik z importami TW3SE_* (wiazane w kompilacji -> release podmienia
+// na MCM_RomanceTw3seDev.stub.ws o identycznych sygnaturach).
+// Dev: tw3se.config -> natives = on. ReloadScripts zabija latenty w locie
+// -> po reloadzie ar_devreset.
 
 import function TW3SE_GetVersion() : int;
 import function TW3SE_Log(text : string);
@@ -49,10 +36,9 @@ function MCM_AR_DevVersion() : int
 	return TW3SE_GetVersion();
 }
 
-// --- logowanie / telemetry -------------------------------------------------
+// --- logowanie ---------------------------------------------------------
 // LEAF: NIGDY nie wolac tu MCM_AR_Log ani GetCore (rekursja).
-// Tee dla calego strumienia [AR]: append do tw3se\out\ar_log.txt + linia
-// na pipe 'events' (czytelna z zewnatrz przez tw3se_pipe.ps1 -Follow).
+// Tee [AR]: append do ar_log.txt + pipe 'events'.
 function MCM_AR_DevLog(msg : string)
 {
 	var line : string;
@@ -107,8 +93,7 @@ function MCM_AR_DevKeyDown(vk : int) : bool
 	return TW3SE_KeyPressed(vk);
 }
 
-// UWAGA: KeyJustPressed jest per-frame - przy poll 50ms zgubi pressy;
-// do tapow licz zbocza DevKeyDown jak w ShowConsentPrompt.
+// KeyJustPressed jest per-frame i gubi pressy przy poll; do tapow licz zbocza DevKeyDown.
 function MCM_AR_DevKeyEdge(vk : int) : bool
 {
 	return TW3SE_KeyJustPressed(vk);
@@ -148,8 +133,7 @@ function MCM_AR_DevDelVar(k : string) : bool
 	return TW3SE_DeleteVar(k);
 }
 
-// --- Lua bridge -------------------------------------------------------------
-
+// --- Lua bridge: mcme_bridge.lua (Clone()/templateParams nie istnieja w WS) --
 function MCM_AR_DevLua(code : string) : string
 {
 	return TW3SE_Lua(code);
@@ -173,12 +157,11 @@ exec function ar_devinfo()
 	v = MCM_AR_DevVersion();
 	if (v == 0)
 	{
-		thePlayer.DisplayHudMessage("[AR-dev] TW3SE nieaktywne (stub/release)");
+		thePlayer.DisplayHudMessage("[AR-dev] TW3SE inactive (stub/release)");
 		return;
 	}
 	ok = MCM_AR_DevAppendFile("ar_selftest.txt", "L1\nL2\n");
-	// v = (major<<16)|(minor<<8)|patch - bez operatorow bitowych (pewniejsze
-	// w WS): major=v/65536, minor=(v/256)%256, patch=v%256.
+	// v = (major<<16)|(minor<<8)|patch — WS nie ma operatorow bitowych.
 	msg = "[AR-dev] TW3SE v" + (v / 65536) + "." + ((v / 256) % 256) + "." + (v % 256) +
 	      " | write=" + ok +
 	      " | size=" + MCM_AR_DevFileSize("ar_selftest.txt") +
@@ -192,11 +175,9 @@ exec function ar_reload()
 {
 	if (!MCM_AR_DevActive())
 	{
-		thePlayer.DisplayHudMessage("[AR-dev] TW3SE nieaktywne - reload niemozliwy");
+		thePlayer.DisplayHudMessage("[AR-dev] TW3SE inactive - reload unavailable");
 		return;
 	}
-	// UWAGA: reload zabija latent-funkcje w locie - cleanup po Sleep nie
-	// strzeli. Po powrocie uruchom ar_devreset (fakty consent itd.).
 	MCM_AR_Log("[AR] ReloadScripts - po powrocie uruchom ar_devreset!");
 	TW3SE_Emit("[AR] reload requested");
 	MCM_AR_DevReloadScripts();

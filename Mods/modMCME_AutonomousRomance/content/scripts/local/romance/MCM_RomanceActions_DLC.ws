@@ -102,6 +102,20 @@ function InitDefaultActions()
 	RegisterAction(new MCM_AR_Anarietta_NightFiller     in this);
 	RegisterAction(new MCM_AR_Vivienne_NightFiller      in this);
 	RegisterAction(new MCM_AR_Cerys_NightFiller         in this);
+
+	// ===== DANCE (F1) =====
+	RegisterAction(new MCM_AR_Priscilla_Dance           in this);
+	RegisterAction(new MCM_AR_Cerys_Dance               in this);
+	RegisterAction(new MCM_AR_Ves_TavernDrink           in this);
+	RegisterAction(new MCM_AR_Ves_DanceRefuse           in this);
+	RegisterAction(new MCM_AR_Triss_Dance in this);
+	RegisterAction(new MCM_AR_Keira_Dance in this);
+	RegisterAction(new MCM_AR_Shani_Dance in this);
+	RegisterAction(new MCM_AR_Tomira_Dance in this);
+	RegisterAction(new MCM_AR_Ciri_Dance in this);
+	RegisterAction(new MCM_AR_Yen_DanceRefuse in this);
+	RegisterAction(new MCM_AR_Ciri_DanceRefuse in this);
+	RegisterAction(new MCM_AR_Philippa_DanceRefuse      in this);
 }
 
 //  ANNA HENRIETTA – Tier 1: Krolewskie docinki – ambient
@@ -628,9 +642,9 @@ class MCM_AR_Anarietta_TavernDrink extends MCM_RomanceInteraction
 	default id              = 'anarietta_tavern_drink';
 	default targetNpc       = 'anna_henrietta';
 	default minAffinity     = 0;
-	default cooldownSeconds = 600.0;
+	default cooldownSeconds = 180.0;
 	default triggerType     = RTT_OneLiner;
-	default weight          = 6;
+	default weight          = 14;
 	default barkVoiceset    = 'greeting_geralt';
 	default lineText        = "The Duchess allows herself this one indulgence.";
 	default lineKey         = "ar_line_anarietta_tavern_drink";
@@ -655,9 +669,9 @@ class MCM_AR_Vivienne_TavernDrink extends MCM_RomanceInteraction
 	default id              = 'vivienne_tavern_drink';
 	default targetNpc       = 'sq701_vivienne';
 	default minAffinity     = 0;
-	default cooldownSeconds = 600.0;
+	default cooldownSeconds = 180.0;
 	default triggerType     = RTT_OneLiner;
-	default weight          = 6;
+	default weight          = 14;
 	default barkVoiceset    = 'greeting_geralt';
 	default lineText        = "A moment's peace and good wine. Rare gifts.";
 	default lineKey         = "ar_line_vivienne_tavern_drink";
@@ -682,9 +696,9 @@ class MCM_AR_Cerys_TavernDrink extends MCM_RomanceInteraction
 	default id              = 'cerys_tavern_drink';
 	default targetNpc       = 'becca';
 	default minAffinity     = 0;
-	default cooldownSeconds = 600.0;
+	default cooldownSeconds = 180.0;
 	default triggerType     = RTT_OneLiner;
-	default weight          = 6;
+	default weight          = 14;
 	default barkVoiceset    = 'greeting_geralt';
 	default lineText        = "Skellige mead beats this swill, but company helps.";
 	default lineKey         = "ar_line_cerys_tavern_drink";
@@ -2014,3 +2028,121 @@ class MCM_AR_Orianna_IntimateInvite extends MCM_RomanceInteraction
 	}
 }
 
+
+//  DANCE (F1) - ambient taniec: tawerna LUB (ognisko i noc). Baza: Interaction.
+
+class MCM_AR_Priscilla_Dance extends MCM_AR_Dance_Base
+{
+	default id        = 'priscilla_dance';
+	default targetNpc = 'priscilla';
+	default lineText  = "A stage? I don't need one. Watch this.";
+	default lineKey   = "ar_line_priscilla_dance";
+}
+
+// Cerys: skelligijskie hulanie (woman_cheering), nie sensualny taniec.
+class MCM_AR_Cerys_Dance extends MCM_AR_Dance_Base
+{
+	default id        = 'cerys_dance';
+	default targetNpc = 'becca';
+	default lineText  = "Hah! On Skellige even the sheep dance. Keep up!";
+	default lineKey   = "ar_line_cerys_dance";
+}
+
+class MCM_AR_Ves_DanceRefuse extends MCM_AR_DanceRefuse_Base
+{
+	default id        = 'ves_dance_refuse';
+	default targetNpc = 'ves';
+	default lineText  = "I'm a soldier, Geralt. If you want dancing, find a bard.";
+	default lineKey   = "ar_line_ves_dance_refuse";
+}
+
+class MCM_AR_Ves_TavernDrink extends MCM_RomanceInteraction
+{
+	default id              = 'ves_tavern_drink';
+	default targetNpc       = 'ves';
+	default minAffinity     = 0;
+	default cooldownSeconds = 180.0;
+	default triggerType     = RTT_OneLiner;
+	default weight          = 14;
+	default barkVoiceset    = 'greeting_geralt';
+	default lineText        = "Pour one for Temeria. Then one for us.";
+	default lineKey         = "ar_line_ves_tavern_drink";
+
+	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
+	{
+		if (!ctx.isInTavern) return "not_in_tavern";
+		return "";
+	}
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		npc.EnableDynamicLookAt(player, 10.0);
+		PlayDrinkingAnimation(npc);
+		PlayBark(npc);
+		return true;
+	}
+}
+
+class MCM_AR_Philippa_DanceRefuse extends MCM_AR_DanceRefuse_Base
+{
+	default id        = 'philippa_dance_refuse';
+	default targetNpc = 'philippa_eilhart';
+	default lineText  = "I don't dance, Geralt. I orchestrate.";
+	default lineKey   = "ar_line_philippa_dance_refuse";
+}
+
+class MCM_AR_Triss_Dance extends MCM_AR_Dance_Base
+{
+	default id        = 'triss_dance';
+	default targetNpc = 'triss';
+	default lineText  = "Fine. One dance. You watch, though.";
+	default lineKey   = "ar_line_triss_dance";
+}
+
+class MCM_AR_Keira_Dance extends MCM_AR_Dance_Base
+{
+	default id        = 'keira_dance';
+	default targetNpc = 'keira_metz';
+	default lineText  = "Life's too short for standing around, Geralt.";
+	default lineKey   = "ar_line_keira_dance";
+}
+
+class MCM_AR_Shani_Dance extends MCM_AR_Dance_Base
+{
+	default id        = 'shani_dance';
+	default targetNpc = 'shani';
+	default lineText  = "Careful, I step on toes. Kidding. Mostly.";
+	default lineKey   = "ar_line_shani_dance";
+}
+
+class MCM_AR_Tomira_Dance extends MCM_AR_Dance_Base
+{
+	default id        = 'tomira_dance';
+	default targetNpc = 'prologue_village_herbalist';
+	default lineText  = "Ha! This is how we dance back in my village!";
+	default lineKey   = "ar_line_tomira_dance";
+}
+
+class MCM_AR_Ciri_Dance extends MCM_AR_Dance_Base
+{
+	default id        = 'ciri_dance';
+	default targetNpc = 'cirilla';
+	default lineText  = "Watch and learn - my teachers charged more than you make in a year.";
+	default lineKey   = "ar_line_ciri_dance";
+}
+
+class MCM_AR_Yen_DanceRefuse extends MCM_AR_DanceRefuse_Base
+{
+	default id        = 'yen_dance_refuse';
+	default targetNpc = 'yennefer';
+	default lineText  = "You expect me to prance like a Passiflora girl? Think again.";
+	default lineKey   = "ar_line_yen_dance_refuse";
+}
+
+class MCM_AR_Ciri_DanceRefuse extends MCM_AR_DanceRefuse_Base
+{
+	default id        = 'ciri_dance_refuse';
+	default targetNpc = 'cirilla';
+	default lineText  = "Me? Dance for you? Dream on, Geralt.";
+	default lineKey   = "ar_line_ciri_dance_refuse";
+}
