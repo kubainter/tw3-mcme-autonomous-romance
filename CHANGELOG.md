@@ -2,6 +2,111 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.3.1] - 2026-11-16 - Input Bindings Packaging Fix
+
+The shipped consent-bindings file now uses the standard `input.settings.txt` name, so it merges automatically on every install path. File contents and key assignments are unchanged.
+
+## Fixes
+- **Input bindings file renamed:** `Mods/modMCME_AutonomousRomance/MCME_AR.input.settings.txt` is now `Mods/modMCME_AutonomousRomance/input.settings.txt`. The prefixed name was invisible to tools that scan mod folders for the conventional filename, so the `MCM_AR_Consent` bindings (keyboard C, gamepad D-pad Left/Right) never got merged there and consent ran purely on the sword-sheathe fallback. Contents unchanged; the fallback still covers installs where the file is not merged.
+- **Docs:** README, the in-mod README.txt and the Nexus install section now point at `input.settings.txt`.
+
+## [2.3.0] - 2026-11-08 - Generic T1-T3 Actions for the Extended Woman_Base Roster
+
+Shared flirt, care and kiss actions for every MCME woman_base follower without dedicated AR actions (Tamara, Iris, Corinne, Jutta, Sasha, Eveline Gallo, Lady of the Lake, Lussi, Yoana and more), a universal kiss-scene fallback, and description accuracy fixes for Rosa var Attre / Tomira Tier 4.
+
+## Features & Improvements
+- **Generic flirt bark (T1):** MCM_AR_Generic_FlirtBark - RTT_OneLiner wildcard (minAffinity 0, weight 6, cd 300s) rotating a shared pool of four flirt lines; gated to woman_base companions that have NO dedicated AR actions via the new `MCM_AR_IsNamedCompanion` exclusion list (19 named companions incl. runtime aliases). Blocked at night and near campfires, matching the dedicated OneLinerFlirt actions.
+- **Generic post-combat care (T2):** MCM_AR_Generic_Care - RTT_Gesture wildcard (minAffinity 30, weight 8, cd 900s) with the same HP below 60% plus recent-combat (300s) gates as the dedicated care actions; comfort bark only, no heal.
+- **Generic kiss (T3):** MCM_AR_Generic_Kiss - RTT_Prompt wildcard (minAffinity 50, usesAutonomousKiss, cd 1800s) playing the shared `ar_tomira_kiss` scene through a new `default` fallback in `AutonomousScenePath` for every woman_base companion without a dedicated kiss mapping. Ciri and noble-rig companions keep their own switch cases and gates; Ciri Adult Mode isolation is preserved both by the named-exclusion list and by her case returning empty in Lore Mode.
+- **Localization:** 7 new keys `ar_line_generic_flirt_1..4`, `ar_line_generic_care`, `ar_line_generic_kiss`, `ar_prompt_generic_kiss` (IDs 2118800290-2118800296) in en/pl/de/es/esmx; compiled .w3strings binaries rebuilt for all 17 locales (the 12 without a dedicated translation are English copies).
+
+## Docs
+- description.bbcode: Rosa var Attre and Tomira no longer listed under bespoke indoor suites (their Tier 4 uses the shared universal outdoor scene); extended MCME roster documented as covered by shared banter, care and kiss actions.
+- README: extended roster row updated from "T4 (Universal)" to "T1 - T4 (Generic)"; `ar_intimate` console documentation corrected (Rosa/Tomira do not stop at kisses).
+- Binary rig verification (`.w2ent` audit of blob/ep1/bob bundles): Tamara, Iris, Corinne, Jutta, Sasha, Eveline Gallo, Lady of the Lake and barons_wife_celina all confirmed `woman_base` (CMovingPhysicalAgentComponent markers); `mq3031_nidas` is a mislabeled `man_base` entry, `cirilla_young` is `child_base`, both intentionally out of scope.
+
+## [2.2.1] - 2026-11-05 - Night Ambient Lines, Post-Combat Care Gating & Idle-Sit Fix
+
+Night-time companion barks for the full roster, lore‑friendly health‑and‑combat gating for Tier‑2 care/allure gestures, and a fix for ambient dance/drink sequences conflicting with idle sitting poses.
+
+## Features & Improvements
+- **Night ambient lines for all remaining companions:** 12 new RTT_OneLiner ambient actions (`*_night_filler`) for Rosa var Attre, Tomira, Ciri, Syanna, Philippa, Ves, Salma, Priscilla, Edna, Fringilla, Margarita and Orianna. Same pattern as existing fillers: night‑gated, weight 8, cooldown 600s, minAffinity 0. Ciri uses barkMimic 'smile' (family register, not flirt). Every roster companion now has a night bark. New localization keys `ar_line_<npc>_night_filler` IDs `2118800278` through `2118800289` in en/pl/de/es/esmx CSVs (esmx reuses es text). Compiled .w3strings binaries rebuilt for all 17 locales (the 12 without a dedicated translation are English copies).
+- **Lore‑friendly gating for care/allure gestures:** MCM_AR_Salma_Allure, MCM_AR_Priscilla_Care, MCM_AR_Edna_Care, MCM_AR_Fringilla_Care, MCM_AR_Margarita_Care, MCM_AR_Orianna_Care now require Geralt HP ≤ 60% AND combat ended < 300s ago (block reasons "hp_ok"/"no_recent_combat"); MCM_AR_Philippa_Care (previously HP‑only) gained the recent‑combat check. These Tier‑2 gestures now read as post‑combat care instead of firing unconditionally in the staged lottery.
+
+## Fixes
+- **Idle‑sit vs ambient sequence conflict fix:** ambient dance (`RunDanceSequence`) and drinking (`PlayDrinkingAnimation`) sequences now call `RemoveIdleJobFor(npc)` on start (NPC stands up from the campfire/idle sit pose) and hold an `MCM_AR_AmbientBusy` marker (90s self‑expiring) for the duration; `UpdateIdleSuspend` skips ambient‑busy NPCs so no new sit job can spawn mid‑performance. New core API: `MarkAmbientBusy`/`ClearAmbientBusy`/`IsAmbientBusy` + `MCM_AR_AmbientBusy` class + `arAmbientBusy` array + `skipAmbient` counter in the idle log line. Original bodies renamed `PlayDrinkingAnimationInner`/`RunDanceSequenceInner`. This also covers the gift‑request drink path (same public function).
+
+## [2.2.0] - 2026-11-04 - Universal Romance Dispatcher & Campfire Intimacy
+
+Universal outdoor intimacy for all companion roster members on the standard woman rig, independent per-companion cooldowns, faster campfire settling, and major code de-bloat.
+
+## Features & Improvements
+- **Universal Outdoor Intimacy (Tier 4):** All female companions on the standard woman rig (woman_base - including Tamara, Iris, Corinna, Jutta, Sasha, Tomira, Rosa var Attre, etc.) now have access to romantic intimacy near campfires and outdoor spots via the unified MCM_AR_Generic_IntimateInvite action.
+- **Independent Cooldowns per Companion:** Generic/wildcard actions now maintain separate cooldown and rejection timers per companion (compCooldownTimes, compRejectTimes), preventing one companion's action from blocking others in multi-companion parties.
+- **Campfire Idle Lifecycle:** Followers take a seat by lit campfires significantly faster (~6s instead of 50s) when Geralt pauses nearby.
+- **Triple Appearance Fallback:** Smooth fallback hierarchy during romantic encounters (
+naked -> underwear -> keep dressed) to avoid missing-mesh visual issues.
+- **Codebase De-bloat:** Consolidated 13 duplicate per-companion action classes into the single generic dispatcher while preserving Ciri adult mode guards and specialized noble-rig routines (Anna Henrietta, Vivienne, Orianna).
+- **Secondary Companion Intimacy & Template Mesh Stripping:** Roster companions lacking hardcoded specialData entries (Corinne Tilly, Ida Emean, Irina Renarde, Eveline Gallo, Anna Stenger, Birna Bran, Sasha, etc.) dynamically scan their template `.w2ent` meshes for naked and underwear appearances during intimate scenes, restoring their original clothes upon scene exit or skip.
+- **HUD Afterglow Speaker Identification:** Fixed a bug where dynamic companion entities displayed empty speaker prefixes (`: "..."`) by routing name resolution through `MCM_AR_GetCompanionDisplayName` with a fallback to `niceName`.
+- **Disambiguated Alias Resolution & Two-Pass Matching:** Resolved ambiguous alias clashes (e.g. `anna` between Anna Henrietta and Anna Stenger); implemented two-pass strict-to-substring matching in debug consoles (`ar_intimate`, `ar_kiss`) eliminating false-positive companion selection.
+
+## Fixes
+- **Ciri Adult Mode Isolation:** Ensured generic wildcard actions cannot match Ciri, keeping her strictly under the explicit MCM Adult Mode toggle.
+- **Wildcard Cooldown Enforcement:** Fixed registry execution paths to properly record execution and rejection timestamps for wildcard actions.
+
+# v2.1.0 - Downtime Reactions, Ambient Dance & Cinematic Scenes
+
+Companion downtime reactions for meditation and sleep, ambient dances, all-day kiss invitations with cinematic variants, campfire intimate scenes, and idle pose transitions. Items listed under Known Limitations still need in-game verification before release.
+
+## Features & Improvements
+- **Downtime reactions (meditation & sleep):** when Geralt meditates or sleeps in the Corvo Bianco bed, every follower within 15 m settles into a relaxed pose on a ring around him (~1.4 m at meditation, ~1.9 m at the bed); when the session ends, the companion who stayed closest says a short line. The channel is consent-free, needs ~2 s of detected downtime so quick alchemy meditations do not trigger it (bed sessions skip the debounce), and re-arms ~60 s after a session (tracked separately for meditation and sleep; a combat break pauses meditation for ~5 min). The detector reads the player state/action - not the menu context - so alchemy, ordinary menus and clean idle never count as downtime. New console probe: `ar_downtime`.
+  - **Positioning:** companions settle on a ring around Geralt instead of posing where they stood; each one keeps its own bearing.
+  - **Bed partner:** during bed downtime the eligible follower with the highest affinity (female rigs) lies down on the free side of the bed next to Geralt for the whole sleep session. The free side is picked from Geralt's actual lying position, occupancy is checked with our own sweep, her position is re-pinned every tick and the lying loop is re-issued periodically so she never ends up standing on the bed. She swaps to underwear (unless `MCM_DisableAppearanceChanging` is on) and dresses back + returns to following when Geralt wakes. If no side is available, the companion falls back to a floor pose by the bed. This is the mod's own job state - no references to MCME job logic, so MCME job-system changes cannot break it.
+- **Dance in taverns and by the campfire (`*_dance`):**
+  - Priscilla, Triss, Keira, Shani, Cerys and Tomira dance (woman_dance); Philippa, Yennefer, Ves and Ciri answer with a short refusal line; Ciri dances in Adult mode only. Affinity 30, ~10 min cooldown. The gate is a tavern, or a campfire at night.
+  - A performance is a sequence of animation steps (start, loops, stop). Combat or an interrupted step ends the sequence cleanly, the same way the drinking animation does.
+  - Philippa, Yennefer, Ves and Ciri answer with a short refusal line instead of dancing.
+- **Console command `ar_dance(name)`:** triggers one dance or refusal for a companion who is in the party, without waiting for an autonomous trigger and without the tavern or campfire gate. Names: `priscilla`, `triss`, `keira`, `shani`, `tomira`, `cerys`, `ves`, `ciri`, `philippa`, `yen`, `ciri_refuse`.
+- **Intimate scenes ship with the mod:** the intimate-invitation scenes for Priscilla, Edna, Orianna, Fringilla and Margarita and for Cerys, Philippa, Ves, Salma, Anarietta and Vivienne (Anarietta & Vivienne) are now copies inside the mod's own `blob0.bundle`. They no longer need those packages installed, and the copies take precedence over the packages' own scene paths. Intimate scenes for the other companions are unchanged.
+- **All-day kiss invitations:** Yennefer and Keira now have an autonomous kiss invitation that works at any time of day (affinity 50, `[C]` consent, ~30 min cooldown), matching the one Triss already had. Their night-gated invitations remain unchanged.
+- **Cinematic kiss variants:** kisses for Triss, Yennefer, Keira and Shani can now play a cinematic camera scene, rotated ~50/50 with the standard per-companion scene. A dynamic action point is spawned at Geralt's feet so the scene plays where the couple stands. New scenes ship in the mod's own `blob0.bundle`.
+- **Intimate invitations at campfires:** the Tier 4 invitations from Yennefer, Triss and Keira are now also eligible at an outdoor campfire, not just near a fixed NaughtyPoint. Away from a point they play a new dedicated outdoor scene (`ar_shani_intimate_outdoor`) with its own spawned action point instead of an MCME cutscene. Shani's and Ciri's invitations keep the NaughtyPoint requirement.
+- **German (de) Localization:** Full translation of all 269 strings across prompts, menus, and companion dialogues into German (de.w3strings.csv and compiled de.w3strings).
+- **Idle pose transitions:** companions in the sitting-on-ground and lying-on-grass poses enter through a start animation and leave through an end animation before they follow again. Other idle poses keep their previous behavior.
+- **E2E checks:** the in-game test suite (dev builds only, ~90 live assertions) covers gate order, affinity edges, gifts, scene paths, config guards, consent timeout, the downtime channel, the dance whitelist and idle animation state.
+
+## Fixes
+- **Gameplay Scene Latch Fix:** Replaced stale actor flag `npc.IsInGameplayScene()` with `theGame.IsDialogOrCutscenePlaying()`. In REDengine 3, `IsInGameplayScene` could stay permanently true after any cutscene/dialogue, freezing companion autonomous ticks and ambient barks.
+- **MCM_Other Companion Tag Integration:** Added `MCM_AR_GetActiveCompanions()` to combine `GeraltsBFF` with `MCM_Other`, fully enabling autonomous romance actions for Cerys (Becca), Tomira, Rosa, and other secondary companions.
+- **Dance & Drinking AI Locomotion Suspension:** Wrapped dance routines and tavern drinking animations with `npc.scmcc.StopFollowing(true)` on entry and `StartFollowing()` on exit/interruption, preventing MCME foot-movement AI ticks from canceling slot animations after 1-2 seconds.
+- **Ves Lore-Friendly Dance Refusal & Tavern Drink:** Replaced male-skeleton sword animations for Ves with an in-character dance refusal (*"I'm a soldier, Geralt. If you want dancing, find a bard."*) and a dedicated tavern toast (*"Pour one for Temeria. Then one for us."*).
+- **Tavern Drinking Rebalance:** Shortened tavern drinking cooldown from 600s to 180s and increased weight from 6 to 14 across all companions.
+- Bed/sleep safety gap: the pre-sleep lying phase (`PEA_GoToSleep`) reports player state `Exploration`, which previously let staged actions, consent prompts and ambient barks fire while the player was locked in the bed interaction. Both safety gates now treat the downtime state as blocked.
+- The consent hint now substitutes the dynamic key glyph into every `[C]` anchor (was: first occurrence only), so the hold hint shows the real key instead of a literal "[C]".
+
+## Known Limitations
+- The 2.5 second duration of the start and end transitions is a first estimate, not measured.
+- The dance clips for Tomira and the Ciri Adult variant are not yet verified in game.
+- Orianna's intimate scene was checked against the game files, not yet played in game.
+- Philippa's kiss scene (since v2.0.0) and her intimate-invitation copy (taken from the Anarietta & Vivienne pack) reference a character template path that the base game does not contain. Their in-game behavior is not verified.
+- Salma's kiss scene references a scene file that is not present in any installed package. This dates from v2.0.0; its in-game behavior is not verified.
+- The eleven intimate-invitation copies play through the manual path (a NaughtyPoint plus an action point). Where a companion pack previously supplied a registered scene path, that path is no longer used for these scenes. Please report any difference in the scene start, camera or cleanup.
+- Yennefer was not observed taking an idle pose in the last test run.
+
+## Affected Files
+- `Mods/modMCME_AutonomousRomance/content/scripts/local/romance/MCM_RomanceCore.ws`
+- `Mods/modMCME_AutonomousRomance/content/scripts/local/romance/MCM_RomanceInteraction.ws`
+- `Mods/modMCME_AutonomousRomance/content/scripts/local/romance/MCM_RomanceActions_Main.ws`
+- `Mods/modMCME_AutonomousRomance/content/scripts/local/romance/MCM_RomanceActions_DLC.ws`
+- `Mods/modMCME_AutonomousRomance/content/scripts/local/romance/MCM_RomanceE2EDev.ws` (new, dev builds only)
+- `Mods/modMCME_AutonomousRomance/content/scripts/local/romance/MCM_RomanceTw3seDev.ws` (E2E suite moved to `MCM_RomanceE2EDev.ws`)
+- `Mods/modMCME_AutonomousRomance/content/blob0.bundle` + `metadata.store` (16 new scenes, 36 entries in total: `ar_cs_kiss_probe.w2scene`, `ar_shani_kiss_cinematic.w2scene`, `ar_shani_intimate_outdoor.w2scene`, `ar_shani_sex_outdoor.w2cutscene`, `ar_triss_kiss_cs.w2cutscene`, and the eleven intimate-invitation copies `naughty/{priscilla,edna,oriana,fringilla,margaritta,cerys,philippa,ves,salma,anarietta,vivienne}/anywhere.w2scene`)
+- `Mods/modMCME_AutonomousRomance/content/en.w3strings.csv` (17 new strings: 11 dance and refusal lines for Priscilla, Cerys, Ves, Philippa, Triss, Keira, Shani, Tomira, Ciri and Yennefer; Yennefer and Keira kiss prompts and lines; two downtime lines; four unused v2.0.0 strings removed)
+- `Mods/modMCME_AutonomousRomance/content/{pl,es,esmx}.w3strings.csv` (all v2.1 strings translated, same 267 keys as en); regenerated `.w3strings` binaries for en/pl/es/esmx, and the 13 other locale binaries are copies of the new en
+- `scripts/tw3se/MCM_RomanceTw3seDev.dev.ws` (dev bridge source)
+- `README.md` (MCMR prerequisite note + Almighty Geralt compatibility section)
+
 # v2.0.0 - Universal Dispatcher, Expanded Roster & Immersive Gestures
 
 Major integration update delivering universal clean scene dispatching, expanding the autonomous romance roster to 19 companions, adding physical drinking animations, and personalizing companion afterglow across the entire cast.
@@ -152,6 +257,49 @@ Initial public release of **MCME Autonomous Romance**, introducing autonomous co
 > *Ready-to-paste text for the Nexus Mods "Change Log" tab:*
 
 ```text
+v2.3.1 - Input Bindings Packaging Fix
+* Fix: the consent bindings file now uses the standard input.settings.txt name, so it merges automatically on every install path. Contents unchanged - C on keyboard and D-pad Left/Right still accept the prompt, and consent still works through the sword-sheathe key when the file is not merged.
+
+v2.3.0 - Romance for the Extended Roster
+* New: extended MCME followers (Tamara, Iris, Corinne, Jutta, Sasha and other standard-rig companions) now join the romance system - shared road flirt lines, comfort after tough fights, and a shared kiss at affinity 50.
+* New: shared kiss scene fallback. Every woman_base companion without her own kiss scene now plays a warm shared kiss moment instead of being skipped.
+* Changed: description corrections. Rosa var Attre and Tomira's intimate moments use the shared outdoor scene, not a bespoke bed cutscene.
+
+v2.2.1 - Night Barks for the Full Roster & After-Combat Care
+* New: night-time remarks for the rest of the roster - Rosa, Tomira, Ciri, Syanna, Philippa, Ves, Salma, Priscilla, Edna, Fringilla, Margarita and Orianna now have something to say after dark, each in her own voice. Every companion gets a night bark.
+* Changed: comfort gestures from Philippa, Salma, Priscilla, Edna, Fringilla, Margarita and Orianna now wait until Geralt is actually hurt (health below 60% and a fight within the last five minutes) instead of firing at random on the road.
+* Fix: companions no longer try to sit down mid-performance - dance and drinking sequences now take over cleanly from idle campfire poses.
+* Fix: German localization was missing Priscilla's intimate prompt; Spanish and Latin American menus now show translated panel names, and the mod-menu title carries the current version again.
+
+v2.2.0 - Universal Romance Dispatcher & Campfire Intimacy
+* New: universal outdoor intimacy - female companions on the standard woman rig that had no intimate action of their own can now invite Geralt near campfires and outdoor resting spots. One shared dispatcher replaces the old per-companion classes; Anna Henrietta, Vivienne and Orianna keep their dedicated noble-rig routines.
+* New: independent cooldowns per companion for the shared actions. In a multi-companion party, one companion's cooldown or rejection no longer blocks the others.
+* Changed: companions settle by a lit campfire much faster when Geralt pauses nearby (about 6 seconds instead of 50).
+* Fixed: intimate scenes fall back through appearances in order (naked, underwear, keep dressed) when a companion lacks a mesh, so characters with missing naked meshes no longer break the scene visually.
+* New: secondary companion mesh stripping - roster companions without hardcoded specialData (Corinne Tilly, Ida Emean, Irina Renarde, Eveline Gallo, Anna Stenger, Birna Bran, etc.) dynamically query their template appearances for naked/underwear mesh variants and restore their outfits afterward.
+* Fixed: post-scene afterglow barks on HUD now correctly display the speaker's name rather than an empty colon prefix.
+* Fixed: disambiguated alias clashes (`anna` for Henrietta vs Stenger) and added two-pass strict-to-substring matching for console commands (`ar_intimate`, `ar_kiss`).
+* Fixed: Tomira and Rosa var Attre fully unblocked for intimate invitations (Tier 4) via the universal dispatcher.
+* Fixed: registered Syanna's missing Tier 4 intimate invitation action in the DLC registry.
+
+v2.2.1 - Night Ambient Lines, Post-Combat Care Gating & Idle-Sit Fix
+* New: night ambient lines for all remaining companions - Rosa var Attre, Tomira, Ciri, Syanna, Philippa, Ves, Salma, Priscilla, Edna, Fringilla, Margarita and Orianna now have night-time barks (same pattern as existing fillers). Every roster companion now has a night bark.
+* Changed: lore-friendly gating for care/allure gestures - Salma's allure and Priscilla/Edna/Fringilla/Margarita/Orianna's care gestures now require Geralt HP ≤ 60% AND combat ended < 300s ago (post-combat care). Philippa's care gesture gained the recent-combat check (previously HP-only).
+* Fixed: idle-sit vs ambient sequence conflict - ambient dance and drinking sequences now stand NPCs up from campfire/idle sit poses and block new sit jobs during performance, preventing visual conflicts.
+
+v2.1.0 - Downtime Reactions, Ambient Dance & Cinematic Scenes
+* New: downtime reactions - when Geralt meditates or sleeps in the Corvo Bianco bed, every follower within 15 m settles into a relaxed pose on a ring around him, and the closest companion says a line when the session ends. Consent-free, ~2 s debounce so quick alchemy meditations don't trigger it, ~60 s re-arm.
+* New: bed partner - during bed downtime the highest-affinity female follower lies on the free side of the bed for the whole sleep session (underwear unless appearance changing is disabled), then dresses and follows again when Geralt wakes.
+* New: ambient dances - Priscilla, Triss, Keira, Shani, Cerys and Tomira dance; Ciri dances in Adult mode. Philippa, Yennefer, Ves and Ciri answer with a refusal line. Taverns or a campfire at night.
+* New: all-day kiss invitations for Yennefer and Keira (affinity 50) - Triss already had one.
+* New: cinematic kiss variant for Triss, Yennefer, Keira and Shani - about half of kisses play the cinematic scene.
+* New: intimate invitations from Yennefer, Triss and Keira now also work at an outdoor campfire and play a dedicated outdoor scene.
+* New: sitting-on-ground and lying-on-grass idle poses now play start/end transition animations.
+* New: German (de) localization with 269 translated strings.
+* New: intimate invitations for Priscilla, Edna, Orianna, Fringilla, Margarita, Cerys, Philippa, Ves, Salma, Anarietta and Vivienne.
+* Fix: the consent hold hint now shows the real bound key instead of a literal "[C]".
+* Fix: staged actions, consent prompts and ambient barks no longer fire while Geralt is locked in the bed sleep interaction.
+
 v2.0.0 - Universal Dispatcher, Expanded Roster & Immersive Gestures
 * New: universal kiss and hug dispatcher. Kisses and hugs play through dedicated per-companion story scenes with the dialogue wheel removed; each companion keeps her own voice lines, animations and cameras.
 * New: kisses for Triss, Yennefer, Keira, Shani, Cerys, Syanna, Philippa, Ves, Salma, Priscilla, Edna, Fringilla, Margarita, Rosa var Attre and Tomira. Anna Henrietta, Vivienne and Orianna have no kiss interaction; they get intimate invitations instead.
