@@ -675,8 +675,28 @@ class MCM_RomanceInteraction
 		return 1;
 	}
 
-	// Bezpieczne odtworzenie animacji picia (toast/degustacja wina/kufla)
+	// Wrapper sekwencji picia: zdejmuje ewentualny idle-job (postac
+	// wstaje z siadu) i blokuje tworzenie nowego na czas animacji -
+	// ProbeAnim grywa na tych samych slotach co sync-instancja idle.
 	public latent function PlayDrinkingAnimation(npc : CNewNPC) : bool
+	{
+		var r    : bool;
+		var core : MCM_AutonomousRomanceCore;
+
+		if (!npc) return false;
+		core = MCM_AR_GetCore();
+		if (core)
+		{
+			core.RemoveIdleJobFor(npc);
+			core.MarkAmbientBusy(npc);
+		}
+		r = PlayDrinkingAnimationInner(npc);
+		if (core) core.ClearAmbientBusy(npc);
+		return r;
+	}
+
+	// Bezpieczne odtworzenie animacji picia (toast/degustacja wina/kufla)
+	protected latent function PlayDrinkingAnimationInner(npc : CNewNPC) : bool
 	{
 		var r             : int;
 		var followStopped : bool;
@@ -774,9 +794,28 @@ class MCM_RomanceInteraction
 		}
 	}
 
+	// Wrapper sekwencji tanca: jak PlayDrinkingAnimation - zdejmuje idle-job
+	// i blokuje nowy na czas animacji (wspolne sloty z sync-instancja).
+	protected latent function RunDanceSequence(npc : CNewNPC, animSet : string) : int
+	{
+		var r    : int;
+		var core : MCM_AutonomousRomanceCore;
+
+		if (!npc) return 0;
+		core = MCM_AR_GetCore();
+		if (core)
+		{
+			core.RemoveIdleJobFor(npc);
+			core.MarkAmbientBusy(npc);
+		}
+		r = RunDanceSequenceInner(npc, animSet);
+		if (core) core.ClearAmbientBusy(npc);
+		return r;
+	}
+
 	// Sekwencja tanca wzorowana na RunDrinkSequence, ale bez propsow.
 	// Zwraca: 0 = brak zestawu/animacji na rigu, 1 = zagrana w calosci, 2 = przerwana.
-	protected latent function RunDanceSequence(npc : CNewNPC, animSet : string) : int
+	protected latent function RunDanceSequenceInner(npc : CNewNPC, animSet : string) : int
 	{
 		var followStopped : bool;
 

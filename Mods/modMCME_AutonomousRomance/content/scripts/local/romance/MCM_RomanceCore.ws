@@ -1,7 +1,7 @@
 /*****************************************************************************/
 /* MCME Autonomous Romance - Core Module                                     */
 /* Główna pętla, timery i context tracker                                    */
-/* Wersja: 2.2.0  |  Wymaga: modMCME_Remastered 5.00+                       */
+/* Wersja: 2.2.1  |  Wymaga: modMCME_Remastered 5.00+                       */
 /*****************************************************************************/
 
 // Singleton dostępny globalnie, inicjowany przy spawnie gracza
@@ -232,6 +232,16 @@ class MCM_AR_IdleJob
 	default syncSeq = -1;
 }
 
+// Marker sekwencji ambientowej (taniec/picie z MCM_AR_ProbeAnim): na czas
+// trwania nowy idle-job nie moze powstac - sync-instancja siedzenia
+// walczylaby z probe-animacjami o te same sloty. `until` = auto-zwolnienie
+// przy latent-abort (scena/ReloadScripts), bo Clear moze nie dojsc.
+class MCM_AR_AmbientBusy
+{
+	var npcNam : name;
+	var until  : float;
+}
+
 statemachine class MCM_AutonomousRomanceCore
 {
 	default autoState = 'Idle';
@@ -292,6 +302,7 @@ statemachine class MCM_AutonomousRomanceCore
 	private var arIdleAnchor : Vector;
 	private var arIdleSince  : float;
 	private var arIdleJobs   : array<MCM_AR_IdleJob>;
+	private var arAmbientBusy : array<MCM_AR_AmbientBusy>;
 	default arIdleSince = -9999.0;
 
 	// Kanal downtime (C-N4 medytacja / C-N5 sen): gracz "stoi" w miejscu,
@@ -586,6 +597,62 @@ statemachine class MCM_AutonomousRomanceCore
 				arIdleJobs.Erase(i);
 			}
 		}
+	}
+
+	// Znacznik "NPC w sekwencji ambientowej" (taniec/picie). UpdateIdleSuspend
+	// pomija takiego NPC-a - nowy sync-job walczylby z ProbeAnim o sloty.
+	// Deadline 90s >> najdluzsza sekwencja (~25s): bezpiecznik na abort.
+	public function MarkAmbientBusy(npc : CNewNPC)
+	{
+		var i    : int;
+		var rec  : MCM_AR_AmbientBusy;
+		var nowT : float;
+
+		if (!npc || !npc.scmcc || !npc.scmcc.data) return;
+		nowT = theGame.GetEngineTimeAsSeconds();
+		for (i = 0; i < arAmbientBusy.Size(); i += 1)
+		{
+			if (arAmbientBusy[i].npcNam == npc.scmcc.data.nam)
+			{
+				arAmbientBusy[i].until = nowT + 90.0;
+				return;
+			}
+		}
+		rec = new MCM_AR_AmbientBusy in this;
+		rec.npcNam = npc.scmcc.data.nam;
+		rec.until  = nowT + 90.0;
+		arAmbientBusy.PushBack(rec);
+	}
+
+	public function ClearAmbientBusy(npc : CNewNPC)
+	{
+		var i : int;
+		if (!npc || !npc.scmcc || !npc.scmcc.data) return;
+		for (i = arAmbientBusy.Size() - 1; i >= 0; i -= 1)
+		{
+			if (arAmbientBusy[i].npcNam == npc.scmcc.data.nam)
+			{
+				arAmbientBusy.Erase(i);
+			}
+		}
+	}
+
+	public function IsAmbientBusy(npc : CNewNPC) : bool
+	{
+		var i    : int;
+		var nowT : float;
+
+		if (!npc || !npc.scmcc || !npc.scmcc.data) return false;
+		nowT = theGame.GetEngineTimeAsSeconds();
+		for (i = arAmbientBusy.Size() - 1; i >= 0; i -= 1)
+		{
+			if (arAmbientBusy[i].npcNam == npc.scmcc.data.nam)
+			{
+				if (nowT < arAmbientBusy[i].until) return true;
+				arAmbientBusy.Erase(i);
+			}
+		}
+		return false;
 	}
 
 	// Klasyfikator downtime gracza: true gdy medytuje lub spi w lozku
@@ -1294,6 +1361,7 @@ statemachine class MCM_AutonomousRomanceCore
 		var skipScene  : int;
 		var skipOwn    : int;
 		var skipSpeak  : int;
+		var skipAmbient : int;
 
 		nowT      = theGame.GetEngineTimeAsSeconds();
 		playerPos = thePlayer.GetWorldPosition();
@@ -1372,6 +1440,13 @@ statemachine class MCM_AutonomousRomanceCore
 				}
 				continue;
 			}
+			// Sekwencja ambientowa w toku (taniec/picie): ProbeAnim grywa
+			// na slotach - nowy sync-job walczylby z nia o GAMEPLAY_SLOT.
+			if (IsAmbientBusy(npc))
+			{
+				skipAmbient += 1;
+				continue;
+			}
 			// Losowa szansa na "teraz" (70%) lub "poczekaj kolejny tick"
 			if (RandRange(100, 0) >= 70 && suspendedThisTick > 0)
 			{
@@ -1433,7 +1508,8 @@ statemachine class MCM_AutonomousRomanceCore
 		           "/" + companions.Size() + " susp=" + suspendedThisTick +
 		           " skip{noFollow=" + skipNoTag + ",far=" + skipFar + ",busy=" + skipBusy +
 		           "{talk=" + skipTalk + ",scene=" + skipScene + ",speak=" + skipSpeak +
-		           ",own=" + skipOwn + "},delay=" + skipDelay + ",null=" + skipNull + "}");
+		           ",own=" + skipOwn + "},delay=" + skipDelay + ",null=" + skipNull +
+		           ",amb=" + skipAmbient + "}");
 	}
 
 	// Pasywny Affinity z podrozy: +1 za 600s aktywnego followa (<=25m).
@@ -2829,7 +2905,7 @@ exec function ar_unhide()
 	{
 		scm.NaughtyManager.ShowAllExcept(NULL);
 	}
-	thePlayer.DisplayHudMessage("[AR] Wszystkie towarzyszki odkryte (SetHideInGame false)!");
+    thePlayer.DisplayHudMessage("[AR] All companions unhidden (SetHideInGame false)!");
 }
 
 exec function ar_reset()
@@ -3801,7 +3877,7 @@ exec function ar_dance(optional npcStr : string)
 		}
 		core.ResetAllCooldowns();
 		MCM_AR_KickStagedTick(core);
-		thePlayer.DisplayHudMessage("[AR] Taniec: " + core.debugForceTarget);
+		thePlayer.DisplayHudMessage("[AR] Dance: " + core.debugForceTarget);
 	}
 }
 
@@ -3816,7 +3892,7 @@ exec function ar_hug()
 		core.debugForceTarget = 'cirilla';
 		core.ResetAllCooldowns();
 		MCM_AR_KickStagedTick(core);
-		thePlayer.DisplayHudMessage("[AR] Bezposredni uscisk: Ciri");
+		thePlayer.DisplayHudMessage("[AR] Direct hug: Ciri");
 	}
 }
 
