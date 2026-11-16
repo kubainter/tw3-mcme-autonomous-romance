@@ -51,6 +51,9 @@ function InitDefaultActions()
 	RegisterAction(new MCM_AR_Triss_NightFiller         in this);
 	RegisterAction(new MCM_AR_Keira_NightFiller         in this);
 	RegisterAction(new MCM_AR_Shani_NightFiller         in this);
+	RegisterAction(new MCM_AR_Rosa_NightFiller          in this);
+	RegisterAction(new MCM_AR_Tomira_NightFiller        in this);
+	RegisterAction(new MCM_AR_Ciri_NightFiller          in this);
 	RegisterAction(new MCM_AR_WeatherBark               in this);
 	RegisterAction(new MCM_AR_HorseBark                 in this);
 	RegisterAction(new MCM_AR_InteriorBark              in this);
@@ -1142,6 +1145,87 @@ class MCM_AR_Shani_NightFiller extends MCM_RomanceInteraction
 	default barkVoiceset    = 'greeting_geralt';
 	default lineText        = "A medic's work doesn't end at sundown.";
 	default lineKey         = "ar_line_shani_night_filler";
+
+	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
+	{
+		if (!ctx.isNight) return "not_night";
+		return "";
+	}
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		npc.EnableDynamicLookAt(player, 6.0);
+		PlayBark(npc);
+		return true;
+	}
+}
+
+class MCM_AR_Rosa_NightFiller extends MCM_RomanceInteraction
+{
+	default id              = 'rosa_night_filler';
+	default targetNpc       = 'rosa_var_attre';
+	default minAffinity     = 0;
+	default cooldownSeconds = 600.0;
+	default triggerType     = RTT_OneLiner;
+	default weight          = 8;
+	default barkMimic       = 'flirt';
+	default barkVoiceset    = 'greeting_geralt';
+	default lineText        = "Night air settles the bones. Sleep well, Geralt.";
+	default lineKey         = "ar_line_rosa_night_filler";
+
+	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
+	{
+		if (!ctx.isNight) return "not_night";
+		return "";
+	}
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		npc.EnableDynamicLookAt(player, 6.0);
+		PlayBark(npc);
+		return true;
+	}
+}
+
+class MCM_AR_Tomira_NightFiller extends MCM_RomanceInteraction
+{
+	default id              = 'tomira_night_filler';
+	default targetNpc       = 'prologue_village_herbalist';
+	default minAffinity     = 0;
+	default cooldownSeconds = 600.0;
+	default triggerType     = RTT_OneLiner;
+	default weight          = 8;
+	default barkMimic       = 'flirt';
+	default barkVoiceset    = 'greeting_geralt';
+	default lineText        = "The herbs dream too, you know. Rest now.";
+	default lineKey         = "ar_line_tomira_night_filler";
+
+	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
+	{
+		if (!ctx.isNight) return "not_night";
+		return "";
+	}
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		npc.EnableDynamicLookAt(player, 6.0);
+		PlayBark(npc);
+		return true;
+	}
+}
+
+class MCM_AR_Ciri_NightFiller extends MCM_RomanceInteraction
+{
+	default id              = 'ciri_night_filler';
+	default targetNpc       = 'cirilla';
+	default minAffinity     = 0;
+	default cooldownSeconds = 600.0;
+	default triggerType     = RTT_OneLiner;
+	default weight          = 8;
+	default barkMimic       = 'smile';
+	default barkVoiceset    = 'greeting_geralt';
+	default lineText        = "I'll take first watch. Sleep, Geralt.";
+	default lineKey         = "ar_line_ciri_night_filler";
 
 	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
 	{

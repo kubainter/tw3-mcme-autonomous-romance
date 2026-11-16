@@ -1,7 +1,7 @@
 ================================================================================
 MCME AUTONOMOUS ROMANCE
 The Witcher 3: Wild Hunt - Remaster (v5.00+)
-Version: 2.2.0
+Version: 2.2.1
 Author: Botan
 ================================================================================
 
@@ -42,8 +42,8 @@ HOW IT WORKS IN GAME
 
   * Campfires & Tavern Drinks:
     When resting by a campfire or relaxing inside any tavern, she may ask for
-    a bottle from your inventory (Est Est, Erveluce, Beauclair White, Mettina Rose, Alcohest,
-    Dwarven Spirit). Share a drink for +3 Affinity (+4 in total with the standard action bonus) and a thank-you.
+    a bottle from your inventory (Est Est, Erveluce, Beauclair White,
+    Mettina Rose, Alcohest, Dwarven Spirit or Temerian Rye). Share a drink for +3 Affinity (+4 in total with the standard action bonus) and a thank-you.
 
   * Natural Idle Moments:
     Stop moving for ~50s (or rest near a lit campfire, where she sits down in ~6s),
@@ -62,11 +62,10 @@ HOW IT WORKS IN GAME
 
   * Tavern & Campfire Dances:
     Inside a tavern - or at a campfire at night (22:00-04:00) - a companion
-    may perform on her own: Priscilla, Triss, Keira and Shani dance, Cerys and
-    Tomira lead a Skellige cheer, Ves runs through sword footwork, and Ciri
-    dances in Adult mode. Philippa, Yennefer and Ciri refuse with a quip.
-    Affinity 30+, ~10 min cooldown; the animation sequence ends cleanly if
-    interrupted.
+    may perform on her own: Priscilla, Triss, Keira, Shani, Cerys and Tomira
+    dance, and Ciri dances in Adult mode. Philippa, Yennefer and Ves refuse
+    with a quip (Ciri refuses in Lore mode). Affinity 30+, ~10 min cooldown;
+    the animation sequence ends cleanly if interrupted.
 
   * Autonomous Dates & Kisses:
     As your bond grows, she steps forward to invite Geralt to private moments,
