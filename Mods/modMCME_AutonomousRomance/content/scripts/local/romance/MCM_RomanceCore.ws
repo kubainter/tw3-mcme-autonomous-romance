@@ -1,7 +1,7 @@
 /*****************************************************************************/
 /* MCME Autonomous Romance - Core Module                                     */
 /* Główna pętla, timery i context tracker                                    */
-/* Wersja: 2.2.1  |  Wymaga: modMCME_Remastered 5.00+                       */
+/* Wersja: 2.3.0  |  Wymaga: modMCME_Remastered 5.00+                       */
 /*****************************************************************************/
 
 // Singleton dostępny globalnie, inicjowany przy spawnie gracza
@@ -305,10 +305,7 @@ statemachine class MCM_AutonomousRomanceCore
 	private var arAmbientBusy : array<MCM_AR_AmbientBusy>;
 	default arIdleSince = -9999.0;
 
-	// Kanal downtime (C-N4 medytacja / C-N5 sen): gracz "stoi" w miejscu,
-	// ale to nie czysty IDLE ani stan unsafe. Edge-detect na cyklu
-	// AmbientTick (~10s); reakcje consent-free (bark + poza przez infra
-	// idle-job). Publiczne dla podgladu debug (ar_downtime / ar_status).
+	// Kanal downtime (medytacja / sen)
 	public var dtDetected    : bool;   // wynik klasyfikatora z biezacego ticku
 	public var dtKind        : name;   // 'ar_dt_meditation' | 'ar_dt_bed'
 	public var dtCount       : int;    // debounce: kolejne ticki w downtime
@@ -2812,7 +2809,6 @@ exec function ar_status()
 	var followN    : int;
 	var worldAff   : string;
 
-	// Markery krokow: przy CTD scriptslog.txt pokaze, ktory krok zabil gre.
 	LogChannel('MCM_AR', "[AR status] step1: get core");
 	core = MCM_AR_GetCore();
 	if (!thePlayer || !core)
@@ -2981,7 +2977,7 @@ exec function ar_idlenow()
 	}
 }
 
-// Sonda downtime (C-N4/C-N5): surowe sygnaly klasyfikatora + stan watchera.
+// Sonda downtime: stan klasyfikatora i watchera.
 exec function ar_downtime()
 {
 	var core    : MCM_AutonomousRomanceCore;
@@ -3985,7 +3981,7 @@ exec function ar_intimate(optional npcStr : string)
 			return;
 		}
 
-		// Krok 1: Dopasowanie scisle (exact nam, canon, niceName, displayName)
+		// Dopasowanie scisle
 		matched = false;
 		for (i = 0; i < companions.Size(); i += 1)
 		{
@@ -4001,7 +3997,7 @@ exec function ar_intimate(optional npcStr : string)
 			}
 		}
 
-		// Krok 2: Elastyczne dopasowanie substring jako fallback (min. 3 znaki)
+		// Dopasowanie elastyczne substring jako fallback
 		if (!matched && StrLen(npcStr) >= 3)
 		{
 			for (i = 0; i < companions.Size(); i += 1)
