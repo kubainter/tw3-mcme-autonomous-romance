@@ -2423,6 +2423,12 @@ class MCM_RomanceInteraction
 		{
 			scm.NaughtyManager.HideAllExcept(npc);
 			npc.AddTag('mcme_companion');
+			if (!theSound.SoundIsBankLoaded("cs_sex.bnk"))
+			{
+				theSound.SoundLoadBank("cs_sex.bnk", false);
+			}
+			theSound.SoundEvent("mus_sq101_love_theme");
+			theSound.SoundEvent("cs_sex_do_0" + (RandRange(5) + 1));
 			theGame.GetStorySceneSystem().PlayScene(scene, "Input");
 			MCM_AR_Log("[AR] IntimateScene (autonomous AR): " + path + " for " + NameToString(nm));
 		}
@@ -2445,9 +2451,13 @@ class MCM_RomanceInteraction
 		}
 
 		ok = WaitForSceneEnd(npc, 90.0, true);
-		if (isAutonomousScene && npc)
+		if (isAutonomousScene)
 		{
-			npc.RemoveTag('mcme_companion');
+			if (npc)
+			{
+				npc.RemoveTag('mcme_companion');
+			}
+			theSound.SoundEvent("stop_music");
 		}
 		FactsSet('mod_scm_allownaughty', 0);
 		MCM_AR_Log("[AR] IntimateScene end: ok=" + ok + " for " + NameToString(nm));
