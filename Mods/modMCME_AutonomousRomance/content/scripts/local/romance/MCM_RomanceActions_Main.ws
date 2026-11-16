@@ -14,6 +14,7 @@ function InitDefaultActions()
 	RegisterAction(new MCM_AR_Yen_OneLinerFlirt        in this);
 	RegisterAction(new MCM_AR_Yen_PostCombatCare        in this);
 	RegisterAction(new MCM_AR_Yen_NightInvitation       in this);
+	RegisterAction(new MCM_AR_Yen_Kiss                 in this);
 	RegisterAction(new MCM_AR_Yen_CampfireEvening       in this);
 	RegisterAction(new MCM_AR_Yen_IntimateInvite        in this);
 	RegisterAction(new MCM_AR_Yen_JealousySnark         in this);
@@ -35,6 +36,7 @@ function InitDefaultActions()
 	RegisterAction(new MCM_AR_Keira_OneLinerFlirt       in this);
 	RegisterAction(new MCM_AR_Keira_PostCombatHeal      in this);
 	RegisterAction(new MCM_AR_Keira_NightProposal       in this);
+	RegisterAction(new MCM_AR_Keira_Kiss               in this);
 	RegisterAction(new MCM_AR_Keira_CampfireWitch       in this);
 	RegisterAction(new MCM_AR_Keira_IntimateInvite      in this);
 	RegisterAction(new MCM_AR_Keira_GiftRequest        in this);
@@ -191,6 +193,42 @@ class MCM_AR_Yen_NightInvitation extends MCM_RomanceInteraction
 	}
 }
 
+//  YENNEFER – Tier 3: Całodobowy pocałunek autonomiczny (24/7 autonomous kiss, rotacja standard/kinowa)
+
+class MCM_AR_Yen_Kiss extends MCM_RomanceInteraction
+{
+	default id              = 'yen_kiss';
+	default usesAutonomousKiss = true;
+	default targetNpc       = 'yennefer';
+	default minAffinity     = 50;
+	default cooldownSeconds = 1800.0;
+	default triggerType     = RTT_Prompt;
+	default weight          = 5;
+	default barkMimic       = 'flirt';
+	default barkVoiceset    = 'greeting_geralt';
+	default lineText        = "Geralt... Come closer.";
+	default lineKey         = "ar_line_yen_kiss";
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		var ok : bool;
+
+		SoftApproach(npc, player, 2.4);
+		PlayBark(npc);
+
+		ok = ApproachAndConsent(npc, player, 2.4, AR_T("ar_prompt_yen_kiss", "[C] Kiss Yennefer"));
+		if (!ok)
+		{
+			return false;
+		}
+
+		HardStage(npc, player, 1.5);
+		ok = PlayKissScene(npc);
+		EndInteraction(npc, player);
+		return ok;
+	}
+}
+
 //  YENNEFER – Tier 2: Przy ognisku (wieczorny) – soft approach
 
 class MCM_AR_Yen_CampfireEvening extends MCM_RomanceInteraction
@@ -239,8 +277,10 @@ class MCM_AR_Yen_IntimateInvite extends MCM_RomanceInteraction
 
 	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
 	{
-		// Tylko obok punktu intymnego MCME (scena wymaga action pointu <=20m)
-		if (!IsOnNaughtyPoint()) return "no_naughty_point";
+		if (!IsOnNaughtyPoint() && !(ctx.isNearCampfire && !ctx.isInInterior && !ctx.isInTavern))
+		{
+			return "no_naughty_point";
+		}
 		// NPC musi miec scene intymna + plik sceny musi istniec (DLC gate)
 		return IntimateSceneBlockReason(npc);
 	}
@@ -349,9 +389,9 @@ class MCM_AR_Yen_TavernWine extends MCM_RomanceInteraction
 	default id              = 'yen_tavern_wine';
 	default targetNpc       = 'yennefer';
 	default minAffinity     = 0;
-	default cooldownSeconds = 600.0;
+	default cooldownSeconds = 180.0;
 	default triggerType     = RTT_OneLiner;
-	default weight          = 6;
+	default weight          = 14;
 	// ID 373572: "Geralt?" – kuratorowana przez MCME linia Yen (przywolanie)
 	default lineId          = 373572;
 	default lineText        = "Geralt?";
@@ -366,6 +406,7 @@ class MCM_AR_Yen_TavernWine extends MCM_RomanceInteraction
 	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
 	{
 		npc.EnableDynamicLookAt(player, 6.0);
+		PlayDrinkingAnimation(npc);
 		PlayBark(npc);
 		return true;
 	}
@@ -572,7 +613,10 @@ class MCM_AR_Triss_IntimateInvite extends MCM_RomanceInteraction
 
 	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
 	{
-		if (!IsOnNaughtyPoint()) return "no_naughty_point";
+		if (!IsOnNaughtyPoint() && !(ctx.isNearCampfire && !ctx.isInInterior && !ctx.isInTavern))
+		{
+			return "no_naughty_point";
+		}
 		return IntimateSceneBlockReason(npc);
 	}
 
@@ -751,6 +795,42 @@ class MCM_AR_Keira_NightProposal extends MCM_RomanceInteraction
 	}
 }
 
+//  KEIRA – Tier 3: Całodobowy pocałunek autonomiczny (24/7 autonomous kiss, rotacja standard/kinowa)
+
+class MCM_AR_Keira_Kiss extends MCM_RomanceInteraction
+{
+	default id              = 'keira_kiss';
+	default usesAutonomousKiss = true;
+	default targetNpc       = 'keira_metz';
+	default minAffinity     = 50;
+	default cooldownSeconds = 1800.0;
+	default triggerType     = RTT_Prompt;
+	default weight          = 5;
+	default barkMimic       = 'flirt';
+	default barkVoiceset    = 'greeting_geralt';
+	default lineText        = "Don't make me ask twice, witcher.";
+	default lineKey         = "ar_line_keira_kiss";
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		var ok : bool;
+
+		SoftApproach(npc, player, 2.4);
+		PlayBark(npc);
+
+		ok = ApproachAndConsent(npc, player, 2.4, AR_T("ar_prompt_keira_kiss", "[C] Kiss Keira"));
+		if (!ok)
+		{
+			return false;
+		}
+
+		HardStage(npc, player, 1.5);
+		ok = PlayKissScene(npc);
+		EndInteraction(npc, player);
+		return ok;
+	}
+}
+
 //  KEIRA – Tier 1: Przy ognisku (komentarz czarodziejki) – ambient
 
 class MCM_AR_Keira_CampfireWitch extends MCM_RomanceInteraction
@@ -798,7 +878,10 @@ class MCM_AR_Keira_IntimateInvite extends MCM_RomanceInteraction
 
 	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
 	{
-		if (!IsOnNaughtyPoint()) return "no_naughty_point";
+		if (!IsOnNaughtyPoint() && !(ctx.isNearCampfire && !ctx.isInInterior && !ctx.isInTavern))
+		{
+			return "no_naughty_point";
+		}
 		return IntimateSceneBlockReason(npc);
 	}
 
@@ -956,7 +1039,10 @@ class MCM_AR_Shani_IntimateInvite extends MCM_RomanceInteraction
 
 	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
 	{
-		if (!IsOnNaughtyPoint()) return "no_naughty_point";
+		if (!IsOnNaughtyPoint() && !(ctx.isNearCampfire && !ctx.isInInterior && !ctx.isInTavern))
+		{
+			return "no_naughty_point";
+		}
 		return IntimateSceneBlockReason(npc);
 	}
 
@@ -1071,9 +1157,9 @@ class MCM_AR_Triss_TavernDrink extends MCM_RomanceInteraction
 	default id              = 'triss_tavern_drink';
 	default targetNpc       = 'triss';
 	default minAffinity     = 0;
-	default cooldownSeconds = 600.0;
+	default cooldownSeconds = 180.0;
 	default triggerType     = RTT_OneLiner;
-	default weight          = 6;
+	default weight          = 14;
 	default barkVoiceset    = 'greeting_geralt';
 	default lineText        = "Another round? This one's on me.";
 	default lineKey         = "ar_line_triss_tavern_drink";
@@ -1098,9 +1184,9 @@ class MCM_AR_Keira_TavernDrink extends MCM_RomanceInteraction
 	default id              = 'keira_tavern_drink';
 	default targetNpc       = 'keira_metz';
 	default minAffinity     = 0;
-	default cooldownSeconds = 600.0;
+	default cooldownSeconds = 180.0;
 	default triggerType     = RTT_OneLiner;
-	default weight          = 6;
+	default weight          = 14;
 	default barkVoiceset    = 'greeting_geralt';
 	default lineText        = "A drink, Geralt? Even a sorceress needs to unwind.";
 	default lineKey         = "ar_line_keira_tavern_drink";
@@ -1125,9 +1211,9 @@ class MCM_AR_Shani_TavernDrink extends MCM_RomanceInteraction
 	default id              = 'shani_tavern_drink';
 	default targetNpc       = 'shani';
 	default minAffinity     = 0;
-	default cooldownSeconds = 600.0;
+	default cooldownSeconds = 180.0;
 	default triggerType     = RTT_OneLiner;
-	default weight          = 6;
+	default weight          = 14;
 	default barkVoiceset    = 'greeting_geralt';
 	default lineText        = "Sit down, drink. Doctor's orders.";
 	default lineKey         = "ar_line_shani_tavern_drink";

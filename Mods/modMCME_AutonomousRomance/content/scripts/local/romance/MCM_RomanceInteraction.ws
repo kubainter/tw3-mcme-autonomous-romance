@@ -42,6 +42,33 @@ class MCM_RomanceContext
 
 class MCM_RomanceInteraction
 {
+	// [E2E] publiczne wrappery dla suity testowej (bez zmiany logiki)
+	public function E2E_AutonomousScenePath(npc : CNewNPC, isHug : bool) : string
+	{
+		return AutonomousScenePath(npc, isHug);
+	}
+
+	public function E2E_NaughtyScenePath(npcName : name) : string
+	{
+		return NaughtyScenePath(npcName);
+	}
+
+	public function E2E_ResolveIntimateScenePath(npc : CNewNPC) : string
+	{
+		return ResolveIntimateScenePath(npc);
+	}
+
+	public function E2E_IsOnNaughtyPoint() : bool
+	{
+		return IsOnNaughtyPoint();
+	}
+
+	public latent function E2E_ShowConsentPrompt(promptText : string, timeoutSec : float, optional npc : CNewNPC) : bool
+	{
+		var ok : bool;
+		ok = ShowConsentPrompt(promptText, timeoutSec, npc);
+		return ok;
+	}
 	public var id              : name;
 	public var targetNpc       : name;   // '' = dowolny towarzysz romansowy
 	public var minAffinity     : int;
@@ -124,7 +151,8 @@ class MCM_RomanceInteraction
 	// Powód blokady ("" = eligible) – używany też przez ar_eval diagnostykę
 	public function GetBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
 	{
-		var now : float;
+		var now        : float;
+		var autoReason : string;
 
 		now = theGame.GetEngineTimeAsSeconds();
 
@@ -148,8 +176,16 @@ class MCM_RomanceInteraction
 		if (VecDistance(player.GetWorldPosition(), npc.GetWorldPosition()) > 15.0)
 			return "distance";
 
-		if (usesAutonomousKiss && StrLen(AutonomousScenePath(npc, false)) == 0) return "no_scene";
-		if (usesAutonomousHug  && StrLen(AutonomousScenePath(npc, true))  == 0) return "no_scene";
+		if (usesAutonomousKiss)
+		{
+			autoReason = AutonomousSceneBlockReason(npc, false);
+			if (autoReason != "") return autoReason;
+		}
+		if (usesAutonomousHug)
+		{
+			autoReason = AutonomousSceneBlockReason(npc, true);
+			if (autoReason != "") return autoReason;
+		}
 
 		// Warunki podklas (noc/ogien/HP/kontekst)
 		return GetExtraBlockReason(npc, player, ctx);
@@ -478,27 +514,188 @@ class MCM_RomanceInteraction
 	// Bezpieczne odtworzenie animacji picia (toast/degustacja wina/kufla)
 	public latent function PlayDrinkingAnimation(npc : CNewNPC) : bool
 	{
-		var r : int;
+		var r             : int;
+		var followStopped : bool;
 
 		if (!npc) return false;
 		SnapshotHeldItems(npc);
 
+		followStopped = false;
+		if (npc.scmcc && npc.HasTag('mod_scm_IsFollowing'))
+		{
+			npc.scmcc.StopFollowing(true);
+			followStopped = true;
+		}
+
 		// Kobiety: degustacja wina
 		r = RunDrinkSequence(npc, 'woman_noble_wine_tasting_start', 'woman_noble_wine_tasting_loop_01', 'woman_noble_wine_tasting_stop');
-		if (r == 1) return true;
-		if (r == 2) return false;
+		if (r == 1)
+		{
+			if (followStopped && npc.scmcc) npc.scmcc.StartFollowing();
+			return true;
+		}
+		if (r == 2)
+		{
+			if (followStopped && npc.scmcc) npc.scmcc.StartFollowing();
+			return false;
+		}
 
 		// Mezczyzni: degustacja lub praca w karczmie
 		r = RunDrinkSequence(npc, 'man_noble_stand_tasting_wine_start', 'man_noble_stand_tasting_wine_1', 'man_noble_stand_tasting_wine_stop');
-		if (r == 1) return true;
-		if (r == 2) return false;
+		if (r == 1)
+		{
+			if (followStopped && npc.scmcc) npc.scmcc.StartFollowing();
+			return true;
+		}
+		if (r == 2)
+		{
+			if (followStopped && npc.scmcc) npc.scmcc.StartFollowing();
+			return false;
+		}
 
 		r = RunDrinkSequence(npc, 'man_work_drinking_start', 'man_work_drinking_loop_01', 'man_work_drinking_stop');
-		if (r == 1) return true;
-		if (r == 2) return false;
+		if (r == 1)
+		{
+			if (followStopped && npc.scmcc) npc.scmcc.StartFollowing();
+			return true;
+		}
+		if (r == 2)
+		{
+			if (followStopped && npc.scmcc) npc.scmcc.StartFollowing();
+			return false;
+		}
 
 		CleanHandProps(npc);
+		if (followStopped && npc.scmcc) npc.scmcc.StartFollowing();
 		return false;
+	}
+
+	// Krok tanca: npc zywy + brak walki. Przerwanie -> kod 2 (NPC wraca do idle).
+	protected function DanceStepOk(npc : CNewNPC) : bool
+	{
+		if (!npc) return false;
+		if (thePlayer.IsInCombat() || npc.IsInCombat()) return false;
+		return true;
+	}
+
+	// Mapa nam -> ID zestawu animacji tanca; "" = NPC nie tanczy
+	// (refuse/noble-rig/poza whitelist). Silnik nie ma StringToName, wiec zwracamy
+	// ID zestawu, a literaly animacji rozwija RunDanceSequence.
+	// Audyt: archive\diffbase\v21\DANCE_AUDIT.md.
+	public function GetDanceAnimsForNpc(nam : name) : string
+	{
+		switch (nam)
+		{
+			case 'triss':
+			case 'keira':
+			case 'keira_metz':
+			case 'shani':
+			case 'priscilla':
+			case 'pryscilla':
+			case 'becca':
+			case 'cerys':
+			case 'tomira':
+			case 'prologue_village_herbalist':
+				return "woman_dance";
+
+			case 'cirilla':
+			case 'ciri':
+				if (thePlayer.MCM_AR_GetConfig().IsCiriAdultMode())
+				{
+					return "woman_dance";
+				}
+				return "";
+			default:
+				return "";
+		}
+	}
+
+	// Sekwencja tanca wzorowana na RunDrinkSequence, ale bez propsow.
+	// Zwraca: 0 = brak zestawu/animacji na rigu, 1 = zagrana w calosci, 2 = przerwana.
+	protected latent function RunDanceSequence(npc : CNewNPC, animSet : string) : int
+	{
+		var followStopped : bool;
+
+		followStopped = false;
+		if (npc && npc.scmcc && npc.HasTag('mod_scm_IsFollowing'))
+		{
+			npc.scmcc.StopFollowing(true);
+			followStopped = true;
+		}
+
+		if (animSet == "woman_dance")
+		{
+			if (!MCM_AR_ProbeAnim(npc, 'woman_work_stand_dancing_start'))
+			{
+				if (followStopped && npc && npc.scmcc) npc.scmcc.StartFollowing();
+				return 0;
+			}
+			Sleep(2.0);
+			if (!DanceStepOk(npc))
+			{
+				if (followStopped && npc && npc.scmcc) npc.scmcc.StartFollowing();
+				return 2;
+			}
+			MCM_AR_ProbeAnim(npc, 'woman_work_prostitute_dance_01');
+			Sleep(6.0);
+			if (!DanceStepOk(npc))
+			{
+				if (followStopped && npc && npc.scmcc) npc.scmcc.StartFollowing();
+				return 2;
+			}
+			MCM_AR_ProbeAnim(npc, 'woman_work_prostitute_dance_02');
+			Sleep(6.0);
+			if (!DanceStepOk(npc))
+			{
+				if (followStopped && npc && npc.scmcc) npc.scmcc.StartFollowing();
+				return 2;
+			}
+			MCM_AR_ProbeAnim(npc, 'woman_work_prostitute_dance_03');
+			Sleep(6.0);
+			if (!DanceStepOk(npc))
+			{
+				if (followStopped && npc && npc.scmcc) npc.scmcc.StartFollowing();
+				return 2;
+			}
+			MCM_AR_ProbeAnim(npc, 'woman_work_stand_dancing_stop');
+			Sleep(2.0);
+			if (followStopped && npc && npc.scmcc) npc.scmcc.StartFollowing();
+			return 1;
+		}
+		if (animSet == "woman_cheering")
+		{
+			if (!MCM_AR_ProbeAnim(npc, 'woman_cheering_arena_loop_1'))
+			{
+				if (followStopped && npc && npc.scmcc) npc.scmcc.StartFollowing();
+				return 0;
+			}
+			Sleep(4.0);
+			if (!DanceStepOk(npc))
+			{
+				if (followStopped && npc && npc.scmcc) npc.scmcc.StartFollowing();
+				return 2;
+			}
+			MCM_AR_ProbeAnim(npc, 'woman_cheering_arena_loop_2');
+			Sleep(4.0);
+			if (!DanceStepOk(npc))
+			{
+				if (followStopped && npc && npc.scmcc) npc.scmcc.StartFollowing();
+				return 2;
+			}
+			MCM_AR_ProbeAnim(npc, 'woman_cheering_arena_loop_3');
+			Sleep(4.0);
+			if (!DanceStepOk(npc))
+			{
+				if (followStopped && npc && npc.scmcc) npc.scmcc.StartFollowing();
+				return 2;
+			}
+			MCM_AR_ProbeAnim(npc, 'woman_cheering_arena_loop_4');
+			Sleep(4.0);
+			if (followStopped && npc && npc.scmcc) npc.scmcc.StartFollowing();
+			return 1;
+		}
+		if (followStopped && npc && npc.scmcc) npc.scmcc.StartFollowing();
+		return 0;
 	}
 
 	// Heal akcji opiekunczych: % max HP Geralta skalowany Affinity
@@ -807,7 +1004,7 @@ class MCM_RomanceInteraction
 		{
 			consentTag = "SwordSheathe";
 		}
-		fullPrompt = ReplaceTagsToIcons(StrReplace(
+		fullPrompt = ReplaceTagsToIcons(StrReplaceAll(
 			promptText + "  " + AR_T("ar_prompt_consent_hint", "(hold [C] ~1s or tap twice)"),
 			"[C]",
 			"<<" + consentTag + ">>"));
@@ -998,6 +1195,7 @@ class MCM_RomanceInteraction
 		var ent    : MultiCompanionModEntity;
 		var dialogueFree : bool;
 		var sawScene     : bool;
+		var pPos         : Vector;
 
 		// Gate: scena nie startuje przy swiezej kolejce czatu MCME
 		// (25s > prog helpera 20s, inaczej martwa kolejka bez bypassu).
@@ -1039,6 +1237,13 @@ class MCM_RomanceInteraction
 		// Sceny ar_* binduja kompana po tagu encji (dontSearchByVoicetag).
 		// Tag potrzebny tylko na moment rozwiązania aktora przy starcie sceny.
 		if (npc) npc.AddTag('mcme_companion');
+		// Sonda A / Cutscenes: stworz lub przenies dynamiczny punkt akcji pod stopy gracza,
+		// aby cutscenka (ar_kiss_point) nie teleportowala na koniec swiata (np. do Vegelbudow)
+		if (scm && scm.APManager)
+		{
+			pPos = thePlayer.GetWorldPosition();
+			scm.APManager.CreateActionPoint('ar_kiss_point', pPos.X, pPos.Y, pPos.Z, 0, thePlayer.GetHeading(), 0);
+		}
 		ent.mod_scm_delayedDialogue(scenePath, 0.05);
 		MCM_AR_Log("[AR] PlayScene: " + scenePath);
 
@@ -1215,13 +1420,53 @@ class MCM_RomanceInteraction
 		return "";
 	}
 
+	// TODO#27b: Kinowe warianty pocałunku per-NPC (w2scene z dynamiczną reżyserią kamer).
+	// Zwraca dedykowany zasób kinowy dla postaci (np. Shani q604, Triss sq301).
+	protected function AutonomousCinematicKissPath(npc : CNewNPC) : string
+	{
+		var nam : name;
+
+		if (!npc || !npc.scmcc || !npc.scmcc.data) return "";
+		nam = npc.scmcc.data.nam;
+
+		switch (nam)
+		{
+			case 'shani':
+			case 'triss':
+			case 'yennefer':
+			case 'keira':
+			case 'keira_metz':
+				// Sonda A (cutscene wrapper z retargetingiem na mcme_companion):
+				// Odpalamy wrapper cs_sq301 w celu weryfikacji in-game kompatybilnosci szkieletu/rigow
+				if (MCM_AR_SceneExists("dlc\mod_mcme_autonomous_romance\dialogue\ar_cs_kiss_probe.w2scene"))
+				{
+					return "dlc\mod_mcme_autonomous_romance\dialogue\ar_cs_kiss_probe.w2scene";
+				}
+				if (nam == 'shani')
+				{
+					return "dlc\mod_mcme_autonomous_romance\dialogue\ar_shani_kiss_cinematic.w2scene";
+				}
+				return "";
+			default:
+				return "";
+		}
+		return "";
+	}
+
 	public latent function PlayKissScene(npc : CNewNPC) : bool
 	{
-		var path : string;
-		var ok   : bool;
+		var basePath      : string;
+		var cinematicPath : string;
+		var chosenPath    : string;
+		var hasBase       : bool;
+		var hasCinematic  : bool;
+		var ok            : bool;
+		var nam           : name;
 
-		path = AutonomousScenePath(npc, false);
-		if (StrLen(path) == 0)
+		basePath      = AutonomousScenePath(npc, false);
+		cinematicPath = AutonomousCinematicKissPath(npc);
+
+		if (StrLen(basePath) == 0 && StrLen(cinematicPath) == 0)
 		{
 			if (npc && npc.scmcc && npc.scmcc.data)
 			{
@@ -1229,7 +1474,46 @@ class MCM_RomanceInteraction
 			}
 			return false;
 		}
-		ok = PlayScene(npc, path);
+
+		hasBase      = (StrLen(basePath) > 0 && MCM_AR_SceneExists(basePath));
+		hasCinematic = (StrLen(cinematicPath) > 0 && MCM_AR_SceneExists(cinematicPath));
+
+		if (npc && npc.scmcc && npc.scmcc.data)
+		{
+			nam = npc.scmcc.data.nam;
+		}
+
+		// Wybór wariantu sceny (TODO#27b):
+		// Gdy dostępny jest zarówno wariant kinowy, jak i standardowy: rotacja 50/50.
+		if (hasCinematic && hasBase)
+		{
+			if (RandRange(100) < 50)
+			{
+				chosenPath = cinematicPath;
+				MCM_AR_Log("[AR] KissScene: selected cinematic variant '" + chosenPath + "' for " + NameToString(nam));
+			}
+			else
+			{
+				chosenPath = basePath;
+				MCM_AR_Log("[AR] KissScene: selected standard variant '" + chosenPath + "' for " + NameToString(nam));
+			}
+		}
+		else if (hasCinematic)
+		{
+			chosenPath = cinematicPath;
+			MCM_AR_Log("[AR] KissScene: playing cinematic variant '" + chosenPath + "' for " + NameToString(nam));
+		}
+		else if (hasBase)
+		{
+			chosenPath = basePath;
+		}
+		else
+		{
+			MCM_AR_Log("[AR] KissScene: scene resources missing for " + NameToString(nam) + " (base='" + basePath + "', cinematic='" + cinematicPath + "') - niekompletny bundle/metadata.store");
+			return false;
+		}
+
+		ok = PlayScene(npc, chosenPath);
 		if (ok)
 		{
 			PlayPostKissReaction(npc);
@@ -1249,6 +1533,11 @@ class MCM_RomanceInteraction
 			{
 				MCM_AR_Log("[AR] HugScene: no autonomous scene for " + NameToString(npc.scmcc.data.nam));
 			}
+			return false;
+		}
+		if (!MCM_AR_SceneExists(path))
+		{
+			MCM_AR_Log("[AR] HugScene: scene resource missing '" + path + "' (niekompletny bundle/metadata.store)");
 			return false;
 		}
 		ok = PlayScene(npc, path);
@@ -1388,12 +1677,56 @@ class MCM_RomanceInteraction
 	// specialData.naughtyScene gdy ustawiona, inaczej NaughtyScenePath(nam).
 	protected function ResolveIntimateScenePath(npc : CNewNPC) : string
 	{
+		var nm : name;
+
 		if (!npc || !npc.scmcc || !npc.scmcc.data) return "";
+		nm = npc.scmcc.data.nam;
+
+		// Wariant A (TODO#12): Dedykowana plenerowa scena intymna dla glownych towarzyszek na woman_base
+		// Na stalym punkcie MCME (np. sypialnie/lozka) zachowujemy scene MCME, w plenerze/przy ognisku gramy scene autonomiczna.
+		if ((nm == 'shani' || nm == 'triss' || nm == 'yennefer' || nm == 'keira' || nm == 'keira_metz') && !IsOnNaughtyPoint())
+		{
+			if (MCM_AR_SceneExists("dlc\mod_mcme_autonomous_romance\dialogue\ar_shani_intimate_outdoor.w2scene"))
+			{
+				return "dlc\mod_mcme_autonomous_romance\dialogue\ar_shani_intimate_outdoor.w2scene";
+			}
+		}
+
+		if (StrStartsWith(NaughtyScenePath(nm), "dlc\mod_mcme_autonomous_romance") && MCM_AR_SceneExists(NaughtyScenePath(nm)))
+		{
+			return NaughtyScenePath(nm);
+		}
 		if (npc.scmcc.specialData && StrLen(npc.scmcc.specialData.naughtyScene) > 0)
 		{
-			return npc.scmcc.specialData.naughtyScene;
+			if (MCM_AR_SceneExists(npc.scmcc.specialData.naughtyScene))
+			{
+				return npc.scmcc.specialData.naughtyScene;
+			}
 		}
-		return NaughtyScenePath(npc.scmcc.data.nam);
+		return NaughtyScenePath(nm);
+	}
+
+	// Powod blokady scen autonomicznych (kiss/hug): "" = ok,
+	// "no_scene" = brak mapowania dla NPC, "no_dlc_scene" = sciezka jest
+	// ale zasob niezaladowany (niekompletny bundle ar_*/metadata.store).
+	protected function AutonomousSceneBlockReason(npc : CNewNPC, isHug : bool) : string
+	{
+		var path          : string;
+		var cinematicPath : string;
+
+		path = AutonomousScenePath(npc, isHug);
+		if (!isHug)
+		{
+			cinematicPath = AutonomousCinematicKissPath(npc);
+		}
+
+		if (path == "" && cinematicPath == "") return "no_scene";
+
+		// Jeśli chociaż jeden zmapowany wariant poprawnie ładuje się z zasobów (bundle/metadata.store) -> scena odblokowana
+		if (path != "" && MCM_AR_SceneExists(path)) return "";
+		if (cinematicPath != "" && MCM_AR_SceneExists(cinematicPath)) return "";
+
+		return "no_dlc_scene";
 	}
 
 	// Powod blokady T4 dla ar_eval: "" = scena ok, "no_scene" = brak sciezki,
@@ -1437,30 +1770,33 @@ class MCM_RomanceInteraction
 					return "dlc\mod_spawn_companions\naughty\ciri\anywhere.w2scene";
 				}
 				return "";
-			case 'anna_henrietta': return "dlc\mod_spawn_companions\naughty\anarietta\anywhere.w2scene";
+			case 'anna_henrietta': return "dlc\mod_mcme_autonomous_romance\naughty\anarietta\anywhere.w2scene";
 			// 'vivienne' = forma ludzka (vivienne_bird = przekleta forma ptasia)
 			case 'sq701_vivienne':
-			case 'vivienne':       return "dlc\mod_spawn_companions\naughty\vivienne\anywhere.w2scene";
+			case 'vivienne':       return "dlc\mod_mcme_autonomous_romance\naughty\vivienne\anywhere.w2scene";
 			case 'becca':
-			case 'cerys':          return "dlc\mod_spawn_companions\naughty\cerys\anywhere.w2scene";
+			case 'cerys':          return "dlc\mod_mcme_autonomous_romance\naughty\cerys\anywhere.w2scene";
 			case 'syanna':         return "dlc\mod_spawn_companions\naughty\syanna\anywhere.w2scene";
 			// noble rig -> brak kiss scene; top tier to naughty cutscene (rig-safe)
 			case 'vampire_diva':
 			case 'oriana':
-			case 'orianna':        return "dlc\mod_spawn_companions\naughty\oriana\anywhere.w2scene";
+			case 'orianna':        return "dlc\mod_mcme_autonomous_romance\naughty\oriana\anywhere.w2scene";
 			// Fallbacki dla NPC, gdy pack nie ustawi specialData.naughtyScene
 			case 'philippa_eilhart':
-			case 'philippa':        return "dlc\mod_spawn_companions\naughty\philippa\anywhere.w2scene";
-			case 'ves':             return "dlc\mod_spawn_companions\naughty\ves\anywhere.w2scene";
+			case 'philippa':        return "dlc\mod_mcme_autonomous_romance\naughty\philippa\anywhere.w2scene";
+			case 'ves':             return "dlc\mod_mcme_autonomous_romance\naughty\ves\anywhere.w2scene";
 			case 'mh303_succbus_v2':
-			case 'salma':           return "dlc\mod_spawn_companions\naughty\salma\anywhere.w2scene";
-			case 'priscilla':       return "dlc\mod_spawn_companions\naughty\priscilla\anywhere.w2scene";
+			case 'salma':           return "dlc\mod_mcme_autonomous_romance\naughty\salma\anywhere.w2scene";
+			// runtime nam z roostera MCME to 'pryscilla' (upstream typo) - alias jak w AutonomousScenePath
+			case 'pryscilla':
+			case 'priscilla':       return "dlc\mod_mcme_autonomous_romance\naughty\priscilla\anywhere.w2scene";
 			case 'edna_var_attre':
-			case 'edna':            return "dlc\mod_spawn_companions\naughty\edna\anywhere.w2scene";
+			case 'edna':            return "dlc\mod_mcme_autonomous_romance\naughty\edna\anywhere.w2scene";
 			case 'fringilla_vigo':
-			case 'fringilla':       return "dlc\mod_spawn_companions\naughty\fringilla\anywhere.w2scene";
+			case 'fringilla':       return "dlc\mod_mcme_autonomous_romance\naughty\fringilla\anywhere.w2scene";
 			// upstream pisownia katalogu to 'margaritta' (podwojne t)
-			case 'margarita':       return "dlc\mod_spawn_companions\naughty\margaritta\anywhere.w2scene";
+			case 'margarita':       return "dlc\mod_mcme_autonomous_romance\naughty\margaritta\anywhere.w2scene";
+			case 'shani':           return "dlc\mod_spawn_companions\naughty\shani\anywhere.w2scene";
 		}
 		return "";
 	}
@@ -1594,8 +1930,15 @@ class MCM_RomanceInteraction
 		var greetT : array<float>;
 		var dialogueFree : bool;
 		var hidP, hidN : int;
+		var pPos : Vector;
+		var isAutonomousScene : bool;
+		var savedGeraltItems   : array<SItemUniqueId>;
+		var equipSlots         : array<EEquipmentSlots>;
+		var eqI                : int;
+		var eqItem             : SItemUniqueId;
+		var savedNpcAppearance : name;
 
-		if (!npc || !npc.scmcc) return false;
+		if (!thePlayer || !npc || !npc.scmcc || !npc.scmcc.data) return false;
 		nm = npc.scmcc.data.nam;
 
 		// Gate: scena nie startuje w trakcie swiezej kolejki czatu MCME
@@ -1614,48 +1957,74 @@ class MCM_RomanceInteraction
 			return false;
 		}
 
-		// Scena wymaga action pointu w zasiegu – sprawdzamy sami (20m jak MCME)
-		point = scm.NaughtyManager.naughtyPoints.GetClosestPoint(20.0);
-		if (!point)
+		path = ResolveIntimateScenePath(npc);
+		if (path == "")
 		{
-			MCM_AR_Log("[AR] IntimateScene FAIL: no NaughtyPoint <=20m for " + NameToString(nm));
+			MCM_AR_Log("[AR] IntimateScene FAIL: ResolveIntimateScenePath empty for " + NameToString(nm));
 			return false;
 		}
 
-		if (npc.scmcc.specialData && StrLen(npc.scmcc.specialData.naughtyScene) > 0)
+		isAutonomousScene = StrStartsWith(path, "dlc\mod_mcme_autonomous_romance") && StrFindFirst(path, "naughty") < 0;
+		MCM_AR_Log("[AR] IntimateScene: target=" + NameToString(nm) + " path=" + path + " isAutonomous=" + isAutonomousScene);
+		if (isAutonomousScene)
 		{
-			// Precheck zasobu: delayedDialogue przy NULL po cichu nic nie
-			// odpala - stalibysmy 90s w WaitForSceneEnd z NPC staged.
-			scene = (CStoryScene)LoadResource(npc.scmcc.specialData.naughtyScene, true);
-			if (!scene)
+			// Dynamiczny Action Point pod stopami gracza dla scen plenerowych
+			if (scm && scm.APManager)
 			{
-				MCM_AR_Log("[AR] IntimateScene FAIL: LoadResource NULL: " + npc.scmcc.specialData.naughtyScene);
-				return false;
+				pPos = thePlayer.GetWorldPosition();
+				scm.APManager.CreateActionPoint('ar_intimate_point', pPos.X, pPos.Y, pPos.Z, 0, thePlayer.GetHeading(), 0);
+			}
+			else
+			{
+				MCM_AR_Log("[AR] IntimateScene WARN: APManager NULL - ar_intimate_point not spawned!");
 			}
 
-			// Inicjalizacja punktu intymnego (ustawia fakt mod_scm_allownaughty).
-			scm.NaughtyManager.PreDialogue(npc);
-			if (FactsQuerySum('mod_scm_allownaughty') <= 0)
-			{
-				MCM_AR_Log("[AR] IntimateScene FAIL: allownaughty=0 for " + NameToString(nm) +
-				           " (point >16m or unmet reqs)");
-				return false;
-			}
-			MCM_AR_Log("[AR] IntimateScene: allownaughty=1, scena=" + npc.scmcc.specialData.naughtyScene);
-		}
-		else
-		{
-			// Sciezka manualna: LoadResource PRZED mutacjami stanu.
-			path = NaughtyScenePath(nm);
 			scene = (CStoryScene)LoadResource(path, true);
 			if (!scene)
 			{
 				MCM_AR_Log("[AR] IntimateScene FAIL: LoadResource NULL: " + path);
 				return false;
 			}
-			// Sceny manualne moga czytac ten fakt - consent juz jawny
-			// (brak specialData = PreDialogue ustawilby 0).
 			FactsSet('mod_scm_allownaughty', 1);
+		}
+		else
+		{
+			// Standardowy rezim MCME: wymaga stalego NaughtyPoint (<=20m)
+			point = scm.NaughtyManager.naughtyPoints.GetClosestPoint(20.0);
+			if (!point)
+			{
+				MCM_AR_Log("[AR] IntimateScene FAIL: no NaughtyPoint <=20m for " + NameToString(nm));
+				return false;
+			}
+
+			if (npc.scmcc.specialData && path == npc.scmcc.specialData.naughtyScene)
+			{
+				scene = (CStoryScene)LoadResource(npc.scmcc.specialData.naughtyScene, true);
+				if (!scene)
+				{
+					MCM_AR_Log("[AR] IntimateScene FAIL: LoadResource NULL: " + npc.scmcc.specialData.naughtyScene);
+					return false;
+				}
+
+				scm.NaughtyManager.PreDialogue(npc);
+				if (FactsQuerySum('mod_scm_allownaughty') <= 0)
+				{
+					MCM_AR_Log("[AR] IntimateScene FAIL: allownaughty=0 for " + NameToString(nm) +
+					           " (point >16m or unmet reqs)");
+					return false;
+				}
+				MCM_AR_Log("[AR] IntimateScene: allownaughty=1, scena=" + npc.scmcc.specialData.naughtyScene);
+			}
+			else
+			{
+				scene = (CStoryScene)LoadResource(path, true);
+				if (!scene)
+				{
+					MCM_AR_Log("[AR] IntimateScene FAIL: LoadResource NULL: " + path);
+					return false;
+				}
+				FactsSet('mod_scm_allownaughty', 1);
+			}
 		}
 
 		if (mcm.JobManager)
@@ -1680,16 +2049,64 @@ class MCM_RomanceInteraction
 		DumpMountedItems(thePlayer, "player");
 		DumpMountedItems(npc, "npc");
 
-		if (npc.scmcc.specialData && StrLen(npc.scmcc.specialData.naughtyScene) > 0)
+		// Zapis aktywnego stroju towarzyszki oraz rynsztunku Geralta
+		if (npc)
 		{
-			// PreNaughtyWith robi mod_scm_GetNPC(ST_Special) - NULL = MCME
-			// po cichu nic nie odpala (diag pre-check).
+			savedNpcAppearance = npc.GetAppearance();
+			if (!IsNameValid(savedNpcAppearance) && npc.scmcc && npc.scmcc.data && IsNameValid(npc.scmcc.data.appearance))
+			{
+				savedNpcAppearance = npc.scmcc.data.appearance;
+			}
+			if (!IsNameValid(savedNpcAppearance))
+			{
+				savedNpcAppearance = MCM_GetDefaultAppearance(nm);
+			}
+			MCM_AR_Log("[AR] IntimateScene: initial appearance for " + NameToString(nm) + " = " + NameToString(savedNpcAppearance));
+		}
+
+		equipSlots.Clear();
+		equipSlots.PushBack(EES_Armor);
+		equipSlots.PushBack(EES_Boots);
+		equipSlots.PushBack(EES_Pants);
+		equipSlots.PushBack(EES_Gloves);
+		equipSlots.PushBack(EES_SilverSword);
+		equipSlots.PushBack(EES_SteelSword);
+		equipSlots.PushBack(EES_RangedWeapon);
+		equipSlots.PushBack(EES_Mask);
+
+		savedGeraltItems.Clear();
+		for (eqI = 0; eqI < equipSlots.Size(); eqI += 1)
+		{
+			eqItem = GetInvalidUniqueId();
+			if (GetWitcherPlayer() && GetWitcherPlayer().GetItemEquippedOnSlot(equipSlots[eqI], eqItem) && thePlayer.inv.IsIdValid(eqItem))
+			{
+				savedGeraltItems.PushBack(eqItem);
+			}
+		}
+
+		if (scm && scm.NaughtyManager)
+		{
+			scm.NaughtyManager.PreNaughty();
+		}
+		if (npc && npc.scmcc && npc.scmcc.specialData && IsNameValid(npc.scmcc.specialData.nakedAppearance))
+		{
+			npc.scmcc.applyNakedAppearance();
+		}
+
+		if (isAutonomousScene)
+		{
+			scm.NaughtyManager.HideAllExcept(npc);
+			npc.AddTag('mcme_companion');
+			theGame.GetStorySceneSystem().PlayScene(scene, "Input");
+			MCM_AR_Log("[AR] IntimateScene (autonomous AR): " + path + " for " + NameToString(nm));
+		}
+		else if (npc.scmcc.specialData && StrLen(npc.scmcc.specialData.naughtyScene) > 0 && path == npc.scmcc.specialData.naughtyScene)
+		{
 			if (!mod_scm_GetNPC(nm, ST_Special, false))
 			{
 				MCM_AR_Log("[AR] IntimateScene WARN: GetNPC(ST_Special) NULL for " +
 				           NameToString(nm) + " - PreNaughtyWith likely a no-op");
 			}
-			// Zarejestrowana: pelny pipeline MCME (AddActionPoint + scene + hide)
 			scm.NaughtyManager.PreNaughtyWith(nm);
 			MCM_AR_Log("[AR] IntimateScene (PreNaughtyWith) for " + NameToString(nm));
 		}
@@ -1702,6 +2119,11 @@ class MCM_RomanceInteraction
 		}
 
 		ok = WaitForSceneEnd(npc, 90.0, true);
+		if (isAutonomousScene && npc)
+		{
+			npc.RemoveTag('mcme_companion');
+		}
+		FactsSet('mod_scm_allownaughty', 0);
 		MCM_AR_Log("[AR] IntimateScene end: ok=" + ok + " for " + NameToString(nm));
 		// IsInGameplayScene true po timeout = scena wiszaca, NPC stoi do reloadu.
 		if (!ok && npc && npc.IsInGameplayScene())
@@ -1709,6 +2131,35 @@ class MCM_RomanceInteraction
 			MCM_AR_Log("[AR] IntimateScene WARN: " + NameToString(nm) +
 			           " nadal IsInGameplayScene po timeout - scena wiszaca");
 		}
+		// Przywrocenie ubioru towarzyszki sprzed sceny (SetAppearance dla CNewNPC w 5.00)
+		if (npc)
+		{
+			if (IsNameValid(savedNpcAppearance) && savedNpcAppearance != 'shani_naked' && savedNpcAppearance != 'naked' && savedNpcAppearance != 'naked_lingerie')
+			{
+				npc.SetAppearance(savedNpcAppearance);
+			}
+			else if (npc.scmcc && npc.scmcc.data && IsNameValid(npc.scmcc.data.appearance))
+			{
+				npc.SetAppearance(npc.scmcc.data.appearance);
+			}
+			else
+			{
+				npc.SetAppearance(MCM_GetDefaultAppearance(nm));
+			}
+			MCM_AR_Log("[AR] IntimateScene: restored appearance for " + NameToString(nm) + " to " + NameToString(npc.GetAppearance()));
+		}
+
+		// Przywrocenie widocznosci wszystkim towarzyszom ukrytym przed scena
+		if (scm && scm.NaughtyManager)
+		{
+			scm.NaughtyManager.ShowAllExcept(NULL);
+		}
+		// Niezalezny re-equip rynsztunku Geralta (odporny na skip sceny SPACJA i czyszczenie buforow MCME)
+		for (eqI = 0; eqI < savedGeraltItems.Size(); eqI += 1)
+		{
+			thePlayer.EquipItem(savedGeraltItems[eqI]);
+		}
+
 		// PostNaughty (EquipItem) moze odtworzyc encje itemow - unhide po nim.
 		if (scm && scm.NaughtyManager)
 		{
@@ -1895,6 +2346,66 @@ class MCM_AR_GiftRequest_Base extends MCM_RomanceInteraction
 	}
 }
 
+//  DANCE - wspolna baza akcji *_dance (F1): bark + sekwencja animacji.
+//  Gate: tawerna LUB (ognisko i noc). Zestaw animacji z GetDanceAnimsForNpc.
+
+class MCM_AR_Dance_Base extends MCM_RomanceInteraction
+{
+	default triggerType     = RTT_OneLiner;
+	default minAffinity     = 30;
+	default cooldownSeconds = 600.0;
+	default weight          = 16;
+	default barkMimic       = 'flirt';
+
+	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
+	{
+		if (!(ctx.isInTavern || (ctx.isNearCampfire && ctx.isNight))) return "no_dance_scene";
+		if (GetDanceAnimsForNpc(targetNpc) == "") return "no_dance_anim";
+		return "";
+	}
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		var r : int;
+
+		npc.EnableDynamicLookAt(player, 6.0);
+		PlayBark(npc);
+		r = RunDanceSequence(npc, GetDanceAnimsForNpc(targetNpc));
+		return r == 1;
+	}
+}
+
+//  DANCE REFUSE - bark odmowy dla NPC poza whitelist tanca (yen/philippa/ciri-Lore).
+
+class MCM_AR_DanceRefuse_Base extends MCM_RomanceInteraction
+{
+	default triggerType     = RTT_OneLiner;
+	default minAffinity     = 30;
+	default cooldownSeconds = 600.0;
+	default weight          = 8;
+	default barkMimic       = 'concern';
+
+	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
+	{
+		if (!(ctx.isInTavern || (ctx.isNearCampfire && ctx.isNight))) return "no_dance_scene";
+		if (GetDanceAnimsForNpc(targetNpc) != "") return "dance_available";
+		return "";
+	}
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		npc.EnableDynamicLookAt(player, 6.0);
+		PlayBark(npc);
+		return true;
+	}
+}
+
+function MCM_AR_TargetMatches(target : name, npcName : name) : bool
+{
+	if (!IsNameValid(target) || target == npcName) return true;
+	return (target == 'priscilla' && npcName == 'pryscilla') || (target == 'pryscilla' && npcName == 'priscilla');
+}
+
 // Centralny rejestr akcji (Action Registry Pattern)
 
 
@@ -1989,6 +2500,13 @@ class MCM_RomanceActionRegistry
 		var core        : MCM_AutonomousRomanceCore;
 
 		eligibleCount = 0;
+		if (!npc || !npc.scmcc || !npc.scmcc.data) return false;
+		// Fail-fast (staged): NPC zajeta silnikowo (kwestia/scena/rozmowa/walka)
+		// - nie przerywamy jej ActionCancelAll; nastepny tick sprobuje ponownie.
+		if (!ambientOnly && (npc.IsSpeaking() || theGame.IsDialogOrCutscenePlaying() || npc.wasInTalkInteraction || npc.IsInCombat()))
+		{
+			return false;
+		}
 		if (!MCM_AR_GetConfig().IsEnabled()) return false;
 
 		npcName = npc.scmcc.data.nam;
@@ -2000,7 +2518,7 @@ class MCM_RomanceActionRegistry
 			if (!action) continue;
 
 			// Filtr: akcja musi pasować do NPC lub być ogólna
-			if (IsNameValid(action.targetNpc) && action.targetNpc != npcName && !(action.targetNpc == 'pryscilla' && npcName == 'priscilla') && !(action.targetNpc == 'priscilla' && npcName == 'pryscilla')) continue;
+			if (!MCM_AR_TargetMatches(action.targetNpc, npcName)) continue;
 
 			// Filtr kanału: ambient = tylko RTT_OneLiner, staged = reszta
 			if (ambientOnly)
@@ -2083,7 +2601,7 @@ class MCM_RomanceActionRegistry
 			if (!action) continue;
 			if (!action.isTimeCritical) continue;
 			if (action.triggerType != RTT_OneLiner) continue;
-			if (IsNameValid(action.targetNpc) && action.targetNpc != npcName) continue;
+			if (!MCM_AR_TargetMatches(action.targetNpc, npcName)) continue;
 			if (!action.CanExecute(npc, player, ctx)) continue;
 
 			if (!best || action.weight > best.weight)
@@ -2123,7 +2641,7 @@ class MCM_RomanceActionRegistry
 			if (!action) continue;
 			if (!action.isTimeCritical) continue;
 			if (action.triggerType != RTT_OneLiner) continue;
-			if (IsNameValid(action.targetNpc) && action.targetNpc != npcName) continue;
+			if (!MCM_AR_TargetMatches(action.targetNpc, npcName)) continue;
 			if (action.CanExecute(npc, player, ctx)) return true;
 		}
 		return false;
@@ -2158,7 +2676,7 @@ class MCM_RomanceActionRegistry
 		var i : int;
 		for (i = 0; i < actions.Size(); i += 1)
 		{
-			if (actions[i] && (actions[i].targetNpc == nam || (actions[i].targetNpc == 'priscilla' && nam == 'pryscilla') || (actions[i].targetNpc == 'pryscilla' && nam == 'priscilla')) && StrContains(NameToString(actions[i].id), idSuffix))
+			if (actions[i] && IsNameValid(actions[i].targetNpc) && MCM_AR_TargetMatches(actions[i].targetNpc, nam) && StrContains(NameToString(actions[i].id), idSuffix))
 			{
 				return actions[i];
 			}
@@ -2273,19 +2791,24 @@ function MCM_AR_GetCompanionDisplayName(npc : CNewNPC) : string
 		case 'sq701_vivienne':
 		case 'vivienne':         return "Vivienne";
 		case 'syanna':           return "Syanna";
-		case 'becca':            return "Cerys";
+		case 'becca':
+		case 'cerys':            return "Cerys";
 		case 'jutta':            return "Jutta";
 		case 'philippa_eilhart':
+		case 'philippa':
 		case 'filippa':          return "Philippa";
 		case 'mh303_succbus_v2':
 		case 'salma':            return "Salma";
 		case 'ves':              return "Ves";
 		case 'corinne':          return "Corinne";
 		case 'frida':            return "Frida";
-		case 'rosa_var_attre':   return "Rosa var Attre";
+		case 'rosa_var_attre':
+		case 'rosa':             return "Rosa var Attre";
 		case 'prologue_village_herbalist':
+		case 'tomira':
 			return "Tomira";
-		case 'edna_var_attre':   return "Edna var Attre";
+		case 'edna_var_attre':
+		case 'edna':             return "Edna var Attre";
 		case 'margarita':
 		case 'margaritta':       return "Margarita";
 		case 'fringilla_vigo':
