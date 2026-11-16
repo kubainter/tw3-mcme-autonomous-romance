@@ -104,7 +104,7 @@ function InitDefaultActions()
 	RegisterAction(new MCM_AR_Margarita_NightFiller     in this);
 	RegisterAction(new MCM_AR_Orianna_NightFiller       in this);
 
-	// ===== DANCE (F1) =====
+	// ===== DANCE =====
 	RegisterAction(new MCM_AR_Priscilla_Dance           in this);
 	RegisterAction(new MCM_AR_Cerys_Dance               in this);
 	RegisterAction(new MCM_AR_Ves_TavernDrink           in this);
@@ -2010,7 +2010,7 @@ class MCM_AR_Orianna_IntimateInvite extends MCM_RomanceInteraction
 }
 
 
-//  DANCE (F1) - ambient taniec: tawerna LUB (ognisko i noc). Baza: Interaction.
+//  DANCE - ambient taniec: tawerna LUB (ognisko i noc). Baza: Interaction.
 
 class MCM_AR_Priscilla_Dance extends MCM_AR_Dance_Base
 {

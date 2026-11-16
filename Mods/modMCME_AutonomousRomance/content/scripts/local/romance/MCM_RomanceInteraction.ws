@@ -763,9 +763,7 @@ class MCM_RomanceInteraction
 	}
 
 	// Mapa nam -> ID zestawu animacji tanca; "" = NPC nie tanczy
-	// (refuse/noble-rig/poza whitelist). Silnik nie ma StringToName, wiec zwracamy
-	// ID zestawu, a literaly animacji rozwija RunDanceSequence.
-	// Audyt: archive\diffbase\v21\DANCE_AUDIT.md.
+	// (refuse/noble-rig/poza whitelist).
 	public function GetDanceAnimsForNpc(nam : name) : string
 	{
 		switch (nam)
@@ -934,8 +932,7 @@ class MCM_RomanceInteraction
 		MCM_AR_Log("[AR] " + id + ": heal +" + amount + " HP (aff=" + aff + ", effFrac=" + effectiveFrac + ")");
 	}
 
-	// Staging interakcji twarzą w twarz:
-	// Faza 1 (miękkie podejście): NPC kieruje się asynchronicznie ku graczowi.
+	// Podejście asynchroniczne NPC ku graczowi
 	protected latent function SoftApproach(npc : CNewNPC, player : CR4Player, targetDist : float)
 	{
 		var arCore : MCM_AutonomousRomanceCore;
@@ -1001,8 +998,7 @@ class MCM_RomanceInteraction
 		return false;
 	}
 
-	// FAZA 2 – dopiero po akceptacji [C]: krótki lock gracza (gap do startu
-	// sceny, ~1-2s), obrót obojga twarzami w twarz, domknięcie dystansu.
+	// Po akceptacji [C]: krótki lock gracza (~1-2s), obrót twarzą w twarz, domknięcie dystansu
 	protected latent function HardStage(npc : CNewNPC, player : CR4Player, targetDist : float)
 	{
 		var toNpc : Vector;
@@ -1665,11 +1661,22 @@ class MCM_RomanceInteraction
 			case 'margarita':
 			case 'margaritta':
 				return "dlc\mod_mcme_autonomous_romance\dialogue\ar_margarita_kiss.w2scene";
+			default:
+				// Tier 3 fallback: kazda towarzyszka woman_base bez dedykowanej
+				// sceny kiss (extended MCME roster) gra wspoldzielona scene
+				// ar_tomira_kiss - binding aktora po tagu 'mcme_companion'
+				// (dontSearchByVoicetag), scena rig-agnostyczna w obrebie
+				// woman_base. Ciri/noble-rig maja wlasne case'y wyzej i tu
+				// nie trafiaja; postacie inne niz woman_base dostaja "".
+				if (IsWomanBaseCompanion(npc))
+				{
+					return "dlc\mod_mcme_autonomous_romance\dialogue\ar_tomira_kiss.w2scene";
+				}
 		}
 		return "";
 	}
 
-	// TODO#27b: Kinowe warianty pocałunku per-NPC (w2scene z dynamiczną reżyserią kamer).
+	// Kinowe warianty pocałunku per-NPC (w2scene z dynamiczną reżyserią kamer).
 	// Zwraca dedykowany zasób kinowy dla postaci (np. Shani q604, Triss sq301).
 	protected function AutonomousCinematicKissPath(npc : CNewNPC) : string
 	{
@@ -1732,8 +1739,7 @@ class MCM_RomanceInteraction
 			nam = npc.scmcc.data.nam;
 		}
 
-		// Wybór wariantu sceny (TODO#27b):
-		// Gdy dostępny jest zarówno wariant kinowy, jak i standardowy: rotacja 50/50.
+		// Wybór wariantu sceny (kinowy vs standardowy 50/50):
 		if (hasCinematic && hasBase)
 		{
 			if (RandRange(100) < 50)
@@ -1931,8 +1937,7 @@ class MCM_RomanceInteraction
 		if (!npc || !npc.scmcc || !npc.scmcc.data) return "";
 		nm = npc.scmcc.data.nam;
 
-		// Wariant A (TODO#12): Dedykowana plenerowa scena intymna w plenerze/przy ognisku,
-		// lub jako glowny uniwersalny fallback dla towarzyszek bez stalego punktu MCME
+		// Scena intymna przy ognisku (fallback plenerowy)
 		if (IsWomanBaseCompanion(npc) && !IsOnNaughtyPoint())
 		{
 			if (MCM_AR_SceneExists("dlc\mod_mcme_autonomous_romance\dialogue\ar_shani_intimate_outdoor.w2scene"))
@@ -2619,7 +2624,7 @@ class MCM_AR_GiftRequest_Base extends MCM_RomanceInteraction
 		compName = MCM_AR_GetCompanionDisplayName(npc);
 		giftName = GetGiftDisplayName(chosenGift);
 
-		// FAZA 1 – propozycja: podejście + bark z prośbą, brak locka gracza
+		// Propozycja: podejście i bark
 		SoftApproach(npc, player, 2.4);
 		PlayBark(npc);
 
@@ -2632,7 +2637,7 @@ class MCM_AR_GiftRequest_Base extends MCM_RomanceInteraction
 			return false;
 		}
 
-		// FAZA 2 – akceptacja: defensywne sprawdzenie czy gracz nadal ma ten przedmiot
+		// Akceptacja: sprawdzenie ekwipunku
 		if (player.inv.GetItemQuantityByName(chosenGift) <= 0)
 		{
 			EndSoft(npc);
