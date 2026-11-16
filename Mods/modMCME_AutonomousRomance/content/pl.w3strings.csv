@@ -36,8 +36,9 @@
 2118800034|        |ar_prompt_keira_intimate|[C] Zostań z Keirą na osobności
 2118800035|        |ar_prompt_shani_stay|[C] Zostań ze Shani
 2118800036|        |ar_prompt_shani_intimate|[C] Zostań ze Shani na osobności
-2118800037|        |ar_prompt_intimate_invite|Spędź intymną chwilę razem [C]
+2118800037|        |ar_prompt_anarietta_escort|[C] Towarzysz Księżnej
 2118800038|        |ar_prompt_anarietta_intimate|[C] Zostań z Księżną na osobności
+2118800039|        |ar_prompt_vivienne_stay|[C] Zostań z Vivienne
 2118800040|        |ar_prompt_vivienne_intimate|[C] Zostań z Vivienne na osobności
 2118800041|        |ar_prompt_cerys_stay|[C] Zostań z Cerys
 2118800042|        |ar_prompt_cerys_intimate|[C] Zostań z Cerys na osobności
@@ -83,9 +84,11 @@
 2118800082|        |ar_line_shani_gift_request|Długi dzień... Masz coś do picia?
 2118800083|        |ar_line_anarietta_oneliner_flirt|Wyśmienite wino. Masz dobry gust.
 2118800084|        |ar_line_anarietta_postcombat_pride|Chciałabym się czegoś dowiedzieć... Jak możesz być tak cholernie spokojny?
+2118800085|        |ar_line_anarietta_night_royal|Chodź, wiedźminie.
 2118800086|        |ar_line_anarietta_intimate_invite|Chodź, wiedźminie.
 2118800087|        |ar_line_vivienne_oneliner_flirt|Piękny dzień na przejażdżkę, nie sądzisz?
 2118800088|        |ar_line_vivienne_campfire_mystery|Chodź.
+2118800089|        |ar_line_vivienne_night_invitation|Przejdziesz się ze mną, Geralcie?
 2118800090|        |ar_line_vivienne_intimate_invite|Noc jest dla nas łaskawa, Geralcie.
 2118800091|        |ar_line_cerys_oneliner_flirt|Pokaż, co potrafisz, pogromco potworów!
 2118800092|        |ar_line_cerys_postcombat_skellige|Wciąż stoisz? Dobrze. Skellige nie potrzebuje wdów.
@@ -138,7 +141,7 @@
 2118800139|        |ar_thanks_tomira|To pomoże bardziej, niż myślisz. Dziękuję, Geralcie.
 2118800140|        |option_mcm_ar_opt_barkpreset|Gadatliwość towarzyszek (1=Cicho, 2=Normalnie, 3=Gadatliwe)
 2118800141|        |option_MCM_AR_BarkPreset|Gadatliwość towarzyszek (1=Cicho, 2=Normalnie, 3=Gadatliwe)
-2118800142|        |preset_Mods_AutonomousRomance|Autonomiczny romans v2.3.0
+2118800142|        |preset_Mods_AutonomousRomance|Autonomous Romance v2.0.0
 2118800143|        |ar_prompt_rosa_kiss|[C] Pocałuj Rosę
 2118800144|        |ar_line_rosa_kiss|Geralt... Nie tak szybko. Daj mi na ciebie spojrzeć.
 2118800145|        |ar_afterglow_rosa|Nieźle. Choć moja forma szermiercza wciąż przewyższa twoją.
@@ -251,41 +254,3 @@
 2118800252|        |ar_line_fringilla_intimate_invite|Nawet Nilfgaardka potrzebuje ciepła. Gdzieś na osobności, Geralcie.
 2118800253|        |ar_prompt_margarita_intimate|[C] Zostań z Margaritą na osobności
 2118800254|        |ar_line_margarita_intimate_invite|Aretuza uczyła dyscypliny, nie abstynencji. Chodź.
-2118800255|        |ar_line_triss_dance|Dobrze. Jeden taniec. Ale ty tylko patrzysz.
-2118800256|        |ar_line_keira_dance|Życie jest za krótkie, żeby tylko stać, Geralcie.
-2118800257|        |ar_line_shani_dance|Uważaj, bo nadepnę ci na palce. Żartuję. Prawie.
-2118800258|        |ar_line_tomira_dance|Ha! Tak tańczy się u mnie w wiosce!
-2118800259|        |ar_line_ciri_dance|Patrz i ucz się. Moi nauczyciele brali więcej, niż ty zarabiasz w rok.
-2118800260|        |ar_line_priscilla_dance|Scena? Nie potrzebuję sceny. Patrz na to.
-2118800261|        |ar_line_cerys_dance|Ha! Na Skellige nawet owce tańczą. Nadążaj!
-2118800262|        |ar_line_ves_dance|Najpierw praca nóg, wiedźminie. Patrz.
-2118800263|        |ar_line_yen_dance_refuse|Myślisz, że będę skakać jak dziewczyna z Passiflory? Pomyśl jeszcze raz.
-2118800264|        |ar_line_philippa_dance_refuse|Nie tańczę, Geralcie. Ja dyryguję.
-2118800265|        |ar_line_ciri_dance_refuse|Ja? Mam tańczyć dla ciebie? Śnij dalej, Geralcie.
-2118800268|        |ar_line_dt_end|Czujesz się lepiej?
-2118800269|        |ar_line_dt_wake|Dzień dobry. Wyspałeś się?
-2118800272|        |ar_prompt_yen_kiss|[C] Pocałuj Yennefer
-2118800273|        |ar_line_yen_kiss|Geralcie... Zbliż się.
-2118800274|        |ar_prompt_keira_kiss|[C] Pocałuj Keirę
-2118800275|        |ar_line_keira_kiss|Nie każ mi prosić dwa razy, wiedźminie.
-2118800276|        |ar_line_ves_dance_refuse|Jestem żołnierzem, Geralcie. Jeśli chcesz tańców, poszukaj barda.
-2118800277|        |ar_line_ves_tavern_drink|Polej za Temerię. A potem za nas.
-2118800278|        |ar_line_rosa_night_filler|Nocne powietrze uspokaja kości. Śpij spokojnie, Geralt.
-2118800279|        |ar_line_tomira_night_filler|Zioła też śnią, wiesz. Odpoczywaj teraz.
-2118800280|        |ar_line_ciri_night_filler|Wezmę pierwszą zmianę. Śpij, Geralt.
-2118800281|        |ar_line_syanna_night_filler|Ciemne godziny należą do mnie, wiedźminie. Twoje do dzielenia.
-2118800282|        |ar_line_philippa_night_filler|Śpij, póki możesz. Drogi nie dbają o zmęczenie.
-2118800283|        |ar_line_ves_night_filler|Temeria nigdy nie śpi. Ja też nie, szczerze.
-2118800284|        |ar_line_salma_night_filler|Noc to mój żywioł, kochanie. Podejdź bliżej... później.
-2118800285|        |ar_line_priscilla_night_filler|Taka noc stworzona jest do piosenki. I do ciebie.
-2118800286|        |ar_line_edna_night_filler|Nawet zabójcy potrzebują snu. Nawet ja. Nie mów gildii.
-2118800287|        |ar_line_fringilla_night_filler|Księżyc uczy cierpliwości. Noc uczy ciszy.
-2118800288|        |ar_line_margarita_night_filler|Noce na morzu nauczyły mnie spać gdziekolwiek. Tu jest lepiej.
-2118800289|        |ar_line_orianna_night_filler|Noc to domena damy. Moja, konkretnie.
-2118800290|        |ar_line_generic_flirt_1|Z tobą droga mija szybciej. Tylko się nie unosz.
-2118800291|        |ar_line_generic_flirt_2|Rozmawiasz ze mną, a wzrokiem jesteś już w lasach. Podoba mi się taka czujność.
-2118800292|        |ar_line_generic_flirt_3|Ostrożnie z tymi komplementami, wiedźminie. Zaczynam w nie wierzyć.
-2118800293|        |ar_line_generic_flirt_4|Długi dzień przed nami. Na szczęście towarzystwo nie jest najgorsze.
-2118800294|        |ar_line_generic_care|Oddychasz? Dobrze. Siadaj i złap oddech. Ja pilnuję drogi.
-2118800295|        |ar_prompt_generic_kiss|[C] Pocałuj ją
-2118800296|        |ar_line_generic_kiss|Podejdź tu, wiedźminie. Nadszedł odpowiedni moment.

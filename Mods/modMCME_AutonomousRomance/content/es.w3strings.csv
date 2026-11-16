@@ -1,8 +1,8 @@
 ;meta[language=es]
 ; id      |key(hex)|key(str)| text
-2118800001|        |panel_AutonomousRomance|Romance autónomo
-2118800002|        |panel_MCM_AR|Romance autónomo
-2118800003|        |panel_MCME_AutonomousRomance|Romance autónomo
+2118800001|        |panel_AutonomousRomance|Autonomous Romance
+2118800002|        |panel_MCM_AR|Autonomous Romance
+2118800003|        |panel_MCME_AutonomousRomance|Autonomous Romance
 2118800004|        |preset_Mods.AutonomousRomance|Preajustes
 2118800005|        |preset_AutonomousRomance|Preajustes
 2118800006|        |preset_MCM_AR|Preajustes
@@ -36,8 +36,9 @@
 2118800034|        |ar_prompt_keira_intimate|[C] Quédate a solas con Keira
 2118800035|        |ar_prompt_shani_stay|[C] Quédate con Shani
 2118800036|        |ar_prompt_shani_intimate|[C] Quédate a solas con Shani
-2118800037|        |ar_prompt_intimate_invite|Pasa un momento íntimo juntos [C]
+2118800037|        |ar_prompt_anarietta_escort|[C] Acompaña a la duquesa
 2118800038|        |ar_prompt_anarietta_intimate|[C] Quédate a solas con la duquesa
+2118800039|        |ar_prompt_vivienne_stay|[C] Quédate con Vivienne
 2118800040|        |ar_prompt_vivienne_intimate|[C] Quédate a solas con Vivienne
 2118800041|        |ar_prompt_cerys_stay|[C] Quédate con Cerys
 2118800042|        |ar_prompt_cerys_intimate|[C] Quédate a solas con Cerys
@@ -83,9 +84,11 @@
 2118800082|        |ar_line_shani_gift_request|Qué día tan largo... ¿Tienes algo de beber?
 2118800083|        |ar_line_anarietta_oneliner_flirt|Un vino excelente. Tienes buen gusto.
 2118800084|        |ar_line_anarietta_postcombat_pride|Hay algo que me gustaría saber... ¿Cómo puedes estar tan malditamente tranquilo?
+2118800085|        |ar_line_anarietta_night_royal|Ven, brujo.
 2118800086|        |ar_line_anarietta_intimate_invite|Ven, brujo.
 2118800087|        |ar_line_vivienne_oneliner_flirt|Un buen día para cabalgar, ¿no crees?
 2118800088|        |ar_line_vivienne_campfire_mystery|Ven.
+2118800089|        |ar_line_vivienne_night_invitation|¿Me acompañas a pasear, Geralt?
 2118800090|        |ar_line_vivienne_intimate_invite|La noche nos es propicia, Geralt.
 2118800091|        |ar_line_cerys_oneliner_flirt|¡Enséñame de lo que eres capaz, matamonstruos!
 2118800092|        |ar_line_cerys_postcombat_skellige|¿Sigues en pie? Bien. Skellige no necesita más viudas.
@@ -138,7 +141,7 @@
 2118800139|        |ar_thanks_tomira|Esto ayudará más de lo que crees. Gracias, Geralt.
 2118800140|        |option_mcm_ar_opt_barkpreset|Charla de compañeras (1=Silencio, 2=Normal, 3=Habladoras)
 2118800141|        |option_MCM_AR_BarkPreset|Charla de compañeras (1=Silencio, 2=Normal, 3=Habladoras)
-2118800142|        |preset_Mods_AutonomousRomance|Romance autónomo v2.3.0
+2118800142|        |preset_Mods_AutonomousRomance|Autonomous Romance v1.1.0
 2118800143|        |ar_prompt_rosa_kiss|[C] Besar a Rosa
 2118800144|        |ar_line_rosa_kiss|Geralt... No tan rápido. Déjame mirarte.
 2118800145|        |ar_afterglow_rosa|Nada mal. Aunque mi esgrima sigue siendo más afilada que la tuya.
@@ -251,41 +254,3 @@
 2118800252|        |ar_line_fringilla_intimate_invite|Hasta una nilfgaardiana necesita calor. En algún sitio privado, Geralt.
 2118800253|        |ar_prompt_margarita_intimate|[C] Quédate a solas con Margarita
 2118800254|        |ar_line_margarita_intimate_invite|Aretuza enseñó disciplina, no abstinencia. Ven.
-2118800255|        |ar_line_triss_dance|Vale. Un baile. Pero tú solo miras.
-2118800256|        |ar_line_keira_dance|La vida es demasiado corta para quedarse parado, Geralt.
-2118800257|        |ar_line_shani_dance|Cuidado, que piso los pies. Es broma. Casi siempre.
-2118800258|        |ar_line_tomira_dance|¡Ja! ¡Así se baila en mi aldea!
-2118800259|        |ar_line_ciri_dance|Mira y aprende: mis maestros cobraban más de lo que tú ganas en un año.
-2118800260|        |ar_line_priscilla_dance|¿Un escenario? No lo necesito. Mira esto.
-2118800261|        |ar_line_cerys_dance|¡Ja! En Skellige hasta las ovejas bailan. ¡Sigue el ritmo!
-2118800262|        |ar_line_ves_dance|Primero los pies, brujo. Mira.
-2118800263|        |ar_line_yen_dance_refuse|¿Esperas que me contonee como una chica de Passiflora? Piénsatelo otra vez.
-2118800264|        |ar_line_philippa_dance_refuse|No bailo, Geralt. Yo dirijo.
-2118800265|        |ar_line_ciri_dance_refuse|¿Yo? ¿Bailar para ti? Sigue soñando, Geralt.
-2118800268|        |ar_line_dt_end|¿Te sientes mejor?
-2118800269|        |ar_line_dt_wake|Buenos días. ¿Dormiste bien?
-2118800272|        |ar_prompt_yen_kiss|[C] Besar a Yennefer
-2118800273|        |ar_line_yen_kiss|Geralt... Acércate.
-2118800274|        |ar_prompt_keira_kiss|[C] Besar a Keira
-2118800275|        |ar_line_keira_kiss|No me hagas repetirlo, brujo.
-2118800276|        |ar_line_ves_dance_refuse|Soy un soldado, Geralt. Si quieres bailar, busca un bardo.
-2118800277|        |ar_line_ves_tavern_drink|Sirve una por Temeria. Luego otra por nosotros.
-2118800278|        |ar_line_rosa_night_filler|El aire nocturno calma los huesos. Duerme bien, Geralt.
-2118800279|        |ar_line_tomira_night_filler|Las hierbas también sueñan, ¿sabes? Descansa ahora.
-2118800280|        |ar_line_ciri_night_filler|Yo tomo la primera guardia. Duerme, Geralt.
-2118800281|        |ar_line_syanna_night_filler|Las horas oscuras son mías, brujo. Las tuyas para compartir.
-2118800282|        |ar_line_philippa_night_filler|Duerme mientras puedas. Los caminos no preguntan por el cansancio.
-2118800283|        |ar_line_ves_night_filler|Temeria nunca duerme. Yo tampoco, la verdad.
-2118800284|        |ar_line_salma_night_filler|La noche es mi elemento, querido. Acércate... luego.
-2118800285|        |ar_line_priscilla_night_filler|Una noche así está hecha para una canción. Y para ti.
-2118800286|        |ar_line_edna_night_filler|Hasta los asesinos necesitan dormir. Incluso yo. No se lo digas a la Hermandad.
-2118800287|        |ar_line_fringilla_night_filler|La luna enseña paciencia. La noche enseña silencio.
-2118800288|        |ar_line_margarita_night_filler|Las noches en el mar me enseñaron a dormir en cualquier parte. Aquí es mejor.
-2118800289|        |ar_line_orianna_night_filler|La noche es dominio de una dama. Mío, para ser precisos.
-2118800290|        |ar_line_generic_flirt_1|La ruta se hace más corta contigo. No dejes que se te suba a la cabeza.
-2118800291|        |ar_line_generic_flirt_2|Me hablas y tu mirada sigue en el bosque. Me gusta esa precaución.
-2118800292|        |ar_line_generic_flirt_3|Cuidado con los halagos, brujo. Estoy empezando a creerlos.
-2118800293|        |ar_line_generic_flirt_4|Nos espera un día largo. Al menos la compañía no es de las peores.
-2118800294|        |ar_line_generic_care|¿Sigues respirando? Bien. Siéntate y recupera el aliento. Yo vigilo el camino.
-2118800295|        |ar_prompt_generic_kiss|[C] Bésala
-2118800296|        |ar_line_generic_kiss|Ven aquí, brujo. Es el momento.
