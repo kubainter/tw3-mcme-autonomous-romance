@@ -1,0 +1,34 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  validate:
+    name: validate (precheck + rules + locales + package)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: WitcherScript precheck
+        shell: pwsh
+        run: ./scripts/precheck_syntax.ps1
+
+      - name: Repo rules lint
+        shell: pwsh
+        run: ./scripts/ci_rules.ps1
+
+      - name: Localization consistency
+        shell: pwsh
+        run: ./scripts/ci_locales.ps1
+
+      - name: Release package dry-run
+        shell: pwsh
+        run: ./scripts/package_release.ps1 -Version v0.0.0-ci -OutDir "$env:RUNNER_TEMP\pkg" -SkipPrecheck
+
+      - name: Verify package contents
+        shell: pwsh
+        run: ./scripts/ci_verify_package.ps1 -ZipPath "$env:RUNNER_TEMP\pkg\MCME_AutonomousRomance_v0.0.0-ci.zip"

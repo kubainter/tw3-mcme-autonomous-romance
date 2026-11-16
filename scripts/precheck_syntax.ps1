@@ -13,11 +13,20 @@
       - duplikaty nazw klas/struktow/enumow miedzy plikami - blad
       - mozliwe przypisanie w warunku if/while  ( x = y  zamiast  x == y ) - ostrzezenie
       - sciezki "dlc\...\*.w2scene" wziete z literatow vs scripts\known_scenes.txt - blad
+      - sciana TW3SE: 'TW3SE_' dozwolone tylko w MCM_RomanceTw3seDev.ws - blad
+      - parzystosc sygnatur dev <-> stub (release nie skompiluje sie bez zgodnosci) - blad
+      - klucze lokalizacji "ar_*" uzyte w kodzie musza istniec w en.w3strings.csv - blad
+      - RegisterAction(new X) wymaga definicji class X; klasa akcji musi byc zarejestrowana - blad
+      - roster: NPC z MCM_AR_IsRomanceNPC powinna miec case w MCM_AR_GetCompanionDisplayName - ostrzezenie
+      - golden licznik exec function ar_* (dev/release) - ostrzezenie
 
     Nie sprawdza semantyki (nieznane metody, typy) - to robi silnik (test_compile.ps1).
 
+    Skrypt rozpoznaje dwa uklady robocze: katalogowa kopie wewnatrz repo
+    (repo\scripts\) oraz legacy _ModDev\scripts\ z repo jako podkatalogiem.
+
 .PARAMETER ScriptsDir
-    Katalog ze skryptami moda. Domyslnie: ..\repo\Mods\modMCME_AutonomousRomance\content\scripts
+    Katalog ze skryptami moda. Domyslnie auto-wykrywany (repo, potem _ModDev).
 
 .PARAMETER SceneListFile
     Plik z lista znanych scen (jedna sciezka w linii). Domyslnie: known_scenes.txt obok skryptu.
@@ -37,10 +46,25 @@ $ErrorActionPreference = 'Stop'
 
 $scriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
 if (-not $scriptRoot) { $scriptRoot = (Get-Location).Path }
-if (-not $ScriptsDir)    { $ScriptsDir    = Join-Path $scriptRoot '..\repo\Mods\modMCME_AutonomousRomance\content\scripts' }
+
+function Resolve-FirstPath([string[]]$candidates) {
+    foreach ($c in $candidates) {
+        if (Test-Path $c) { return (Resolve-Path $c).Path }
+    }
+    return $null
+}
+
+if (-not $ScriptsDir) {
+    $ScriptsDir = Resolve-FirstPath @(
+        (Join-Path $scriptRoot '..\Mods\modMCME_AutonomousRomance\content\scripts'),
+        (Join-Path $scriptRoot '..\repo\Mods\modMCME_AutonomousRomance\content\scripts')
+    )
+}
 if (-not $SceneListFile) { $SceneListFile = Join-Path $scriptRoot 'known_scenes.txt' }
+if (-not $ScriptsDir) { Write-Error "Nie znaleziono katalogu skryptow moda (repo ani _ModDev layout)"; exit 2 }
 
 $ScriptsDir = (Resolve-Path $ScriptsDir).Path
+$contentDir = Split-Path -Parent $ScriptsDir
 $files = Get-ChildItem -Path $ScriptsDir -Recurse -Filter '*.ws' -File
 if (-not $files) { Write-Error "Nie znaleziono zadnych plikow .ws w $ScriptsDir"; exit 2 }
 
@@ -226,9 +250,12 @@ foreach ($file in $files) {
 # Stub podmienia dev-plik w paczce - kazda publiczna sygnatura musi sie
 # zgadzac (nazwa + typy parametrow + typ zwrotny), inaczej release nie
 # skompiluje sie u gracza (CR: botex F2 / agy).
-$devFile  = Join-Path $scriptRoot '..\repo\scripts\tw3se\MCM_RomanceTw3seDev.dev.ws'
-$stubFile = Join-Path $scriptRoot '..\repo\scripts\tw3se\MCM_RomanceTw3seDev.stub.ws'
-if ((Test-Path $devFile) -or (Test-Path $stubFile)) {
+$devFile  = Join-Path $ScriptsDir 'local\romance\MCM_RomanceTw3seDev.ws'
+$stubFile = Resolve-FirstPath @(
+    (Join-Path $scriptRoot 'tw3se\MCM_RomanceTw3seDev.stub.ws'),
+    (Join-Path $scriptRoot '..\repo\scripts\tw3se\MCM_RomanceTw3seDev.stub.ws')
+)
+if ((Test-Path $devFile) -or $stubFile) {
     $sigRe = [regex]'(?m)^\s*(?:exec\s+)?function\s+([A-Za-z_]\w*)\s*\(([^)]*)\)\s*(?::\s*([A-Za-z_]\w*))?'
     $getSigs = {
         param($path)
@@ -246,9 +273,9 @@ if ((Test-Path $devFile) -or (Test-Path $stubFile)) {
         }
         return $set
     }
-    if (-not (Test-Path $devFile))  { Report 'MCM_RomanceTw3seDev.ws' 0 'ERROR' 'brak pliku dev przy istniejacym stubie' }
-    if (-not (Test-Path $stubFile)) { Report 'MCM_RomanceTw3seDev.stub.ws' 0 'ERROR' 'brak stuba w repo\scripts\tw3se - release nie ma czym podmienic' }
-    if ((Test-Path $devFile) -and (Test-Path $stubFile)) {
+    if (-not (Test-Path $devFile)) { Report 'MCM_RomanceTw3seDev.ws' 0 'ERROR' 'brak pliku dev przy istniejacym stubie' }
+    if (-not $stubFile)            { Report 'MCM_RomanceTw3seDev.stub.ws' 0 'ERROR' 'brak stuba w scripts\tw3se - release nie ma czym podmienic' }
+    if ((Test-Path $devFile) -and $stubFile) {
         if ([System.IO.File]::ReadAllText($stubFile) -match '(?m)^\s*import\s+function') {
             Report 'MCM_RomanceTw3seDev.stub.ws' 0 'ERROR' 'stub zawiera import function - zepsulaby kompilacje u gracza'
         }
@@ -259,6 +286,83 @@ if ((Test-Path $devFile) -or (Test-Path $stubFile)) {
     }
 }
 
+# --- T0.5: spojnosc statyczna miedzy plikami (lokalizacja, rejestr akcji, roster, liczba execow) ---
+$csvPath = Join-Path $contentDir 'en.w3strings.csv'
+$csvKeys = @{}
+if (Test-Path $csvPath) {
+    foreach ($ln in [System.IO.File]::ReadAllLines($csvPath, [System.Text.Encoding]::UTF8)) {
+        if ($ln.TrimStart().StartsWith(';') -or -not $ln.Contains('|')) { continue }
+        $cols = $ln -split '\|'
+        if ($cols.Count -ge 3 -and $cols[2].Trim()) { $csvKeys[$cols[2].Trim()] = $true }
+    }
+} else {
+    Report 'en.w3strings.csv' 0 'ERROR' 'brak en.w3strings.csv - nie da sie sprawdzic kluczy lokalizacji'
+}
+$locRe  = [regex]'"(ar_(?:line|prompt|thanks|msg)_\w+)"'
+$regRe  = [regex]'RegisterAction\s*\(\s*new\s+(\w+)'
+$extRe  = [regex]'(?m)^\s*class\s+(MCM_AR_\w+)\s+extends\s+(?:MCM_RomanceInteraction|\w+_Base)\b'
+$execRe = [regex]'(?m)^\s*exec\s+function\s+ar_\w+'
+$registered = @{}
+$execAll = 0
+$execRel = 0
+$rawByFile = @{}
+foreach ($file in $files) {
+    $rel = $file.FullName.Substring($ScriptsDir.Length).TrimStart('\')
+    $raw = [System.IO.File]::ReadAllText($file.FullName)
+    $rawByFile[$rel] = [regex]::Replace($raw, '(?m)//[^\r\n]*', '')
+    foreach ($m in $locRe.Matches($raw)) {
+        $k = $m.Groups[1].Value
+        if ($csvKeys.Count -gt 0 -and -not $csvKeys.ContainsKey($k)) {
+            $lineNo = ($raw.Substring(0, $m.Index) -split "`n").Count
+            Report $rel $lineNo 'ERROR' "klucz lokalizacji '$k' nie istnieje w en.w3strings.csv"
+        }
+    }
+    foreach ($m in $regRe.Matches($rawByFile[$rel])) { $registered[$m.Groups[1].Value] = $true }
+    $n = $execRe.Matches($raw).Count
+    $execAll += $n
+    if ($file.Name -ne 'MCM_RomanceE2EDev.ws') { $execRel += $n }
+}
+foreach ($rel in $rawByFile.Keys) {
+    $raw = $rawByFile[$rel]
+    foreach ($m in $regRe.Matches($raw)) {
+        $cn = $m.Groups[1].Value
+        if (-not $typeDefs.ContainsKey($cn)) {
+            $lineNo = ($raw.Substring(0, $m.Index) -split "`n").Count
+            Report $rel $lineNo 'ERROR' "RegisterAction(new $cn) - brak definicji class $cn"
+        }
+    }
+    foreach ($m in $extRe.Matches($raw)) {
+        $cn = $m.Groups[1].Value
+        if (-not $registered.ContainsKey($cn) -and $cn -notlike '*_Base' -and $cn -notlike 'MCM_AR_E2E*') {
+            $lineNo = ($raw.Substring(0, $m.Index) -split "`n").Count
+            Report $rel $lineNo 'ERROR' "klasa $cn extends MCM_RomanceInteraction nie jest zarejestrowana w RegisterAction"
+        }
+    }
+}
+function Get-FnBody([string]$text, [string]$fnName) {
+    $m = [regex]::Match($text, "function\s+$fnName\s*\(")
+    if (-not $m.Success) { return $null }
+    $rest = $text.Substring($m.Index + $m.Length)
+    $nx = [regex]::Match($rest, '(?m)^\s*(?:(?:public|protected|private|latent|entry|exec|static)\s+)*function\s+\w+\s*\(')
+    if ($nx.Success) { return $rest.Substring(0, $nx.Index) }
+    return $rest
+}
+$romanceBody = $null
+$displayBody = $null
+foreach ($rel in $rawByFile.Keys) {
+    if (-not $romanceBody) { $romanceBody = Get-FnBody $rawByFile[$rel] 'MCM_AR_IsRomanceNPC' }
+    if (-not $displayBody) { $displayBody = Get-FnBody $rawByFile[$rel] 'MCM_AR_GetCompanionDisplayName' }
+}
+if ($romanceBody -and $displayBody) {
+    $displayNames = @{}
+    foreach ($m in [regex]::Matches($displayBody, "case\s+'(\w+)'")) { $displayNames[$m.Groups[1].Value] = $true }
+    foreach ($m in [regex]::Matches($romanceBody, "'(\w+)'")) {
+        $nm = $m.Groups[1].Value
+        if (-not $displayNames.ContainsKey($nm)) { Report 'roster' 0 'WARN' "NPC '$nm' w MCM_AR_IsRomanceNPC bez case w MCM_AR_GetCompanionDisplayName" }
+    }
+}
+if ($execAll -ne 38) { Report 'exec' 0 'WARN' "liczba 'exec function ar_*' w zrodle = $execAll (golden dev: 38) - nowy/znikniety exec, swiadome?" }
+if ($execRel -ne 35) { Report 'exec' 0 'WARN' "liczba execow w paczce (bez E2EDev) = $execRel (golden release: 35)" }
 Write-Host ''
 Write-Host '==========================================================' -ForegroundColor Cyan
 if ($totalErrors -eq 0 -and (-not $WarningsAsErrors -or $totalWarnings -eq 0)) {
