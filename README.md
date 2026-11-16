@@ -7,6 +7,8 @@
 [![Issues][issues-shield]][issues-url]
 [![License][license-shield]][license-url]
 [![The Witcher 3: Remastered](https://img.shields.io/badge/Witcher%203-Remastered%20v5.00%2B-blue.svg?style=for-the-badge&logo=gogdotcom)](https://www.thewitcher.com/)
+[![Release Version](https://img.shields.io/badge/Version-v2.3.0-brightgreen.svg?style=for-the-badge)](CHANGELOG.md)
+
 [![Dependency](https://img.shields.io/badge/Dependency-MCME%20Remastered-orange.svg?style=for-the-badge)](https://www.nexusmods.com/witcher3/mods/13144)
 [![Script Merger](https://img.shields.io/badge/Script%20Merger-Zero%20Conflicts-brightgreen.svg?style=for-the-badge)](#zero-script-merger-conflicts)
 
@@ -93,6 +95,7 @@ In vanilla **Multi Companion Mod Enhanced (MCME)**, companions are passive follo
 - They initiate authentic flirts and tease Geralt using genuine, context-aware voiced lines and subtitles.
 - They invite Geralt to intimate romantic moments, dates at Corvo Bianco, or quiet evenings with full player consent safeguards.
 - When Geralt pauses during a journey, companions stop following, find a spot, and settle into idle poses - resuming the moment he moves on.
+- When Geralt meditates or beds down at Corvo Bianco, they quietly settle on a ring around him - and the companion who trusts him most can take the free side of the bed until he wakes.
 - Companions can even ask Geralt for a bottle of wine or spirits while relaxing at a tavern, campfire, or at Corvo Bianco.
 
 ```text
@@ -131,8 +134,8 @@ In vanilla **Multi Companion Mod Enhanced (MCME)**, companions are passive follo
 #### 1. 4-Tier Escalation Ladder
 * **Tier 1 (Flirt & Ambient Banter):** Spontaneous one-liners delivered with genuine in-game voice lines and subtitles while traveling the open world or resting.
 * **Tier 2 (Physical & Emotional Care):** Companions approach Geralt, express concern when he takes heavy combat damage, heal his wounds, or share a moment by glowing campfires.
-* **Tier 3 (Intimate Invitations):** Companions approach and discreetly invite Geralt to pause their journey. A non-intrusive 20-second HUD prompt (`[C] Respond`) allows the player to accept or decline.
-* **Tier 4 (Full Story Intimacy & Dates):** Private chambers, Corvo Bianco estate relaxation, and romantic cutscenes playing cleanly without dialogue wheel prompts.
+* **Tier 3 (Intimate Invitations):** Companions approach and discreetly invite Geralt to pause their journey. A non-intrusive 20-second HUD prompt (e.g. `[C] Kiss Yennefer`, `[C] Stay with Shani`) allows the player to accept or decline.
+* **Tier 4 (Full Story Intimacy & Dates):** Private chambers, Corvo Bianco estate relaxation, and romantic cutscenes playing cleanly without dialogue wheel prompts - the main companions' kisses can also pick cinematic camera angles.
 
 #### 2. 3-Pillar Stateless Affinity Engine
 * **Pillar 1 (Vanilla Story Projection):** Real-time evaluation of original story choices (e.g. *The Last Wish*, *Now or Never*, Fyke Isle, Shani's wedding) without altering quest progression states.
@@ -145,17 +148,26 @@ In vanilla **Multi Companion Mod Enhanced (MCME)**, companions are passive follo
 
 #### 4. Non-Intrusive Player Consent Safeguard
 * Tier 3 & Tier 4 romantic initiatives never hijack player controls abruptly.
-* When a companion initiates, an on-screen HUD prompt appears: `[C] Respond`.
+* When a companion initiates, an on-screen HUD prompt appears with her name and intent (e.g. `[C] Kiss Yennefer`, `[C] Give Est Est to Keira`).
 * Ships its own input action `MCM_AR_Consent` - bound to **C** on keyboard and **D-pad Left/Right** on gamepad, so consent works regardless of how you remapped sheathing. The prompt itself shows your real bound key/glyph (via `ReplaceTagsToIcons`). Vanilla `'SwordSheathe'` is still honored as a fallback. Walking away or waiting 20 seconds declines the invitation. Affinity is not reduced; ignoring the prompt starts a rejection cooldown for that action.
 
 #### 5. Configurable Pacing & Full Localization
 * A dedicated **Decision Tick Interval** slider (20-160 s, default 30 s) controls how often companions evaluate new initiatives - separate from the initiative cooldown per companion.
 * A **Companion Chatter** preset (Quiet / Default / Chatty) tunes ambient bark frequency.
-* All player-facing text (prompts, HUD messages, voiced-line subtitles, MCM labels) ships in **English, Polish, Spanish and Latin American Spanish** via W3Strings; other game languages fall back to English.
+* All player-facing text (prompts, HUD messages, voiced-line subtitles, MCM labels) ships in **English, Polish, German, Spanish and Latin American Spanish** via W3Strings; other game languages fall back to English.
 
 #### 6. Zero Script Merger Conflicts
 * Built exclusively with native Remaster annotations (`@wrapMethod`, `@addMethod`, `@addField`).
 * Modifies zero vanilla or MCME `.ws` script files, ensuring clean installation alongside other mods.
+
+#### 7. Downtime Companionship & Bedside Rest
+* When Geralt meditates or sleeps in the Corvo Bianco bed, every follower within ~15 m settles into a relaxed pose on a ring around him (~1.4 m at meditation, ~1.9 m at the bed). The channel is ambient-only - no consent prompt - and deliberately patient: ~2 s of detected downtime is required, so quick alchemy meditations never trigger it, and it re-arms ~60 s after a session (~5 min if broken by combat).
+* During bed downtime, the highest-affinity eligible follower lies down on the free side of the bed for the whole sleep session (swapping to sleepwear unless MCME's appearance-changing option is disabled), then dresses back and resumes following when Geralt wakes. The companion who stayed closest speaks a short good-morning / feel-better line when the session ends.
+* Debug the detector live with the `ar_downtime` console probe.
+
+#### 8. Ambient Dances (Tavern / Campfire at Night)
+* Inside a tavern - or at a campfire at night (22:00-04:00) - a companion may break into a performance: Priscilla, Triss, Keira, Shani, Cerys and Tomira dance; Philippa, Yennefer, Ves and Ciri answer with a refusal quip instead; Ciri dances in Adult mode.
+* These are ambient actions (affinity 30+, ~10 min cooldown): a sequence of animation steps that ends cleanly if a step fails or combat starts.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -172,8 +184,9 @@ In vanilla **Multi Companion Mod Enhanced (MCME)**, companions are passive follo
 | **Cerys an Craite** *(DLC)* | T1 - T4 | Skellige-style direct banter, warrior honor checks, blunt nighttime drinking invitations, tavern drinks, personalized walking afterglow. | Kaer Trolde keep, mountain campfires. |
 | **Syanna** *(DLC)* | T1 - T4 | Cynical wit, post-combat remarks, a spontaneous kiss, and full cloud intimacy with native CDPR mesh, personalized walking afterglow. | Romantic sweet spots, secluded Toussaint chambers. |
 | **Cirilla (Ciri)** | T3 (+T4 opt-in) | Warm family embrace interaction without dialogue traps, trail companionship, affectionate walking afterglow. The optional **Ciri Adult Mode** toggle (off by default) unlocks her autonomous kiss and intimate scenes. | Open world, campfires, roadside rests. |
-| **Rosa var Attre** | T1 - T3 | Sharp-tongued fencing banter, fine-wine requests, a spontaneous kiss, personalized walking afterglow. | Taverns, campfires, rest stops. |
-| **Tomira** | T1 - T3 | Gentle herbalist warmth, spirit requests for tinctures, a spontaneous kiss, personalized walking afterglow. | Taverns, campfires, rest stops. |
+| **Rosa var Attre** | T1 - T4 | Sharp-tongued fencing banter, fine-wine requests, a spontaneous kiss, campfire intimacy (shared outdoor scene instead of a bespoke bed cutscene), personalized walking afterglow. | Taverns, campfires, rest stops. |
+| **Tomira** | T1 - T4 | Gentle herbalist warmth, spirit requests for tinctures, a spontaneous kiss, campfire intimacy (shared outdoor scene instead of a bespoke bed cutscene), personalized walking afterglow. | Taverns, campfires, rest stops. |
+| **Extended MCME Roster** *(Tamara, Iris, Corinne, Jutta, Sasha, etc.)* | T1 - T4 (Generic) | Shared road flirt lines, post-combat comfort, the shared kiss (affinity 50) and outdoor campfire intimacy via the universal dispatchers - all female followers on the woman_base rig. | Campfires, wilderness resting spots, on the road. |
 | **Philippa Eilhart** | T1 - T4 | Coldly pragmatic combat care, sharp condescending banter, spirit requests, a calculated kiss, private invitations, personalized walking afterglow. | Campfires, taverns, rest stops. |
 | **Ves** | T1 - T4 | Frontline Blue Stripes camaraderie, campfire stillness, drink requests, a spontaneous kiss, private invitations, personalized walking afterglow. | Campfires, taverns, rest stops. |
 | **Salma** *(Deadly Delights)* | T1 - T4 | Seductive campfire allure, spirit requests, a spontaneous kiss, private invitations, sensory warmth afterglow. | Campfires, taverns, rest stops. |
@@ -204,8 +217,10 @@ In vanilla **Multi Companion Mod Enhanced (MCME)**, companions are passive follo
 ### Prerequisites
 
 * **The Witcher 3: Wild Hunt**: Remastered update (**v5.00+**).
-* **Multi Companion Mod Remastered (MCMR)**: Installed and functioning ([Nexus Mods](https://www.nexusmods.com/witcher3/mods/13144)).
+* **Multi Companion Mod Remastered (MCMR)**: Installed and functioning ([Nexus Mods](https://www.nexusmods.com/witcher3/mods/13144)). Use the current release; an outdated or Script-Merger-shadowed `MCM_DialogueManager` will fail compilation with `Could not find function 'IsBusy'` / `'lastProgress' is not a member`.
 * **Debug Console Enabled**: Add `DBGConsoleOn=true` under `[General]` in `<The Witcher 3>\bin\config\base\general.ini`.
+
+> **Compatibility: Almighty Geralt.** This mod needs the real MCMR stack (`modMCME_Remastered`). The `modAlmightyGeralt_Companions` module is a fork of an older MCME codebase: it compiles against our scripts (the AG author added a shim for that), but it handles companions differently at runtime. Its dialogue hook fires the native Talk interaction on top of ours, and its NPC manager can teleport or destroy a follower mid-scene. Under that fork you may see dialogs closing after a second, companions vanishing, or scenes playing invisibly while the game holds your input. The supported setup is vanilla MCMR plus Almighty Geralt without its companions module. If you enabled AG's "no dialog timer" or "hold to skip" options, turn them off: the first freezes game time during scenes, the second auto-skips them.
 
 ### Installation
 
@@ -215,9 +230,9 @@ In vanilla **Multi Companion Mod Enhanced (MCME)**, companions are passive follo
    * `bin/config/r4game/user_config_matrix/pc/modMCME_AutonomousRomance.xml` → `<Witcher 3>/bin/config/r4game/user_config_matrix/pc/modMCME_AutonomousRomance.xml`
 3. Launch the game. Witcher 3 will automatically compile the scripts on first startup.
 4. **No Script Merger is needed.** Because the mod uses `@wrapMethod` annotations and touches zero base files, no merging is required.
-5. **Input bindings (consent key):** consent works out of the box — **C** on keyboard and **D-pad Left/Right** on gamepad are detected through the standard `SwordSheathe` binding. The mod also ships `Mods/modMCME_AutonomousRomance/MCME_AR.input.settings.txt` registering a dedicated `MCM_AR_Consent` action:
+5. **Input bindings (consent key):** consent works out of the box — **C** on keyboard and **D-pad Left/Right** on gamepad are detected through the standard `SwordSheathe` binding. The mod also ships `Mods/modMCME_AutonomousRomance/input.settings.txt` registering a dedicated `MCM_AR_Consent` action:
    * **TW3 Mod Manager:** merges `.txt` input fragments automatically — nothing to do.
-   * **Vortex / manual install:** append the file's contents to your `Documents\The Witcher 3\input.settings` under each matching context section (`[Exploration]`, `[Combat]`, `[Horse]`, `[Boat]`, `[Swimming]`). Optional — if skipped, consent still works via `SwordSheathe`.
+   * **Vortex / manual install:** append the file's contents to your `Documents\The Witcher 3\input.settings` under each matching context section (`[Exploration]`, `[Combat]`, `[Horse]`, `[Boat]`, `[Swimming]`). If skipped, consent falls back to `SwordSheathe` — fine on keyboard, but **recommended for gamepad users**: vanilla D-pad Left/Right draws swords, so without the merge your consent key is whatever Sword Sheathe is bound to (check the glyph shown in the prompt — that's your real key).
 
 ### First Run & Verification
 
@@ -242,7 +257,7 @@ In vanilla **Multi Companion Mod Enhanced (MCME)**, companions are passive follo
 
 ### In-Game Configuration (MCM Menu)
 
-Navigate to **Options → Gameplay / Mods → MCME - Autonomous Romance**:
+Navigate to **Options → Mods → Autonomous Romance**:
 
 | Setting | Range / Options | Default | Description |
 | :--- | :---: | :---: | :--- |
@@ -252,7 +267,7 @@ Navigate to **Options → Gameplay / Mods → MCME - Autonomous Romance**:
 | **Affinity Multiplier** | 0.5x - 5.0x | `1.0x` | Adjusts how quickly dynamic relationship points are earned. |
 | **Jealousy Mode** | Jealousy / Polyamory | `Jealousy` | On: rivalry banter and jealousy-only actions. Off (Polyamory): jealousy-only actions are skipped. |
 | **Companion Chatter** | Quiet / Default / Chatty | `Default` | How talkative companions are: Quiet ~30%, Default ~65%, Chatty ~100% of ambient bark opportunities. |
-| **Sandbox Mode** | On / Off | `Off` | Bypasses story quest gates and maximizes affinity for instant testing. |
+| **Sandbox Mode** | On / Off | `Off` | Bypasses story quest gates and maximizes affinity for instant testing. It does **not** bypass environmental gates: intimate invitations still require a valid romance spot nearby, an installed scene file, and normal safety checks — use `ar_eval` to see what's blocking. |
 | **Require Player Consent [C] Prompt** | On / Off | `On` | Requires `[C]` key confirmation before romantic invitations and intimate scenes. |
 | **Debug HUD Messages** | On / Off | `Off` | Shows `[AR]` diagnostic notifications on the HUD. |
 | **Ciri: MCME Adult Mode** | On / Off | `Off` | Off keeps Ciri strictly lore-friendly (family-bond hug only). On unlocks her autonomous kiss and intimate scenes. |
@@ -260,7 +275,7 @@ Navigate to **Options → Gameplay / Mods → MCME - Autonomous Romance**:
 ### Player Consent Safeguard ([C] Key)
 
 When a companion approaches Geralt for a romantic date or intimate scene:
-1. A subtle HUD notification appears: `[C] Respond to <Companion>` - the prompt renders the **actual key/button bound on your setup** (keyboard or gamepad glyph), not a hardcoded letter.
+1. A subtle HUD notification appears with her name and intent (e.g. `[C] Kiss Yennefer`, `[C] Give Est Est to Keira`) - the prompt renders the **actual key/button bound on your setup** (keyboard or gamepad glyph), not a hardcoded letter.
 2. You have **20 seconds** to respond - hold the shown key (default **C** / gamepad **D-pad Left or Right**) for about a second, or double-tap it quickly.
 3. On accept, the cutscene or romantic dialogue smoothly initiates.
 4. If you walk more than ~12 m away or let the timer expire, the companion offers an understanding remark. Declining or ignoring the prompt starts an escalating rejection cooldown for that action (5, 15, then 30 minutes); affinity is not reduced.
@@ -295,45 +310,41 @@ Open the game console (`~`) to execute diagnostic commands:
 | Command | Parameters | Description |
 | :--- | :--- | :--- |
 | `ar_kiss` | `optional npc: string` | Triggers the autonomous kiss scene for the target companion (all romanced companions on the `woman_base` rig; Ciri requires Adult Mode; unavailable for Anna Henrietta, Vivienne, Orianna - noble rig). |
+| `ar_intimate` | `optional npc: string` | Triggers the Tier 4 intimate scene invitation directly (respects campfire/naughty point conditions; alerts HUD if Ciri is in Lore Mode, or if the target has no usable intimate scene). |
 | `ar_hug` | None | Triggers Ciri's warm family embrace interaction. |
+| `ar_dance` | `optional npc: string` | Test command: runs one dance or refusal for a companion in the party, skipping the tavern/campfire gate. Names: `priscilla`, `triss`, `keira`, `shani`, `tomira`, `cerys`, `ves`, `ciri`, `philippa`, `yen`, `ciri_refuse`. |
 | `ar_affinity` | `name: string, points: int` | Adds or subtracts affinity points for a given companion (e.g., `ar_affinity('yen', 25)`). |
-| `ar_gift` | None | Tests the gifting logic manually, consuming a drink and awarding affinity. |
-| `ar_dress` | None | Restores default companion outfits. |
-| `ar_undress` | None | Switches companion to underwear mesh for intimate scenes. |
-| `ar_naked` | None | Switches companion to naked mesh. |
+| `ar_gift` | `optional npc: string` | Tests the gifting logic manually, consuming a drink and awarding affinity. |
+| `ar_dress` | `optional npc: string` | Restores default companion outfits. |
+| `ar_undress` | `optional npc: string` | Switches companion to underwear mesh for intimate scenes. |
+| `ar_naked` | `optional npc: string` | Switches companion to naked mesh. |
 
-#### Diagnostics, Audio & TW3SE
+#### Diagnostics & Audio
 | Command | Parameters | Description |
 | :--- | :--- | :--- |
-| `ar_debug` | None | Toggles real-time decision digest messages on the HUD. |
-| `ar_logdump` | `lines: int` (default 25) | Dumps the last N lines of the internal diagnostic buffer to the HUD. |
+| `ar_debug` | `optional mode: int` | Toggles real-time decision digest messages on the HUD. |
+| `ar_logdump` | `optional lines: int` (default 15) | Dumps the last N lines of the internal diagnostic buffer to the HUD. |
 | `ar_bootlog` | None | Prints the initialization sequence and registered companion count. |
 | `ar_diag` | None | Detailed memory and state dump for all companion actors. |
+| `ar_downtime` | None | Downtime probe: raw classifier signals (player state/action), detected kind (meditation/bed), bed AP sides, chosen partner and channel cooldown. |
 | `ar_line` | `name: string, lineId: int` | Plays a specific voice line ID on the targeted companion for audio testing. |
 | `ar_probeanim` | `name: string, anim: string` | Probes whether a specific animation slot is supported on the companion mesh. |
-| `ar_devinfo` | None | (TW3SE) Displays development build version and extender status. |
-| `ar_reload` | None | (TW3SE) Reloads development configuration on the fly. |
-| `ar_test_e2e` | None | (TW3SE) Runs the 28 live E2E assertions (dev builds only). |
-| `ar_neartags` | None | Dev audit: lists entity tags within 10 m (campfire detection). |
-| `ar_taverndebug` | None | Dev audit: tavern-detection entity scan. |
-| `ar_probeanim2` | `target: string, anim: name` | Dev probe: applies an animation to a companion or the player. |
-| `ar_probeinject` | `target: string, animset: string, anim: name` | Dev probe: injects an animset into a live entity and tries cutscene tracks. |
-| `ar_tour_scenes` | `optional npc: string` | Dev: plays the `ar_*` scenes of a companion for testing. |
+
+> **No Script Extender required:** this mod is 100% vanilla-compatible WitcherScript Remastered and does not require TW3SE or any external extender.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ### Runtime Diagnostics & Logging
 
-The mod logs through two independent channels:
+The mod logs through the standard engine script log (`scriptslog.txt`):
 
-1. **TW3SE dev channel (recommended for development; tooling not included in this repository):** every `[AR]` line lands in `bin\x64_dx12\tw3se\out\ar_log.txt` and on the `\\.\pipe\tw3se` named pipe - no launch flags needed. `scripts\run_game_dev.bat` starts the game plus a live-follow window; `scripts\tw3se_pipe.ps1 -Cmd "exec ar_status()"` runs console commands without opening `~`.
-2. **Vanilla `scriptslog.txt`:** launch with `scripts\run_game_debug.bat` (`-debugscripts` only - **never add `-net`**, it redirects output to a dead debug socket and kills the file). Verify `user.settings` contains:
+1. Launch with `scripts\run_game_debug.bat` (`-debugscripts` only - **never add `-net`**, it redirects output to a dead debug socket and kills the file). Verify `user.settings` contains:
    ```ini
    [Scripts]
    DebugScriptsLogDir=Documents\The Witcher 3
    DebugScriptsForceFlush=true
    ```
-3. Autonomous Romance logs under the channel `MCME_Romance`. Note: the `[AR]` diagnostic channel is intentionally English-only in every game language.
+2. Autonomous Romance logs under the channel `MCME_Romance`. Note: the `[AR]` diagnostic channel is intentionally English-only in every game language.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -350,10 +361,11 @@ Mods/modMCME_AutonomousRomance/content/scripts/local/romance/
 ├── MCM_RomanceCore.ws          # Configurable decision tick + 10s ambient loop, idle-suspend jobs, safety checks, input listener
 ├── MCM_RomanceAffinity.ws      # Stateless 3-pillar affinity resolver & MCM config wrapper
 ├── MCM_RomanceInteraction.ws   # Interaction base classes, Action Registry, consent loop
-├── MCM_RomanceActions_Main.ws  # Actions & authentic voice lines for Yen, Triss, Keira, Shani
+├── MCM_RomanceActions_Main.ws  # Actions & voice lines for Yen, Triss, Keira, Shani + Rosa, Tomira, Ciri and the shared situational barks
 ├── MCM_RomanceActions_DLC.ws   # Modular actions for the DLC roster (Anna Henrietta, Vivienne, Cerys, Syanna, Philippa, Ves, Salma, Priscilla, Edna, Fringilla, Margarita, Orianna)
 ├── MCM_RomanceQoL.ws           # Flash UI outfit injection in MCME, outfit persistence, gifts
-└── MCM_RomanceTw3seDev.ws      # TW3SE developer layer (native C++ imports, IPC pipe, key polling)
+├── MCM_RomanceE2EDev.ws        # In-game E2E assertion suite (dev builds only - removed from release packages)
+└── MCM_RomanceTw3seDev.ws      # TW3SE developer layer (native C++ imports, IPC pipe, key polling) - release packages swap in an identical-signature stub, so the mod never requires TW3SE
 ```
 
 ### Zero Script Merger Conflicts
