@@ -1,7 +1,7 @@
 /*****************************************************************************/
 /* MCME Autonomous Romance - Core Module                                     */
 /* Główna pętla, timery i context tracker                                    */
-/* Wersja: 2.1.0  |  Wymaga: modMCME_Remastered 5.00+                       */
+/* Wersja: 2.2.0  |  Wymaga: modMCME_Remastered 5.00+                       */
 /*****************************************************************************/
 
 // Singleton dostępny globalnie, inicjowany przy spawnie gracza
@@ -425,7 +425,7 @@ statemachine class MCM_AutonomousRomanceCore
 		masterDef.parts.PushBack(part);
 		masterDef.entity         = job.npc;
 		masterDef.manualSlotName = 'GAMEPLAY_SLOT';
-		masterDef.freezeAtEnd    = false;
+		masterDef.freezeAtEnd    = true;
 
 		job.syncSeq = job.syncInst.RegisterMaster(masterDef);
 		if (job.syncSeq == -1)
@@ -524,11 +524,6 @@ statemachine class MCM_AutonomousRomanceCore
 			if (job.syncInst)
 			{
 				job.syncInst.Update(dt / MaxF(theGame.GetTimeScale(), 1.0));
-				if (job.animPhase == 2 && job.syncInst.HasEnded() && theGame.GetEngineTimeAsSeconds() >= job.reissueAt)
-				{
-					StartIdleSyncAnim(job, job.anim);
-					job.reissueAt = theGame.GetEngineTimeAsSeconds() + 1.0;
-				}
 			}
 			if (job.isBed && job.phase >= 1 && job.animPhase != 3)
 			{
@@ -1319,8 +1314,15 @@ statemachine class MCM_AutonomousRomanceCore
 			return;
 		}
 
-		// Prog postoju 50s - za krotko, czekamy.
-		if (nowT - arIdleSince < 50.0) return;
+		// Prog postoju 50s (lub 6s przy ognisku) - za krotko, czekamy.
+		if (cachedContext.isNearCampfire || MCM_AR_IsNearCampfire())
+		{
+			if (nowT - arIdleSince < 6.0) return;
+		}
+		else
+		{
+			if (nowT - arIdleSince < 50.0) return;
+		}
 
 		// (Fazy jobow moving->posed: UpdateIdleAmbient na timerze ~10s.)
 
@@ -1937,6 +1939,7 @@ statemachine class MCM_AutonomousRomanceCore
 		interactionBusy = true;
 		busyNpc = npc;
 		busyStartTime = theGame.GetEngineTimeAsSeconds();
+		RemoveIdleJobFor(npc);
 		return true;
 	}
 
@@ -2094,9 +2097,14 @@ statemachine class MCM_AutonomousRomanceCore
 	public function MCM_AR_IsNearCampfire() : bool
 	{
 		var entities : array<CEntity>;
+		var fireEnts : array<CGameplayEntity>;
 		var entStr   : string;
 		var i        : int;
 		var dist     : float;
+
+		// Ogniska spawnowane przez mody bez tagow (np. Chill Out CO_Campfire extends W3Campfire)
+		FindGameplayEntitiesInSphere(fireEnts, thePlayer.GetWorldPosition(), 6.0, 1,,,,'W3Campfire');
+		if (fireEnts.Size() > 0) return true;
 
 		// Ogniska: tag 'campfire' lub silnikowy 'CarriesOpenFire' (palone light entities)
 		theGame.GetEntitiesByTag('campfire', entities);
@@ -2278,6 +2286,14 @@ state ProcessingTick in MCM_AutonomousRomanceCore
 			// czyscimy flage, zeby nie wymuszala odrzuconego ticku w kolko.
 			if (parent.debugForceAction != '')
 			{
+				// Jesli blokada wynika TYLKO z otwartej konsoli (~ -> EMPTY_CONTEXT),
+				// nie kasuj akcji! Gracz wlasnie wpisal komende i za sekunde zamknie konsole.
+				if (theInput.GetContext() == 'EMPTY_CONTEXT' && thePlayer.GetCurrentStateName() == 'Exploration' && !thePlayer.IsInCombat())
+				{
+					parent.GotoState('Idle');
+					return;
+				}
+
 				MCM_AR_Log("[AR] force '" + NameToString(parent.debugForceAction) + "' odrzucona: " + safeReason);
 				parent.debugForceAction = '';
 				parent.debugForceTarget = '';
@@ -2794,14 +2810,47 @@ exec function ar_status()
 	LogChannel('MCM_AR', "[AR status] step10: done");
 }
 
+exec function ar_unhide()
+{
+	var companions : array<CNewNPC>;
+	var i          : int;
+	var scm        : mod_scm;
+
+	MCM_AR_GetActiveCompanions(companions);
+	for (i = 0; i < companions.Size(); i += 1)
+	{
+		if (companions[i])
+		{
+			companions[i].SetHideInGame(false);
+		}
+	}
+	scm = mod_scm_GetSCM();
+	if (scm && scm.NaughtyManager)
+	{
+		scm.NaughtyManager.ShowAllExcept(NULL);
+	}
+	thePlayer.DisplayHudMessage("[AR] Wszystkie towarzyszki odkryte (SetHideInGame false)!");
+}
+
 exec function ar_reset()
 {
-	var core : MCM_AutonomousRomanceCore;
+	var core       : MCM_AutonomousRomanceCore;
+	var companions : array<CNewNPC>;
+	var i          : int;
+
 	core = MCM_AR_GetCore();
 	if (core)
 	{
 		core.ResetAllCooldowns();
-		thePlayer.DisplayHudMessage("[AR] All cooldowns reset (-9999s)!");
+		MCM_AR_GetActiveCompanions(companions);
+		for (i = 0; i < companions.Size(); i += 1)
+		{
+			if (companions[i])
+			{
+				companions[i].SetHideInGame(false);
+			}
+		}
+		thePlayer.DisplayHudMessage("[AR] All cooldowns reset (-9999s) + companions unhidden!");
 	}
 }
 
@@ -3506,7 +3555,7 @@ exec function ar_neartags()
 			tagStr += NameToString(tags[j]);
 		}
 
-		if (ent.HasTag('campfire') || ent.HasTag(theGame.params.TAG_OPEN_FIRE))
+		if (ent.HasTag('campfire') || ent.HasTag(theGame.params.TAG_OPEN_FIRE) || (W3Campfire)ent)
 		{
 			campfires += 1;
 			tagStr += "  <<<<< FIRE";
@@ -3529,7 +3578,7 @@ exec function ar_neartags()
 		}
 	}
 
-	MCM_AR_Log("encje z tagiem 'campfire': " + campfires);
+	MCM_AR_Log("encje 'campfire' (tag/klasa): " + campfires);
 }
 
 exec function ar_taverndebug()
@@ -3590,7 +3639,7 @@ exec function ar_kiss(optional npcStr : string)
 			core.debugForceAction = 'shani_night_relax';
 			core.debugForceTarget = 'shani';
 		}
-		else if (npcStr == "anarietta" || npcStr == "anna" || npcStr == "anna_henrietta")
+		else if (npcStr == "anarietta" || npcStr == "henrietta" || npcStr == "anna_henrietta")
 		{
 			thePlayer.DisplayHudMessage("[AR] anna_henrietta: no kiss tier - noble rig limit, by design");
 			return;
@@ -3771,6 +3820,36 @@ exec function ar_hug()
 	}
 }
 
+// Kanonikalizacja aliasow i wariantow scmcc.data.nam na wspolny klucz
+// dopasowania towarzyszki (stosowana po obu stronach porownania).
+function MCM_AR_CanonCompanionName(s : string) : string
+{
+	if      (s == "yen")                                return "yennefer";
+	else if (s == "keira")                              return "keira_metz";
+	else if (s == "anarietta" || s == "henrietta")       return "anna_henrietta";
+	else if (s == "stenger" || s == "celina" || s == "barons_wife") return "barons_wife_celina";
+	else if (s == "corine" || s == "corinne" || s == "tilly")       return "dreamer_corine_tilly";
+	else if (s == "ida" || s == "emean")                return "ida_emean_aep_sivney";
+	else if (s == "irina" || s == "renarde")            return "irina_renarde";
+	else if (s == "eveline" || s == "gallo")            return "q603_circus_artist_companion";
+	else if (s == "birna")                              return "lady_bran";
+	else if (s == "sasha" || s == "cantarella")         return "sq306_sacha";
+	else if (s == "jutta")                              return "mq2038_shieldmaiden";
+	else if (s == "vivienne")                           return "sq701_vivienne";
+	else if (s == "cerys")                              return "becca";
+	else if (s == "philippa" || s == "filippa")         return "philippa_eilhart";
+	else if (s == "salma")                              return "mh303_succbus_v2";
+	else if (s == "pryscilla")                          return "priscilla";
+	else if (s == "edna")                               return "edna_var_attre";
+	else if (s == "fringilla")                          return "fringilla_vigo";
+	else if (s == "margaritta")                         return "margarita";
+	else if (s == "oriana" || s == "orianna")           return "vampire_diva";
+	else if (s == "rosa")                               return "rosa_var_attre";
+	else if (s == "tomira")                             return "prologue_village_herbalist";
+	else if (s == "ciri")                               return "cirilla";
+	return s;
+}
+
 exec function ar_intimate(optional npcStr : string)
 {
 	var core       : MCM_AutonomousRomanceCore;
@@ -3779,33 +3858,37 @@ exec function ar_intimate(optional npcStr : string)
 	var minDist    : float;
 	var dist       : float;
 	var i          : int;
-	var nam        : name;
+	var cmpStr     : string;
+	var matched    : bool;
+	var actionName : name;
+	var targetName : name;
 
 	core = MCM_AR_GetCore();
 	if (!core) return;
 
 	npcStr = StrLower(npcStr);
 
+	// Jeden scan: nearestNpc = najblizszy follower (auto-pick dla pustego
+	// argumentu oraz safe-fallback gdy podane imie nie ma aktywnej towarzyszki).
+	MCM_AR_GetActiveCompanions(companions);
+	minDist = 999.0;
+	for (i = 0; i < companions.Size(); i += 1)
+	{
+		if (!companions[i] || !companions[i].scmcc || !companions[i].scmcc.data) continue;
+		if (!companions[i].HasTag('mod_scm_IsFollowing')) continue;
+		dist = VecDistance(thePlayer.GetWorldPosition(), companions[i].GetWorldPosition());
+		if (dist < minDist)
+		{
+			minDist = dist;
+			nearestNpc = companions[i];
+		}
+	}
+
 	if (npcStr == "")
 	{
-		MCM_AR_GetActiveCompanions(companions);
-		minDist = 999.0;
-		for (i = 0; i < companions.Size(); i += 1)
-		{
-			if (!companions[i] || !companions[i].scmcc || !companions[i].scmcc.data) continue;
-			if (!companions[i].HasTag('mod_scm_IsFollowing')) continue;
-			dist = VecDistance(thePlayer.GetWorldPosition(), companions[i].GetWorldPosition());
-			if (dist < minDist)
-			{
-				minDist = dist;
-				nearestNpc = companions[i];
-			}
-		}
-
 		if (nearestNpc)
 		{
-			nam = nearestNpc.scmcc.data.nam;
-			npcStr = StrLower(NameToString(nam));
+			npcStr = StrLower(NameToString(nearestNpc.scmcc.data.nam));
 		}
 		else
 		{
@@ -3813,105 +3896,90 @@ exec function ar_intimate(optional npcStr : string)
 			return;
 		}
 	}
+	else
+	{
+		npcStr = MCM_AR_CanonCompanionName(npcStr);
 
-	if (npcStr == "yen" || npcStr == "yennefer")
-	{
-		core.debugForceAction = 'yen_intimate_invite';
-		core.debugForceTarget = 'yennefer';
+		// Zamierzone blokady/gate na ZADANYM imieniu - przed safe-fallbackiem,
+		// zeby pytanie o zablokowana towarzyszke nie podmienialo celu.
+		if (npcStr == "cirilla" && !thePlayer.MCM_AR_GetConfig().IsCiriAdultMode())
+		{
+			thePlayer.DisplayHudMessage("[AR] cirilla: intimate tier disabled in Lore-Friendly mode (enable Adult Mode in MCM)");
+			MCM_AR_Log("[AR] ar_intimate: cirilla intimate tier is disabled in Lore-Friendly mode");
+			return;
+		}
+
+		// Krok 1: Dopasowanie scisle (exact nam, canon, niceName, displayName)
+		matched = false;
+		for (i = 0; i < companions.Size(); i += 1)
+		{
+			if (!companions[i] || !companions[i].scmcc || !companions[i].scmcc.data) continue;
+			cmpStr = StrLower(NameToString(companions[i].scmcc.data.nam));
+			if (cmpStr == npcStr || MCM_AR_CanonCompanionName(cmpStr) == npcStr
+				|| (companions[i].scmcc.data.niceName != '' && StrLower(NameToString(companions[i].scmcc.data.niceName)) == npcStr)
+				|| StrLower(MCM_AR_GetCompanionDisplayName(companions[i])) == npcStr)
+			{
+				nearestNpc = companions[i];
+				matched = true;
+				break;
+			}
+		}
+
+		// Krok 2: Elastyczne dopasowanie substring jako fallback (min. 3 znaki)
+		if (!matched && StrLen(npcStr) >= 3)
+		{
+			for (i = 0; i < companions.Size(); i += 1)
+			{
+				if (!companions[i] || !companions[i].scmcc || !companions[i].scmcc.data) continue;
+				cmpStr = StrLower(NameToString(companions[i].scmcc.data.nam));
+				if (StrContains(cmpStr, npcStr) || StrContains(npcStr, cmpStr)
+					|| (companions[i].scmcc.data.niceName != '' && StrContains(StrLower(NameToString(companions[i].scmcc.data.niceName)), npcStr))
+					|| StrContains(StrLower(MCM_AR_GetCompanionDisplayName(companions[i])), npcStr))
+				{
+					nearestNpc = companions[i];
+					matched = true;
+					break;
+				}
+			}
+		}
+
+		if (!nearestNpc)
+		{
+			thePlayer.DisplayHudMessage("[AR intimate] Nie znaleziono towarzyszki: " + npcStr);
+			return;
+		}
+		if (!matched)
+		{
+			thePlayer.DisplayHudMessage("[AR intimate] '" + npcStr + "' bez aktywnej towarzyszki - fallback: " + NameToString(nearestNpc.scmcc.data.nam));
+			MCM_AR_Log("[AR intimate] requested '" + npcStr + "' has no active companion - falling back to " + NameToString(nearestNpc.scmcc.data.nam));
+			npcStr = StrLower(NameToString(nearestNpc.scmcc.data.nam));
+		}
 	}
-	else if (npcStr == "triss")
-	{
-		core.debugForceAction = 'triss_intimate_invite';
-		core.debugForceTarget = 'triss';
-	}
-	else if (npcStr == "keira" || npcStr == "keira_metz")
-	{
-		core.debugForceAction = 'keira_intimate_invite';
-		core.debugForceTarget = 'keira_metz';
-	}
-	else if (npcStr == "shani")
-	{
-		core.debugForceAction = 'shani_intimate_invite';
-		core.debugForceTarget = 'shani';
-	}
-	else if (npcStr == "anarietta" || npcStr == "anna" || npcStr == "anna_henrietta")
+
+	// Kanonikalizacja rozwiazanego nam (np. follower z nam 'anarietta').
+	npcStr = MCM_AR_CanonCompanionName(npcStr);
+	targetName = nearestNpc.scmcc.data.nam;
+
+	// Dedykowane invite i gate'y wg klucza - noble-rig (anarietta/vivienne/
+	// orianna) jest wylaczony z wildcard generic (IsWomanBaseCompanion),
+	// a cirilla ma dedykowana akcje z wlasnym gate Adult Mode.
+	if (npcStr == "anna_henrietta")
 	{
 		core.debugForceAction = 'anarietta_intimate_invite';
-		core.debugForceTarget = 'anna_henrietta';
 	}
-	else if (npcStr == "vivienne" || npcStr == "sq701_vivienne")
+	else if (npcStr == "sq701_vivienne")
 	{
 		core.debugForceAction = 'vivienne_intimate_invite';
-		core.debugForceTarget = 'sq701_vivienne';
 	}
-	else if (npcStr == "cerys" || npcStr == "becca")
-	{
-		core.debugForceAction = 'cerys_intimate_invite';
-		core.debugForceTarget = 'becca';
-	}
-	else if (npcStr == "syanna")
-	{
-		core.debugForceAction = 'syanna_intimate_invite';
-		core.debugForceTarget = 'syanna';
-	}
-	else if (npcStr == "philippa" || npcStr == "filippa" || npcStr == "philippa_eilhart")
-	{
-		core.debugForceAction = 'philippa_intimate_invite';
-		core.debugForceTarget = 'philippa_eilhart';
-	}
-	else if (npcStr == "ves")
-	{
-		core.debugForceAction = 'ves_intimate_invite';
-		core.debugForceTarget = 'ves';
-	}
-	else if (npcStr == "salma" || npcStr == "mh303_succbus_v2")
-	{
-		core.debugForceAction = 'salma_intimate_invite';
-		core.debugForceTarget = 'mh303_succbus_v2';
-	}
-	else if (npcStr == "priscilla" || npcStr == "pryscilla")
-	{
-		core.debugForceAction = 'priscilla_intimate_invite';
-		core.debugForceTarget = 'priscilla';
-	}
-	else if (npcStr == "edna" || npcStr == "edna_var_attre")
-	{
-		core.debugForceAction = 'edna_intimate_invite';
-		core.debugForceTarget = 'edna_var_attre';
-	}
-	else if (npcStr == "fringilla" || npcStr == "fringilla_vigo")
-	{
-		core.debugForceAction = 'fringilla_intimate_invite';
-		core.debugForceTarget = 'fringilla_vigo';
-	}
-	else if (npcStr == "margarita" || npcStr == "margaritta")
-	{
-		core.debugForceAction = 'margarita_intimate_invite';
-		core.debugForceTarget = 'margarita';
-	}
-	else if (npcStr == "orianna" || npcStr == "oriana" || npcStr == "vampire_diva")
+	else if (npcStr == "vampire_diva")
 	{
 		core.debugForceAction = 'orianna_intimate_invite';
-		core.debugForceTarget = 'vampire_diva';
 	}
-	else if (npcStr == "rosa" || npcStr == "rosa_var_attre")
-	{
-		thePlayer.DisplayHudMessage("[AR] rosa_var_attre: no intimate tier (stops at kisses, by design)");
-		MCM_AR_Log("[AR] ar_intimate: rosa_var_attre has no intimate tier (stops at kisses, by design)");
-		return;
-	}
-	else if (npcStr == "tomira" || npcStr == "prologue_village_herbalist")
-	{
-		thePlayer.DisplayHudMessage("[AR] tomira: no intimate tier (stops at kisses, by design)");
-		MCM_AR_Log("[AR] ar_intimate: tomira has no intimate tier (stops at kisses, by design)");
-		return;
-	}
-	else if (npcStr == "ciri" || npcStr == "cirilla")
+	else if (npcStr == "cirilla")
 	{
 		if (thePlayer.MCM_AR_GetConfig().IsCiriAdultMode())
 		{
 			core.debugForceAction = 'ciri_intimate_invite';
-			core.debugForceTarget = 'cirilla';
 		}
 		else
 		{
@@ -3920,16 +3988,22 @@ exec function ar_intimate(optional npcStr : string)
 			return;
 		}
 	}
+	else if (npcStr == "syanna")
+	{
+		core.debugForceAction = 'syanna_intimate_invite';
+	}
 	else
 	{
-		thePlayer.DisplayHudMessage("[AR intimate] Nieznana towarzyszka: " + npcStr);
-		return;
+		core.debugForceAction = 'generic_intimate_invite';
+		MCM_AR_Log("[AR intimate] Triggering intimate action for " + NameToString(targetName));
 	}
+	core.debugForceTarget = targetName;
 
+	actionName = core.debugForceAction;
 	core.ResetAllCooldowns();
 	MCM_AR_KickStagedTick(core);
-	thePlayer.DisplayHudMessage("[AR] Wymuszenie intymnosci: " + core.debugForceTarget);
-	MCM_AR_Log("[AR] ar_intimate: wymuszono akcje " + NameToString(core.debugForceAction) + " dla " + NameToString(core.debugForceTarget));
+	thePlayer.DisplayHudMessage("[AR] Wymuszenie intymnosci: " + NameToString(targetName));
+	MCM_AR_Log("[AR] ar_intimate: wymuszono akcje " + NameToString(actionName) + " dla " + NameToString(targetName));
 }
 
 

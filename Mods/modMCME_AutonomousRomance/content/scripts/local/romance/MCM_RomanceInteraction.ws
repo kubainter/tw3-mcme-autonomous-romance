@@ -97,6 +97,13 @@ class MCM_RomanceInteraction
 	private var lastExecTime   : float;
 	default lastExecTime = -9999.0;
 
+	// Niezalezne cooldowny i backoffy per-NPC dla akcji z pustym targetNpc (wildcard)
+	private var compCooldownNpcs  : array<name>;
+	private var compCooldownTimes : array<float>;
+	private var compRejectNpcs    : array<name>;
+	private var compRejectTimes   : array<float>;
+	private var compRejectCounts  : array<int>;
+
 	// Backoff po odmowie/zignorowaniu propozycji (5 -> 15 -> 30 min)
 	private var rejectedUntil  : float;
 	private var rejectCount    : int;
@@ -115,10 +122,132 @@ class MCM_RomanceInteraction
 		lastExecTime = -9999.0;
 		rejectedUntil = -1.0;
 		rejectCount = 0;
+		compCooldownNpcs.Clear();
+		compCooldownTimes.Clear();
+		compRejectNpcs.Clear();
+		compRejectTimes.Clear();
+		compRejectCounts.Clear();
+	}
+
+	// Pomocniczy index search dla tablic name (WitcherScript nie posiada array.Find)
+	private function FindCompNameIndex(compName : name, arr : array<name>) : int
+	{
+		var i : int;
+		for (i = 0; i < arr.Size(); i += 1)
+		{
+			if (arr[i] == compName) return i;
+		}
+		return -1;
+	}
+
+	// Sprawdzenie cooldownu i reject backoffu dla konkretnego NPC
+	public function IsCompanionOnCooldown(compName : name, cooldownSec : float) : bool
+	{
+		var nowT : float;
+		var idx  : int;
+
+		nowT = theGame.GetEngineTimeAsSeconds();
+		idx = FindCompNameIndex(compName, compCooldownNpcs);
+		if (idx >= 0)
+		{
+			if ((nowT - compCooldownTimes[idx]) < cooldownSec)
+			{
+				return true;
+			}
+		}
+		idx = FindCompNameIndex(compName, compRejectNpcs);
+		if (idx >= 0)
+		{
+			if (compRejectTimes[idx] > 0.0 && nowT < compRejectTimes[idx])
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public function RecordCompanionExecution(compName : name)
+	{
+		var nowT : float;
+		var idx  : int;
+
+		nowT = theGame.GetEngineTimeAsSeconds();
+		idx = FindCompNameIndex(compName, compCooldownNpcs);
+		if (idx >= 0)
+		{
+			compCooldownTimes[idx] = nowT;
+		}
+		else
+		{
+			compCooldownNpcs.PushBack(compName);
+			compCooldownTimes.PushBack(nowT);
+		}
+		idx = FindCompNameIndex(compName, compRejectNpcs);
+		if (idx >= 0)
+		{
+			compRejectTimes[idx] = -1.0;
+			compRejectCounts[idx] = 0;
+		}
+	}
+
+	public function RecordCompanionRejection(compName : name)
+	{
+		var nowT   : float;
+		var idx    : int;
+		var delay  : float;
+		var rCount : int;
+
+		nowT = theGame.GetEngineTimeAsSeconds();
+		idx = FindCompNameIndex(compName, compRejectNpcs);
+		if (idx < 0)
+		{
+			compRejectNpcs.PushBack(compName);
+			compRejectTimes.PushBack(-1.0);
+			compRejectCounts.PushBack(0);
+			idx = compRejectNpcs.Size() - 1;
+		}
+		rCount = compRejectCounts[idx] + 1;
+		compRejectCounts[idx] = rCount;
+		if (rCount <= 1)       delay = 300.0;
+		else if (rCount == 2)  delay = 900.0;
+		else                   delay = 1800.0;
+		compRejectTimes[idx] = nowT + delay;
+		MCM_AR_Log("[AR] Companion Reject: " + id + " comp=" + NameToString(compName) + " backoff " + delay + "s (x" + rCount + ")");
+	}
+
+	// Walidacja riga: true dla standardowego woman_base, false dla noble_woman_base / monster rig
+	public function IsWomanBaseCompanion(npc : CNewNPC) : bool
+	{
+		var nm : name;
+		if (!npc || !npc.scmcc || !npc.scmcc.data) return false;
+		if (!npc.IsWoman()) return false;
+		if (!npc.GetMovingAgentComponent() || npc.GetMovingAgentComponent().GetName() != "woman_base") return false;
+		nm = npc.scmcc.data.nam;
+		if (nm == 'anarietta' || nm == 'anna_henrietta' || nm == 'anna' ||
+		    nm == 'vivienne' || nm == 'sq701_vivienne' ||
+		    nm == 'oriana' || nm == 'orianna' || nm == 'vampire_diva' || nm == 'anabelle')
+		{
+			return false;
+		}
+		return true;
+	}
+
+	public function HasNaughtyScene(npc : CNewNPC) : bool
+	{
+		var nm : name;
+		if (!npc || !npc.scmcc || !npc.scmcc.data) return false;
+		nm = npc.scmcc.data.nam;
+		if (npc.scmcc.specialData && StrLen(npc.scmcc.specialData.naughtyScene) > 0) return true;
+		if (NaughtyScenePath(nm) != "") return true;
+		if (IsWomanBaseCompanion(npc) && MCM_AR_SceneExists("dlc\mod_mcme_autonomous_romance\dialogue\ar_shani_intimate_outdoor.w2scene"))
+		{
+			return true;
+		}
+		return false;
 	}
 
 	// Odmowa/ignorowanie promptu: narastający cooldown na tę akcję
-	public function MarkRejected()
+	public function MarkRejected(optional compName : name)
 	{
 		var backoff : float;
 		rejectCount += 1;
@@ -126,6 +255,14 @@ class MCM_RomanceInteraction
 		else if (rejectCount == 2)  backoff = 900.0;
 		else                        backoff = 1800.0;
 		rejectedUntil = theGame.GetEngineTimeAsSeconds() + backoff;
+		if (compName != '')
+		{
+			RecordCompanionRejection(compName);
+		}
+		else if (targetNpc != '')
+		{
+			RecordCompanionRejection(targetNpc);
+		}
 		MCM_AR_Log("[AR] Reject: " + id + " backoff " + backoff + "s (x" + rejectCount + ")");
 	}
 
@@ -136,11 +273,19 @@ class MCM_RomanceInteraction
 	}
 
 	// Sukces: cooldown + reset backoffu odmowy (wołane przez registry).
-	public function MarkExecuted()
+	public function MarkExecuted(optional compName : name)
 	{
 		lastExecTime = theGame.GetEngineTimeAsSeconds();
 		rejectedUntil = -1.0;
 		rejectCount = 0;
+		if (compName != '')
+		{
+			RecordCompanionExecution(compName);
+		}
+		else if (targetNpc != '')
+		{
+			RecordCompanionExecution(targetNpc);
+		}
 	}
 
 	public function CanExecute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
@@ -153,11 +298,30 @@ class MCM_RomanceInteraction
 	{
 		var now        : float;
 		var autoReason : string;
+		var compName   : name;
+		var idx        : int;
 
 		now = theGame.GetEngineTimeAsSeconds();
 
-		if ((now - lastExecTime) < cooldownSeconds) return "cooldown";
+		// 1. Sprawdzenie per-towarzysz dla akcji uniwersalnych (wildcard)
+		if (targetNpc == '' && npc && npc.scmcc && npc.scmcc.data)
+		{
+			compName = npc.scmcc.data.nam;
+			idx = FindCompNameIndex(compName, compRejectNpcs);
+			if (idx >= 0 && compRejectTimes[idx] > 0.0 && now < compRejectTimes[idx])
+			{
+				return "rejected_backoff";
+			}
+			idx = FindCompNameIndex(compName, compCooldownNpcs);
+			if (idx >= 0 && (now - compCooldownTimes[idx]) < cooldownSeconds)
+			{
+				return "cooldown";
+			}
+		}
+
+		// 2. Globalny cooldown i backoff akcji (lub akcji dedykowanej z targetNpc)
 		if (rejectedUntil > 0.0 && now < rejectedUntil) return "rejected_backoff";
+		if ((now - lastExecTime) < cooldownSeconds) return "cooldown";
 
 		// ForceRomance omija prog affinity
 		if (minAffinity > 0 && !MCM_AR_GetConfig().IsForceRomanceOn())
@@ -735,7 +899,15 @@ class MCM_RomanceInteraction
 	// Faza 1 (miękkie podejście): NPC kieruje się asynchronicznie ku graczowi.
 	protected latent function SoftApproach(npc : CNewNPC, player : CR4Player, targetDist : float)
 	{
+		var arCore : MCM_AutonomousRomanceCore;
+
 		if (!npc || !player) return;
+
+		arCore = MCM_AR_GetCore();
+		if (arCore)
+		{
+			arCore.RemoveIdleJobFor(npc);
+		}
 
 		// Zapamietaj follow przed ruszeniem - scena moze pozniej zdjac flage
 		// (toggle_follow), a EndInteraction musi wiedziec czy wracac do podazania.
@@ -1177,7 +1349,16 @@ class MCM_RomanceInteraction
 			if (!ok)
 			{
 				EndSoft(npc);
-				MarkRejected();
+				// Wildcard (targetNpc == '') potrzebuje nazwy NPC, inaczej
+				// RecordCompanionRejection nie zapisze backoffu per-towarzysz.
+				if (npc && npc.scmcc && npc.scmcc.data)
+				{
+					MarkRejected(npc.scmcc.data.nam);
+				}
+				else
+				{
+					MarkRejected();
+				}
 				MCM_AR_Log("[AR] Player declined/ignored: " + id);
 				return false;
 			}
@@ -1288,6 +1469,7 @@ class MCM_RomanceInteraction
 	protected latent function WaitForSceneEnd(npc : CNewNPC, optional timeoutSec : float, optional rehideWeapons : bool) : bool
 	{
 		var t              : float;
+		var quietT         : float;
 		var sawScene       : bool;
 		var playerReleased : bool;
 		var rehideT        : float;
@@ -1297,8 +1479,9 @@ class MCM_RomanceInteraction
 		sawScene = false;
 		playerReleased = false;
 		rehideT = -1.0;
+		quietT = 0.0;
 
-		Sleep(0.1);
+		Sleep(0.2);
 		t = 0.0;
 		while (t <= timeoutSec)
 		{
@@ -1309,41 +1492,68 @@ class MCM_RomanceInteraction
 				if (npc) HideActorWeapons(npc);
 				rehideT = t;
 			}
-			if (theGame.IsDialogOrCutscenePlaying() || (npc && npc.IsInGameplayScene()))
+
+			if (theGame.IsDialogOrCutscenePlaying())
 			{
 				sawScene = true;
+				quietT = 0.0;
 			}
-			// Koniec sceny dla gracza = zwolnij lock od razu. NPC moze
-			// jeszcze wychodzic z gameplay-sceny (IsInGameplayScene zostaje
-			// po koncu) - bez trzymania locka na graczu.
-			if (!playerReleased && sawScene && !theGame.IsDialogOrCutscenePlaying())
+			else if (!sawScene && t >= 8.0)
 			{
-				thePlayer.UnblockAction(EIAB_Movement, 'MCM_AR_interaction');
-				thePlayer.DisableLookAt();
-				playerReleased = true;
+				// Fast-fail: scena nie wystartowala w ciagu 8s - abortujemy martwe oczekiwanie
+				MCM_AR_Log("[AR] WaitForSceneEnd FAIL-START: scena nie wystartowala po 8s - przerywanie");
+				break;
 			}
-			if (t >= 4.0 &&
-			    !theGame.IsDialogOrCutscenePlaying() &&
-			    !(npc && npc.IsInGameplayScene()) &&
-			    !(npc && npc.IsSpeaking()))
+			else if (sawScene)
 			{
-				if (!playerReleased)
+				// Scena grala, ale silnik zglosil brak DialogOrCutscenePlaying
+				// (koniec w2scene lub natychmiastowy skip SPACJA).
+				if (npc && npc.IsSpeaking())
 				{
-					thePlayer.UnblockAction(EIAB_Movement, 'MCM_AR_interaction');
-					thePlayer.DisableLookAt();
+					quietT = 0.0;
 				}
-				return sawScene;
+				else
+				{
+					quietT += 0.15;
+				}
+
+				// Debounce 0.4s bez dialogu/cutscenki = scena definitywnie zakonczona.
+				// IsInGameplayScene celowo NIE blokuje wyjscia (flaga potrafi wisiec bez konca).
+				if (quietT >= 0.4)
+				{
+					if (!playerReleased)
+					{
+						thePlayer.UnblockAction(EIAB_Movement, 'MCM_AR_interaction');
+						thePlayer.DisableLookAt();
+					}
+					return true;
+				}
 			}
+
 			Sleep(0.15);
 			t += 0.15;
 		}
-		// Timeout – bezpiecznik: nigdy nie zostawiaj locka gracza na zawsze.
+
+		// Timeout / abort - pelny teardown sceny i odblokowanie sterowania
+		if (thePlayer)
+		{
+			thePlayer.StopAllScenes();
+		}
+		if (theGame.GetSyncAnimManager())
+		{
+			theGame.GetSyncAnimManager().BreakSyncIfPossible(npc);
+		}
+		if (npc)
+		{
+			npc.StopAllScenes();
+			npc.ActionCancelAll();
+		}
 		if (!playerReleased)
 		{
 			thePlayer.UnblockAction(EIAB_Movement, 'MCM_AR_interaction');
 			thePlayer.DisableLookAt();
 		}
-		return false;
+		return sawScene;
 	}
 
 	// Sceny autonomiczne kiss/hug: per-NPC .w2scene z wycietym PChoice we
@@ -1682,9 +1892,9 @@ class MCM_RomanceInteraction
 		if (!npc || !npc.scmcc || !npc.scmcc.data) return "";
 		nm = npc.scmcc.data.nam;
 
-		// Wariant A (TODO#12): Dedykowana plenerowa scena intymna dla glownych towarzyszek na woman_base
-		// Na stalym punkcie MCME (np. sypialnie/lozka) zachowujemy scene MCME, w plenerze/przy ognisku gramy scene autonomiczna.
-		if ((nm == 'shani' || nm == 'triss' || nm == 'yennefer' || nm == 'keira' || nm == 'keira_metz') && !IsOnNaughtyPoint())
+		// Wariant A (TODO#12): Dedykowana plenerowa scena intymna w plenerze/przy ognisku,
+		// lub jako glowny uniwersalny fallback dla towarzyszek bez stalego punktu MCME
+		if (IsWomanBaseCompanion(npc) && !IsOnNaughtyPoint())
 		{
 			if (MCM_AR_SceneExists("dlc\mod_mcme_autonomous_romance\dialogue\ar_shani_intimate_outdoor.w2scene"))
 			{
@@ -1703,7 +1913,20 @@ class MCM_RomanceInteraction
 				return npc.scmcc.specialData.naughtyScene;
 			}
 		}
-		return NaughtyScenePath(nm);
+		if (NaughtyScenePath(nm) != "")
+		{
+			return NaughtyScenePath(nm);
+		}
+
+		// Fallback na scene uniwersalna z wlasnego bundle dla kazdej kompatybilnej towarzyszki woman_base
+		if (IsWomanBaseCompanion(npc))
+		{
+			if (MCM_AR_SceneExists("dlc\mod_mcme_autonomous_romance\dialogue\ar_shani_intimate_outdoor.w2scene"))
+			{
+				return "dlc\mod_mcme_autonomous_romance\dialogue\ar_shani_intimate_outdoor.w2scene";
+			}
+		}
+		return "";
 	}
 
 	// Powod blokady scen autonomicznych (kiss/hug): "" = ok,
@@ -1937,6 +2160,16 @@ class MCM_RomanceInteraction
 		var eqI                : int;
 		var eqItem             : SItemUniqueId;
 		var savedNpcAppearance : name;
+		var appToRestore       : name;
+		var appStr             : string;
+		var allComps           : array<CNewNPC>;
+		var compI              : int;
+		var template           : CEntityTemplate;
+		var appNames           : array<name>;
+		var foundNakedApp      : name;
+		var foundUnderwearApp  : name;
+		var aStr               : string;
+		var appI               : int;
 
 		if (!thePlayer || !npc || !npc.scmcc || !npc.scmcc.data) return false;
 		nm = npc.scmcc.data.nam;
@@ -2053,6 +2286,11 @@ class MCM_RomanceInteraction
 		if (npc)
 		{
 			savedNpcAppearance = npc.GetAppearance();
+			appStr = StrLower(NameToString(savedNpcAppearance));
+			if (StrContains(appStr, "naked") || StrContains(appStr, "panties") || StrContains(appStr, "underwear") || StrContains(appStr, "lingerie"))
+			{
+				savedNpcAppearance = '';
+			}
 			if (!IsNameValid(savedNpcAppearance) && npc.scmcc && npc.scmcc.data && IsNameValid(npc.scmcc.data.appearance))
 			{
 				savedNpcAppearance = npc.scmcc.data.appearance;
@@ -2088,9 +2326,53 @@ class MCM_RomanceInteraction
 		{
 			scm.NaughtyManager.PreNaughty();
 		}
-		if (npc && npc.scmcc && npc.scmcc.specialData && IsNameValid(npc.scmcc.specialData.nakedAppearance))
+		if (npc && npc.scmcc)
 		{
-			npc.scmcc.applyNakedAppearance();
+			if (npc.scmcc.specialData && IsNameValid(npc.scmcc.specialData.nakedAppearance))
+			{
+				npc.scmcc.applyNakedAppearance();
+			}
+			else
+			{
+				// Postacie drugoplanowe: dynamiczny skan szablonu .w2ent (naked / underwear)
+				template = MCM_GetEntityTemplate(nm, npc.scmcc.data.depotPathPrefix);
+				if (template)
+				{
+					appNames.Clear();
+					GetAppearanceNames(template, appNames);
+					for (appI = 0; appI < appNames.Size(); appI += 1)
+					{
+						aStr = StrLower(NameToString(appNames[appI]));
+						if (foundNakedApp == '' && (StrContains(aStr, "naked") || StrContains(aStr, "nude")))
+						{
+							foundNakedApp = appNames[appI];
+						}
+						else if (foundUnderwearApp == '' && (StrContains(aStr, "underwear") || StrContains(aStr, "lingerie") || StrContains(aStr, "panties")))
+						{
+							foundUnderwearApp = appNames[appI];
+						}
+					}
+				}
+
+				if (foundNakedApp != '')
+				{
+					npc.ApplyAppearance(foundNakedApp);
+					MCM_AR_Log("[AR] IntimateScene: template naked appearance '" + NameToString(foundNakedApp) + "' for " + NameToString(nm));
+				}
+				else if (foundUnderwearApp != '')
+				{
+					npc.ApplyAppearance(foundUnderwearApp);
+					MCM_AR_Log("[AR] IntimateScene: template underwear appearance '" + NameToString(foundUnderwearApp) + "' for " + NameToString(nm));
+				}
+				else if (npc.scmcc.specialData && IsNameValid(npc.scmcc.specialData.underwearAppearance))
+				{
+					npc.ApplyAppearance(npc.scmcc.specialData.underwearAppearance);
+				}
+				else
+				{
+					MCM_AR_Log("[AR] IntimateScene: no naked/underwear appearance for " + NameToString(nm) + " - keeping current outfit");
+				}
+			}
 		}
 
 		if (isAutonomousScene)
@@ -2131,25 +2413,44 @@ class MCM_RomanceInteraction
 			MCM_AR_Log("[AR] IntimateScene WARN: " + NameToString(nm) +
 			           " nadal IsInGameplayScene po timeout - scena wiszaca");
 		}
-		// Przywrocenie ubioru towarzyszki sprzed sceny (SetAppearance dla CNewNPC w 5.00)
+		// Przywrocenie ubioru towarzyszki sprzed sceny (ApplyAppearance z resetem komponentow)
 		if (npc)
 		{
-			if (IsNameValid(savedNpcAppearance) && savedNpcAppearance != 'shani_naked' && savedNpcAppearance != 'naked' && savedNpcAppearance != 'naked_lingerie')
+			if (npc.scmcc && npc.scmcc.data && IsNameValid(npc.scmcc.data.appearance))
 			{
-				npc.SetAppearance(savedNpcAppearance);
+				appToRestore = npc.scmcc.data.appearance;
 			}
-			else if (npc.scmcc && npc.scmcc.data && IsNameValid(npc.scmcc.data.appearance))
+			else if (IsNameValid(savedNpcAppearance))
 			{
-				npc.SetAppearance(npc.scmcc.data.appearance);
+				appToRestore = savedNpcAppearance;
 			}
 			else
 			{
-				npc.SetAppearance(MCM_GetDefaultAppearance(nm));
+				appToRestore = MCM_GetDefaultAppearance(nm);
 			}
-			MCM_AR_Log("[AR] IntimateScene: restored appearance for " + NameToString(nm) + " to " + NameToString(npc.GetAppearance()));
+
+			appStr = StrLower(NameToString(appToRestore));
+			if (StrContains(appStr, "naked") || StrContains(appStr, "panties") || StrContains(appStr, "underwear") || StrContains(appStr, "lingerie"))
+			{
+				appToRestore = MCM_GetDefaultAppearance(nm);
+			}
+
+			if (IsNameValid(appToRestore))
+			{
+				npc.ApplyAppearance(appToRestore);
+				MCM_AR_Log("[AR] IntimateScene: restored appearance for " + NameToString(nm) + " to " + NameToString(appToRestore));
+			}
 		}
 
 		// Przywrocenie widocznosci wszystkim towarzyszom ukrytym przed scena
+		MCM_AR_GetActiveCompanions(allComps);
+		for (compI = 0; compI < allComps.Size(); compI += 1)
+		{
+			if (allComps[compI])
+			{
+				allComps[compI].SetHideInGame(false);
+			}
+		}
 		if (scm && scm.NaughtyManager)
 		{
 			scm.NaughtyManager.ShowAllExcept(NULL);
@@ -2461,6 +2762,12 @@ class MCM_RomanceActionRegistry
 			if (!action) continue;
 			if (action.id == actionId)
 			{
+				if (action.GetBlockReason(npc, player, ctx) != "")
+				{
+					MCM_AR_Log("[AR] TryExecuteSpecificAction BLOCKED: " + action.id + " reason=" + action.GetBlockReason(npc, player, ctx));
+					thePlayer.DisplayHudMessage("[AR] Akcja niemozliwa: " + action.GetBlockReason(npc, player, ctx));
+					return false;
+				}
 				core = MCM_AR_GetCore();
 				if (core && !core.BeginStagedInteraction(npc)) return false;
 
@@ -2470,7 +2777,7 @@ class MCM_RomanceActionRegistry
 
 				if (res)
 				{
-					action.MarkExecuted();
+					action.MarkExecuted(npcName);
 					affinity.AddAffinityPoints(npcName, 1);
 					if (action.triggerType == RTT_Scene || action.triggerType == RTT_Prompt)
 					{
@@ -2564,7 +2871,9 @@ class MCM_RomanceActionRegistry
 				}
 				if (result)
 				{
-					eligible[i].MarkExecuted();
+					// npcName wymagane: akcje wildcard (targetNpc == '') inaczej
+					// nie zapisza cooldownu per-towarzysz (RecordCompanionExecution).
+					eligible[i].MarkExecuted(npcName);
 					affinity.AddAffinityPoints(npcName, 1);
 					// Stempelek dla afterglow/konfrontacji zazdrości (T3/T4)
 					if (eligible[i].triggerType == RTT_Scene || eligible[i].triggerType == RTT_Prompt)
@@ -2591,6 +2900,7 @@ class MCM_RomanceActionRegistry
 		var npcName : name;
 		var result  : bool;
 
+		if (!npc || !npc.scmcc || !npc.scmcc.data) return false;
 		if (!MCM_AR_GetConfig().IsEnabled()) return false;
 
 		npcName = npc.scmcc.data.nam;
@@ -2617,7 +2927,7 @@ class MCM_RomanceActionRegistry
 		result = best.Execute(npc, player, ctx);
 		if (result)
 		{
-			best.MarkExecuted();
+			best.MarkExecuted(npcName);
 			affinity.AddAffinityPoints(npcName, 1);
 		}
 		return result;
@@ -2820,9 +3130,20 @@ function MCM_AR_GetCompanionDisplayName(npc : CNewNPC) : string
 		case 'orianna':          return "Orianna";
 		case 'cantarella':       return "Cantarella";
 		case 'tamara':           return "Tamara";
+		case 'dreamer_corine_tilly':        return "Corinne Tilly";
+		case 'ida_emean_aep_sivney':        return "Ida Emean";
+		case 'irina_renarde':               return "Irina Renarde";
+		case 'q603_circus_artist_companion': return "Eveline Gallo";
+		case 'barons_wife_celina':          return "Anna Stenger";
+		case 'lady_bran':                   return "Birna Bran";
+		case 'sq306_sacha':                 return "Sasha";
+		case 'mq2038_shieldmaiden':         return "Jutta";
+		case 'iris':                        return "Iris";
+		case 'vernossiel':                  return "Vernossiel";
 		default:
-			if (npc)
-				return npc.GetName();
+			// npc.GetName() na spawn'owanych NPC zwraca "" - fallback na niceName MCME.
+			if (npc && npc.scmcc && npc.scmcc.data && IsNameValid(npc.scmcc.data.niceName))
+				return NameToString(npc.scmcc.data.niceName);
 			return AR_T("ar_msg_companion", "Companion");
 	}
 }

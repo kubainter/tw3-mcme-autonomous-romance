@@ -16,7 +16,6 @@ function InitDefaultActions()
 	RegisterAction(new MCM_AR_Yen_NightInvitation       in this);
 	RegisterAction(new MCM_AR_Yen_Kiss                 in this);
 	RegisterAction(new MCM_AR_Yen_CampfireEvening       in this);
-	RegisterAction(new MCM_AR_Yen_IntimateInvite        in this);
 	RegisterAction(new MCM_AR_Yen_JealousySnark         in this);
 	RegisterAction(new MCM_AR_Yen_JealousySnark2        in this);
 	RegisterAction(new MCM_AR_Yen_TavernWine            in this);
@@ -28,7 +27,6 @@ function InitDefaultActions()
 	RegisterAction(new MCM_AR_Triss_NightWhisper        in this);
 	RegisterAction(new MCM_AR_Triss_CampfireWarmth      in this);
 	RegisterAction(new MCM_AR_Triss_KissInvite          in this);
-	RegisterAction(new MCM_AR_Triss_IntimateInvite      in this);
 	RegisterAction(new MCM_AR_Triss_JealousySnark       in this);
 	RegisterAction(new MCM_AR_Triss_GiftRequest        in this);
 
@@ -38,14 +36,12 @@ function InitDefaultActions()
 	RegisterAction(new MCM_AR_Keira_NightProposal       in this);
 	RegisterAction(new MCM_AR_Keira_Kiss               in this);
 	RegisterAction(new MCM_AR_Keira_CampfireWitch       in this);
-	RegisterAction(new MCM_AR_Keira_IntimateInvite      in this);
 	RegisterAction(new MCM_AR_Keira_GiftRequest        in this);
 
 	// ===== SHANI =====
 	RegisterAction(new MCM_AR_Shani_OneLinerFlirt       in this);
 	RegisterAction(new MCM_AR_Shani_PostCombatMedic     in this);
 	RegisterAction(new MCM_AR_Shani_NightRelax          in this);
-	RegisterAction(new MCM_AR_Shani_IntimateInvite      in this);
 	RegisterAction(new MCM_AR_Shani_GiftRequest        in this);
 
 	RegisterAction(new MCM_AR_Triss_TavernDrink         in this);
@@ -70,6 +66,9 @@ function InitDefaultActions()
 	RegisterAction(new MCM_AR_Ciri_IntimateInvite       in this);
 	RegisterAction(new MCM_AR_Rosa_GiftRequest          in this);
 	RegisterAction(new MCM_AR_Tomira_GiftRequest        in this);
+
+	// ===== GENERIC: zaproszenie intymne (wildcard woman_base) =====
+	RegisterAction(new MCM_AR_Generic_IntimateInvite    in this);
 }
 
 //  YENNEFER – Tier 1: Autonomiczny flirt / one-liner (kanał ambient)
@@ -256,53 +255,6 @@ class MCM_AR_Yen_CampfireEvening extends MCM_RomanceInteraction
 		npc.EnableDynamicLookAt(player, 6.0);
 		PlayBark(npc);
 		return true;
-	}
-}
-
-//  YENNEFER – Tier 4: Zaproszenie intymne przy "sweet spot" (NaughtyPoint)
-
-class MCM_AR_Yen_IntimateInvite extends MCM_RomanceInteraction
-{
-	default id              = 'yen_intimate_invite';
-	default targetNpc       = 'yennefer';
-	default minAffinity     = 80;
-	default cooldownSeconds = 3600.0;  // 1h
-	default triggerType     = RTT_Scene;
-	default weight          = 3;
-	default barkMimic       = 'flirt';
-	// ID 1123805: "That I regret we didn't try that earlier. Much earlier."
-	default lineId          = 1123805;
-	default lineText        = "That I regret we didn't try that earlier. Much earlier.";
-	default lineKey         = "ar_line_yen_intimate_invite";
-
-	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
-	{
-		if (!IsOnNaughtyPoint() && !(ctx.isNearCampfire && !ctx.isInInterior && !ctx.isInTavern))
-		{
-			return "no_naughty_point";
-		}
-		// NPC musi miec scene intymna + plik sceny musi istniec (DLC gate)
-		return IntimateSceneBlockReason(npc);
-	}
-
-	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
-	{
-		var ok : bool;
-
-		SoftApproach(npc, player, 2.2);
-		PlayBark(npc);
-
-		// Tier 4: scena intymna - zgoda gracza [C] zawsze wymagana.
-		ok = ApproachAndConsent(npc, player, 2.2, AR_T("ar_prompt_yen_intimate", "[C] Stay alone with Yennefer"), true);
-		if (!ok)
-		{
-			return false;
-		}
-
-		HardStage(npc, player, 1.5);
-		ok = PlayIntimateScene(npc);
-		EndInteraction(npc, player);
-		return ok;
 	}
 }
 
@@ -595,52 +547,6 @@ class MCM_AR_Triss_KissInvite extends MCM_RomanceInteraction
 	}
 }
 
-//  TRISS – Tier 4: Zaproszenie intymne przy "sweet spot"
-
-class MCM_AR_Triss_IntimateInvite extends MCM_RomanceInteraction
-{
-	default id              = 'triss_intimate_invite';
-	default targetNpc       = 'triss';
-	default minAffinity     = 80;
-	default cooldownSeconds = 3600.0;
-	default triggerType     = RTT_Scene;
-	default weight          = 3;
-	default barkMimic       = 'flirt';
-	// "Hmmmm Geraaalt" – ciepla, wymowna linia Triss
-	default lineId          = 1000783;
-	default lineText        = "Hmmmm, Geraaalt...";
-	default lineKey         = "ar_line_triss_intimate_invite";
-
-	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
-	{
-		if (!IsOnNaughtyPoint() && !(ctx.isNearCampfire && !ctx.isInInterior && !ctx.isInTavern))
-		{
-			return "no_naughty_point";
-		}
-		return IntimateSceneBlockReason(npc);
-	}
-
-	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
-	{
-		var ok : bool;
-
-		SoftApproach(npc, player, 2.2);
-		PlayBark(npc);
-
-		// Tier 4: scena intymna - zgoda gracza [C] zawsze wymagana.
-		ok = ApproachAndConsent(npc, player, 2.2, AR_T("ar_prompt_triss_intimate", "[C] Stay alone with Triss"), true);
-		if (!ok)
-		{
-			return false;
-		}
-
-		HardStage(npc, player, 1.5);
-		ok = PlayIntimateScene(npc);
-		EndInteraction(npc, player);
-		return ok;
-	}
-}
-
 //  TRISS – Tier 1: Zazdrość (gdy Yen jest w drużynie) – ambient
 
 class MCM_AR_Triss_JealousySnark extends MCM_RomanceInteraction
@@ -860,52 +766,6 @@ class MCM_AR_Keira_CampfireWitch extends MCM_RomanceInteraction
 	}
 }
 
-//  KEIRA – Tier 4: Zaproszenie intymne przy "sweet spot"
-
-class MCM_AR_Keira_IntimateInvite extends MCM_RomanceInteraction
-{
-	default id              = 'keira_intimate_invite';
-	default targetNpc       = 'keira_metz';
-	default minAffinity     = 80;
-	default cooldownSeconds = 3600.0;
-	default triggerType     = RTT_Scene;
-	default weight          = 3;
-	default barkMimic       = 'flirt';
-	// "...thrill you... come and see me" – dwoista propozycja pasuje idealnie
-	default lineId          = 589402;
-	default lineText        = "I daresay this one, once sprung, would thrill you... Ah well, change your mind - come and see me.";
-	default lineKey         = "ar_line_keira_intimate_invite";
-
-	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
-	{
-		if (!IsOnNaughtyPoint() && !(ctx.isNearCampfire && !ctx.isInInterior && !ctx.isInTavern))
-		{
-			return "no_naughty_point";
-		}
-		return IntimateSceneBlockReason(npc);
-	}
-
-	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
-	{
-		var ok : bool;
-
-		SoftApproach(npc, player, 2.2);
-		PlayBark(npc);
-
-		// Tier 4: scena intymna - zgoda gracza [C] zawsze wymagana.
-		ok = ApproachAndConsent(npc, player, 2.2, AR_T("ar_prompt_keira_intimate", "[C] Stay alone with Keira"), true);
-		if (!ok)
-		{
-			return false;
-		}
-
-		HardStage(npc, player, 1.5);
-		ok = PlayIntimateScene(npc);
-		EndInteraction(npc, player);
-		return ok;
-	}
-}
-
 //  SHANI – Tier 1: Flirt / lekarka na polu – ambient
 
 class MCM_AR_Shani_OneLinerFlirt extends MCM_RomanceInteraction
@@ -1016,52 +876,6 @@ class MCM_AR_Shani_NightRelax extends MCM_RomanceInteraction
 
 		HardStage(npc, player, 1.5);
 		ok = PlayKissScene(npc);
-		EndInteraction(npc, player);
-		return ok;
-	}
-}
-
-//  SHANI – Tier 4: Zaproszenie intymne przy "sweet spot"
-
-class MCM_AR_Shani_IntimateInvite extends MCM_RomanceInteraction
-{
-	default id              = 'shani_intimate_invite';
-	default targetNpc       = 'shani';
-	default minAffinity     = 80;
-	default cooldownSeconds = 3600.0;
-	default triggerType     = RTT_Scene;
-	default weight          = 3;
-	default barkMimic       = 'flirt';
-	// "It would do you good to be more relaxed" – pasuje tez do intymnosci
-	default lineId          = 1108130;
-	default lineText        = "It would do you good to be more relaxed sometimes.";
-	default lineKey         = "ar_line_shani_intimate_invite";
-
-	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
-	{
-		if (!IsOnNaughtyPoint() && !(ctx.isNearCampfire && !ctx.isInInterior && !ctx.isInTavern))
-		{
-			return "no_naughty_point";
-		}
-		return IntimateSceneBlockReason(npc);
-	}
-
-	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
-	{
-		var ok : bool;
-
-		SoftApproach(npc, player, 2.2);
-		PlayBark(npc);
-
-		// Tier 4: scena intymna - zgoda gracza [C] zawsze wymagana.
-		ok = ApproachAndConsent(npc, player, 2.2, AR_T("ar_prompt_shani_intimate", "[C] Stay alone with Shani"), true);
-		if (!ok)
-		{
-			return false;
-		}
-
-		HardStage(npc, player, 1.5);
-		ok = PlayIntimateScene(npc);
 		EndInteraction(npc, player);
 		return ok;
 	}
@@ -1895,6 +1709,58 @@ class MCM_AR_Ciri_IntimateInvite extends MCM_RomanceInteraction
 		ok = ApproachAndConsent(npc, player, 2.2, AR_T("ar_prompt_ciri_intimate", "[C] Stay alone with Ciri"), true);
 		if (!ok)
 		{
+			return false;
+		}
+
+		HardStage(npc, player, 1.5);
+		ok = PlayIntimateScene(npc);
+		EndInteraction(npc, player);
+		return ok;
+	}
+}
+
+//  GENERIC – Tier 4: Zaproszenie intymne (wildcard: dowolna towarzyszka woman_base)
+
+class MCM_AR_Generic_IntimateInvite extends MCM_RomanceInteraction
+{
+	default id              = 'generic_intimate_invite';
+	default targetNpc       = '';  // Wildcard dla dowolnej towarzyszki woman_base
+	default minAffinity     = 80;
+	default cooldownSeconds = 3600.0;
+	default triggerType     = RTT_Scene;
+	default weight          = 3;
+	default barkMimic       = 'flirt';
+
+	public function GetExtraBlockReason(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : string
+	{
+		var nm : name;
+
+		if (!npc || !npc.scmcc || !npc.scmcc.data) return "no_npc_data";
+		nm = npc.scmcc.data.nam;
+		// Ciri ma dedykowana akcje (MCM_AR_Ciri_IntimateInvite) z gate
+		// IsCiriAdultMode. Wildcard nie moze jej przechwycic - inaczej
+		// omija gate trybu Adult (specialData.naughtyScene z paczek MCME).
+		if (nm == 'cirilla' || nm == 'ciri') return "ciri_dedicated_action";
+		if (!IsWomanBaseCompanion(npc)) return "noble_rig_restricted";
+		if (!IsOnNaughtyPoint() && !(ctx.isNearCampfire && !ctx.isInInterior && !ctx.isInTavern))
+		{
+			return "no_naughty_point";
+		}
+		return IntimateSceneBlockReason(npc);
+	}
+
+	public latent function Execute(npc : CNewNPC, player : CR4Player, ctx : MCM_RomanceContext) : bool
+	{
+		var ok : bool;
+
+		SoftApproach(npc, player, 2.2);
+		PlayBark(npc);
+
+		// Tier 4: scena intymna - zgoda gracza [C] zawsze wymagana.
+		ok = ApproachAndConsent(npc, player, 2.2, AR_T("ar_prompt_intimate_invite", "Spend an intimate moment together [C]"), true);
+		if (!ok)
+		{
+			EndSoft(npc);
 			return false;
 		}
 

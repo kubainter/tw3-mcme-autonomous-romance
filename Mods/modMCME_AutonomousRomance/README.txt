@@ -1,7 +1,7 @@
 ================================================================================
 MCME AUTONOMOUS ROMANCE
 The Witcher 3: Wild Hunt - Remaster (v5.00+)
-Version: 2.1.0
+Version: 2.2.0
 Author: Botan
 ================================================================================
 
@@ -46,7 +46,7 @@ HOW IT WORKS IN GAME
     Dwarven Spirit). Share a drink for +3 Affinity (+4 in total with the standard action bonus) and a thank-you.
 
   * Natural Idle Moments:
-    Stop moving for ~50s (consulting the map, crafting, inventory management),
+    Stop moving for ~50s (or rest near a lit campfire, where she sits down in ~6s),
     and she drops the follow routine to find a spot to sit or lean. She resumes
     following the instant you take a step.
 
@@ -106,9 +106,13 @@ SUPPORTED COMPANIONS
     - Fringilla Vigo (Guarded Nilfgaardian flirts, warmth triage, universal kiss)
     - Margarita Laux-Antille (Comforting triage, spirit requests, universal kiss)
 
-  Romance, Universal Kisses & Drink Requests (Tier 1 - Tier 3):
-    - Rosa var Attre (Fencing flirts, Nilfgaardian wine requests, universal kiss)
-    - Tomira (Warm herbalist remarks, spirit requests, universal kiss)
+  Romance, Universal Kisses, Drink Requests & Intimate Invitations (Tier 1 - Tier 4):
+    - Rosa var Attre (Fencing flirts, Nilfgaardian wine requests, universal kiss, campfire intimacy)
+    - Tomira (Warm herbalist remarks, spirit requests, universal kiss, campfire intimacy)
+
+  Universal Companion Support (Tier 4 Outdoor Intimacy):
+    - Extended MCME Companions (Tamara, Iris, Corinna, Jutta, Sasha, etc. - any female
+      follower on the woman_base skeleton can initiate outdoor intimacy near campfires)
 
   Family Bond & Warmth (Ambient chatter + family embrace; Adult Mode opt-in):
     - Cirilla / Ciri (Warm family embrace without dialogue wheels, companion
