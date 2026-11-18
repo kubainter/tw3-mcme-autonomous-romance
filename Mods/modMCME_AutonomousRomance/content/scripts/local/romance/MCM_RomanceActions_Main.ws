@@ -1847,7 +1847,6 @@ class MCM_AR_Generic_IntimateInvite extends MCM_RomanceInteraction
 		ok = ApproachAndConsent(npc, player, 2.2, AR_T("ar_prompt_intimate_invite", "Spend an intimate moment together [C]"), true);
 		if (!ok)
 		{
-			EndSoft(npc);
 			return false;
 		}
 
