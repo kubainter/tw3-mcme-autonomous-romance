@@ -280,7 +280,7 @@ function MCM_AR_E2E_Gating(t : MCM_AR_E2E)
 	}
 	reg = core.registry;
 
-	theGame.GetNPCsByTag('GeraltsBFF', companions);
+	MCM_AR_GetActiveCompanions(companions);
 	followers = 0;
 	for (i = 0; i < companions.Size(); i += 1)
 	{
@@ -417,7 +417,7 @@ function MCM_AR_E2E_DumpGateMap(t : MCM_AR_E2E)
 	}
 	reg = core.registry;
 
-	theGame.GetNPCsByTag('GeraltsBFF', companions);
+	MCM_AR_GetActiveCompanions(companions);
 	ctx = core.BuildContext(companions);
 	rows = 0;
 	for (i = 0; i < companions.Size(); i += 1)
@@ -508,7 +508,7 @@ function MCM_AR_E2E_GateOrder(t : MCM_AR_E2E)
 		t.Skip("gate_order", "brak core");
 		return;
 	}
-	theGame.GetNPCsByTag('GeraltsBFF', companions);
+	MCM_AR_GetActiveCompanions(companions);
 	npc = MCM_AR_E2E_FirstFollower(companions);
 	ctx = core.BuildContext(companions);
 	a = new MCM_RomanceInteraction in thePlayer;
@@ -560,7 +560,7 @@ function MCM_AR_E2E_AffinityEdge(t : MCM_AR_E2E)
 		t.Skip("affinity_edge", "brak wrapper/config/affinity/core");
 		return;
 	}
-	theGame.GetNPCsByTag('GeraltsBFF', companions);
+	MCM_AR_GetActiveCompanions(companions);
 	npc = MCM_AR_E2E_FirstFollower(companions);
 	if (!npc)
 	{
@@ -649,7 +649,7 @@ function MCM_AR_E2E_ScenePaths(t : MCM_AR_E2E)
 	var p          : string;
 	var i, n       : int;
 
-	theGame.GetNPCsByTag('GeraltsBFF', companions);
+	MCM_AR_GetActiveCompanions(companions);
 	a = new MCM_RomanceInteraction in thePlayer;
 	n = 0;
 	for (i = 0; i < companions.Size(); i += 1)
@@ -826,7 +826,7 @@ latent function MCM_AR_E2E_RegistryFlow(t : MCM_AR_E2E)
 		return;
 	}
 	reg = core.registry;
-	theGame.GetNPCsByTag('GeraltsBFF', companions);
+	MCM_AR_GetActiveCompanions(companions);
 	npc = MCM_AR_E2E_FirstFollower(companions);
 	if (!npc)
 	{
@@ -888,7 +888,7 @@ latent function MCM_AR_E2E_ConsentTimeout(t : MCM_AR_E2E)
 		t.Skip("consent_timeout", "brak core");
 		return;
 	}
-	theGame.GetNPCsByTag('GeraltsBFF', companions);
+	MCM_AR_GetActiveCompanions(companions);
 	npc = MCM_AR_E2E_FirstFollower(companions);
 	if (!npc)
 	{
@@ -1143,7 +1143,7 @@ exec function ar_tour_scenes(optional npcStr : string)
 
 	if (!target)
 	{
-		theGame.GetNPCsByTag('GeraltsBFF', companions);
+		MCM_AR_GetActiveCompanions(companions);
 		for (i = 0; i < companions.Size(); i += 1)
 		{
 			if (companions[i] && companions[i].scmcc && companions[i].HasTag('mod_scm_IsFollowing'))
