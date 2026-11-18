@@ -7,7 +7,7 @@
 [![Issues][issues-shield]][issues-url]
 [![License][license-shield]][license-url]
 [![The Witcher 3: Remastered](https://img.shields.io/badge/Witcher%203-Remastered%20v5.00%2B-blue.svg?style=for-the-badge&logo=gogdotcom)](https://www.thewitcher.com/)
-[![Release Version](https://img.shields.io/badge/Version-v2.3.0-brightgreen.svg?style=for-the-badge)](CHANGELOG.md)
+[![Release Version](https://img.shields.io/badge/Version-v2.3.1-brightgreen.svg?style=for-the-badge)](CHANGELOG.md)
 
 [![Dependency](https://img.shields.io/badge/Dependency-MCME%20Remastered-orange.svg?style=for-the-badge)](https://www.nexusmods.com/witcher3/mods/13144)
 [![Script Merger](https://img.shields.io/badge/Script%20Merger-Zero%20Conflicts-brightgreen.svg?style=for-the-badge)](#zero-script-merger-conflicts)

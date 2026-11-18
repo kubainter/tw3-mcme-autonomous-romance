@@ -12,6 +12,7 @@
       - input.settings.txt musi zawierac binding MCM_AR_Consent - blad
       - CHANGELOG.md musi miec sekcje [Nexus Mods Changelog Snippet] z blokiem ```text - blad
       - najnowszy naglowek wersji w CHANGELOG musi parsowac jako semver - blad
+      - badge Version-vX.Y.Z w README.md musi pasowac do najnowszego naglowka CHANGELOG - blad
       - pliki tymczasowe/niechciane w drzewie (*.bak, *.tmp, *~, vortex marker) - blad
 
 .EXAMPLE
@@ -89,7 +90,15 @@ if (-not (Test-Path $changelog)) {
         Report 'CHANGELOG.md' 'ERROR' 'brak sekcji [Nexus Mods Changelog Snippet] z blokiem ```text - package_release.ps1 tego wymaga'
     }
     if ($md -match '(?m)^## \[(\d+\.\d+\.\d+)\]') {
-        # ok - pierwszy naglowek wersji parsuje
+        # ok - pierwszy naglowek wersji parsuje; badge README nie moze dryfowac
+        $changelogVer = $Matches[1]
+        $readmePath   = Join-Path $RepoRoot 'README.md'
+        if (Test-Path $readmePath) {
+            $readmeMd = [System.IO.File]::ReadAllText($readmePath, [System.Text.Encoding]::UTF8)
+            if ($readmeMd -notmatch [regex]::Escape("Version-v$changelogVer-")) {
+                Report 'README.md' 'ERROR' "badge Version-v$changelogVer nie pasuje do najnowszego naglowka CHANGELOG - sync wersji"
+            }
+        }
     } else {
         Report 'CHANGELOG.md' 'ERROR' 'brak parsowalnego naglowka wersji ## [X.Y.Z] - release workflow czyta tag z niego'
     }
