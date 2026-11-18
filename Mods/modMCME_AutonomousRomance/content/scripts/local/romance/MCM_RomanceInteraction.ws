@@ -863,38 +863,6 @@ class MCM_RomanceInteraction
 			if (followStopped && npc && npc.scmcc) npc.scmcc.StartFollowing();
 			return 1;
 		}
-		if (animSet == "woman_cheering")
-		{
-			if (!MCM_AR_ProbeAnim(npc, 'woman_cheering_arena_loop_1'))
-			{
-				if (followStopped && npc && npc.scmcc) npc.scmcc.StartFollowing();
-				return 0;
-			}
-			Sleep(4.0);
-			if (!DanceStepOk(npc))
-			{
-				if (followStopped && npc && npc.scmcc) npc.scmcc.StartFollowing();
-				return 2;
-			}
-			MCM_AR_ProbeAnim(npc, 'woman_cheering_arena_loop_2');
-			Sleep(4.0);
-			if (!DanceStepOk(npc))
-			{
-				if (followStopped && npc && npc.scmcc) npc.scmcc.StartFollowing();
-				return 2;
-			}
-			MCM_AR_ProbeAnim(npc, 'woman_cheering_arena_loop_3');
-			Sleep(4.0);
-			if (!DanceStepOk(npc))
-			{
-				if (followStopped && npc && npc.scmcc) npc.scmcc.StartFollowing();
-				return 2;
-			}
-			MCM_AR_ProbeAnim(npc, 'woman_cheering_arena_loop_4');
-			Sleep(4.0);
-			if (followStopped && npc && npc.scmcc) npc.scmcc.StartFollowing();
-			return 1;
-		}
 		if (followStopped && npc && npc.scmcc) npc.scmcc.StartFollowing();
 		return 0;
 	}
