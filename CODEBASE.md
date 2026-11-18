@@ -6,7 +6,7 @@
 > oraz procedurze rozszerzania moda bez tworzenia regresji.
 >
 > 📖 **Dokumentacja powiązana i badania architektury:**
-> - [`ACTION_DISPATCH_MAP.md`](file:///G:/GOG%20Galaxy/Games/The%20Witcher%203%20Wild%20Hunt%20GOTY/_ModDev/MCME_AutonomousRomance/repo/ACTION_DISPATCH_MAP.md) (w repozytorium) - Szczegółowa mapa dyspozytora akcji, logiki decyzyjnej, bramek kontekstowych i cyklu ticków.
+> - [`ACTION_DISPATCH_MAP.md`](ACTION_DISPATCH_MAP.md) (w repozytorium) - Szczegółowa mapa dyspozytora akcji, logiki decyzyjnej, bramek kontekstowych i cyklu ticków.
 > - `..\archive\research\RESEARCH_SEAMLESS_ROMANCE_PLAYBACK.md` (archiwum, poza repo) - Analiza silnikowego odtwarzania cutscen (TGL Scene Selector vs MCM AR) i odrzucona ścieżka Lua/TW3SE dla pocałunku. **Uwaga: ścieżka z researchu NIE jest obecną architekturą** - v2.0 używa natywnych scen `ar_*.w2scene` bez PChoice (§7 ARCHITECTURE).
 
 ---
@@ -213,46 +213,46 @@ Sceny intymne Tier 4 (`RTT_Scene`) korzystają z NaughtyPoints zarejestrowanych 
 
 ## 3. Kompletny Indeks Konsoli Debugującej (38 komend `exec` w źródłach; 35 trafiają do paczki, 3 dev-only z `MCM_RomanceE2EDev.ws` są usuwane ze stagingu)
 
-| `ar_unhide()` | `Core.ws:L2889` | Awaryjne odkrycie towarzyszek zasłoniętych po scenie (`SetHideInGame(false)` + `NaughtyManager.ShowAllExcept`) — komenda recovery, celowo pominięta w README gracza |
 | Komenda konsoli | Plik źródłowy | Działanie |
 | --- | --- | --- |
-| `ar_test()` | `Core.ws:L78` | undefined |
-| `ar_status()` | `Core.ws:L2796` | undefined |
-| `ar_reset()` | `Core.ws:L2911` | undefined |
-| `ar_force()` | `Core.ws:L2933` | undefined |
-| `ar_devreset()` | `Core.ws:L2955` | undefined |
-| `ar_idlenow()` | `Core.ws:L2973` | undefined |
-| `ar_downtime()` | `Core.ws:L2985` | undefined |
-| `ar_consent()` | `Core.ws:L3041` | undefined |
-| `ar_affinity(npc, n)` | `Core.ws:L2944` | Dodaje `n` punktów zażyłości dla wskazanego NPC |
-| `ar_trigger()` | `Core.ws:L3076` | undefined |
-| `ar_logdump(optional n)` | `Core.ws:L2977` | Wypisuje na HUD ostatnie `n` linii z bufora logów |
-| `ar_bootlog()` | `Core.ws:L3124` | undefined |
-| `ar_diag()` | `Core.ws:L3141` | undefined |
-| `ar_line(npc, lineId)` | `Core.ws:L3078` | Odtwarza wybraną kwestię dialogową na żywo (test audio) |
-| `ar_probeanim(npc, anim)` | `Core.ws:L3103` | Sprawdza obecność animacji slotowej w modelu postaci |
-| `ar_probeanim2(target, anim)` | `Core.ws:L3127` | Wariant proba animacji na dowolnym celu |
-| `ar_probesync()` | `Core.ws:L3332` | undefined |
-| `ar_probesyncstop()` | `Core.ws:L3354` | undefined |
-| `ar_npcsweep()` | `Core.ws:L3366` | undefined |
-| `ar_probeinject(target, animset, anim)` | `Core.ws:L3277` | Test wstrzyknięcia animacji z animsetu |
-| `ar_dance(optional npc)` | `Core.ws:L3665` | Test: wymusza jeden taniec lub odmowę dla towarzyszki w drużynie, bez bramki tawerna/ognisko. Nazwy: priscilla, triss, keira, shani, tomira, cerys, ves, ciri, philippa, yen, ciri_refuse |
-| `ar_debug(optional mode)` | `Core.ws:L3360` | Włącza/wyłącza powiadomienia o tickach na ekranie HUD |
-| `ar_eval()` | `Core.ws:L3512` | undefined |
-| `ar_neartags()` | `Core.ws:L3606` | undefined |
-| `ar_taverndebug()` | `Core.ws:L3660` | undefined |
-| `ar_kiss(optional npc)` | `Core.ws:L3578` | Natychmiastowy bezpośredni pocałunek ze wskazaną towarzyszką (v2.0) |
-| `ar_intimate(optional npc)` | `Core.ws` | Test/Wymuszenie: natychmiastowe zaproszenie do intymnosci (T4) lub informacja na HUD/w konsoli o braku obslugi dla danego NPC (v2.1) |
-| `ar_hug()` | `Core.ws:L3885` | undefined |
-| `ar_dress(optional npc)` | `QoL.ws:L211` | Zmienia strój towarzyszki na normalny |
-| `ar_undress(optional npc)` | `QoL.ws:L220` | Zmienia strój towarzyszki na bieliznę |
-| `ar_naked(optional npc)` | `QoL.ws:L234` | Zmienia strój towarzyszki na nagość |
-| `ar_gift(optional npc)` | `QoL.ws:L250` | Wręcza butelkę alkoholu z ekwipunku (+3 affinity) |
-| `ar_devinfo()` | `Tw3seDev.ws:L151` | undefined |
-| `ar_reload()` | `Tw3seDev.ws:L174` | undefined |
-| `ar_e2e_rebuild_registry()` | `E2EDev.ws:L919` | undefined |
-| `ar_test_e2e()` | `E2EDev.ws:L933` | undefined |
-| `ar_tour_scenes(optional npc)` | `E2EDev.ws:L1094` | **DEV-ONLY** (wycięty z paczki): tour po scenach danej postaci (gift→kiss/hug→T4) |
+| `ar_test()` | `Core.ws:L78` | Natychmiastowy test obecności moda i uchwytu `thePlayer` (`MCM_AR_OnPlayerReady`) |
+| `ar_status()` | `Core.ws:L2815` | Zrzut stanu: wykryte towarzyszki, stan bezpieczny, aktywne cooldowny, zażyłość |
+| `ar_unhide()` | `Core.ws:L2907` | Awaryjne odkrycie towarzyszek zasłoniętych po scenie (`SetHideInGame(false)` + `NaughtyManager.ShowAllExcept`) — komenda recovery, celowo pominięta w README gracza |
+| `ar_reset()` | `Core.ws:L2929` | Zeruje wszystkie cooldowny akcji dla wykrytych towarzyszek |
+| `ar_force()` | `Core.ws:L2951` | Toggle `ForceRomance` (sandbox): max affinity, pomijanie bramek fabularnych |
+| `ar_devreset()` | `Core.ws:L2973` | Awaryjny reset stanu sesji AR (odblokowanie locków i faktów) |
+| `ar_idlenow()` | `Core.ws:L2991` | Wymusza próg postoju — suspend bez czekania 50 s (wynik: `ar_diag`/`ar_logdump`) |
+| `ar_downtime()` | `Core.ws:L3003` | Sonda downtime: stan klasyfikatora i watchera |
+| `ar_consent()` | `Core.ws:L3059` | Toggle `MCM_AR_RequireConsent` (wymóg promptu `[C]` dla Tier 3+4) z konsoli |
+| `ar_affinity(npc, n)` | `Core.ws:L3080` | Dodaje `n` punktów zażyłości dla wskazanego NPC |
+| `ar_trigger()` | `Core.ws:L3094` | Zeruje cooldowny i natychmiast wymusza tick decyzyjny moda |
+| `ar_logdump(optional n)` | `Core.ws:L3113` | Wypisuje na HUD ostatnie `n` linii z bufora logów |
+| `ar_bootlog()` | `Core.ws:L3142` | Dump bootloga na HUD (linie sprzed powstania core — głównie ścieżka `InitRemasterSettings`) |
+| `ar_diag()` | `Core.ws:L3159` | Dump diagnostyki do `user.settings` (`[AR_Diag]`) — kanał czytelny z dysku |
+| `ar_line(npc, lineId)` | `Core.ws:L3214` | Odtwarza wybraną kwestię dialogową na żywo (test audio) |
+| `ar_probeanim(npc, anim)` | `Core.ws:L3239` | Sprawdza obecność animacji slotowej w modelu postaci |
+| `ar_probeanim2(target, anim)` | `Core.ws:L3263` | Wariant proba animacji na dowolnym celu |
+| `ar_probesync()` | `Core.ws:L3350` | Sonda sync-instancji: tworzy prawdziwy idle-job i leci `StartIdleSyncAnim` — test pozy bez medytacji |
+| `ar_probesyncstop()` | `Core.ws:L3372` | Zwalnia testową sync-instancję z `ar_probesync` |
+| `ar_npcsweep()` | `Core.ws:L3384` | Sweep unstick: sekwencja release zdejmuje zaciętą flagę `IsInGameplayScene` na towarzyszkach (z logiem przed/po) |
+| `ar_probeinject(target, animset, anim)` | `Core.ws:L3414` | Test wstrzyknięcia animacji z animsetu |
+| `ar_dance(optional npc)` | `Core.ws:L3941` | Test: wymusza jeden taniec lub odmowę dla towarzyszki w drużynie, bez bramki tawerna/ognisko. Nazwy: priscilla, triss, keira, shani, tomira, cerys, ves, ciri, philippa, yen, ciri_refuse |
+| `ar_debug(optional mode)` | `Core.ws:L3497` | Włącza/wyłącza powiadomienia o tickach na ekranie HUD |
+| `ar_eval()` | `Core.ws:L3531` | Dry-run bramek: dla każdej towarzyszki affinity, cooldown i które akcje są eligible/zablokowane |
+| `ar_neartags()` | `Core.ws:L3625` | Wypisuje tagi encji w promieniu 10 m (audyt wykrywania `campfire`) |
+| `ar_taverndebug()` | `Core.ws:L3679` | Sonda tawerny: `player_in_inn`, `IsInInterior`, `MCM_AR_IsInTavern` + skan nazw encji |
+| `ar_kiss(optional npc)` | `Core.ws:L3715` | Natychmiastowy bezpośredni pocałunek: aliasy kanoniczne, najbliższa towarzyszka dla pustego arg., `generic_kiss` dla rozszerzonego rosteru |
+| `ar_intimate(optional npc)` | `Core.ws:L4059` | Test/Wymuszenie: natychmiastowe zaproszenie do intymnosci (T4) lub informacja na HUD/w konsoli o braku obslugi dla danego NPC (v2.1) |
+| `ar_hug()` | `Core.ws:L4015` | Natychmiastowy test bezokienkowego uścisku Ciri |
+| `ar_dress(optional npc)` | `QoL.ws:L190` | Zmienia strój towarzyszki na normalny |
+| `ar_undress(optional npc)` | `QoL.ws:L199` | Zmienia strój towarzyszki na bieliznę |
+| `ar_naked(optional npc)` | `QoL.ws:L213` | Zmienia strój towarzyszki na nagość |
+| `ar_gift(optional npc)` | `QoL.ws:L229` | Wręcza butelkę alkoholu z ekwipunku (+3 affinity) |
+| `ar_devinfo()` | `Tw3seDev.ws:L151` | **DEV** self-test mostka TW3SE (wersja, zapis pliku, pipe) |
+| `ar_reload()` | `Tw3seDev.ws:L174` | **DEV** `ReloadScripts` przez TW3SE (po powrocie uruchom `ar_devreset`) |
+| `ar_e2e_rebuild_registry()` | `E2EDev.ws:L919` | **DEV-ONLY** przebudowa rejestru akcji na żywo (`registry.Init()`) |
+| `ar_test_e2e()` | `E2EDev.ws:L933` | **DEV-ONLY** pełny suite E2E: asercje silnikowe (stan rdzenia, rejestr, Affinity, dry-run bramek) |
+| `ar_tour_scenes(optional npc)` | `E2EDev.ws:L1119` | **DEV-ONLY** (wycięty z paczki): tour po scenach danej postaci (gift→kiss/hug→T4) |
 
 ---
 
