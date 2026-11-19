@@ -6,7 +6,7 @@
 > oraz procedurze rozszerzania moda bez tworzenia regresji.
 >
 > 📖 **Dokumentacja powiązana i badania architektury:**
-> - [`ACTION_DISPATCH_MAP.md`](ACTION_DISPATCH_MAP.md) (w repozytorium) - Szczegółowa mapa dyspozytora akcji, logiki decyzyjnej, bramek kontekstowych i cyklu ticków.
+> - `ACTION_DISPATCH_MAP.md` (lokalna notatka robocza, poza repo) - Szczegółowa mapa dyspozytora akcji, logiki decyzyjnej, bramek kontekstowych i cyklu ticków.
 > - `..\archive\research\RESEARCH_SEAMLESS_ROMANCE_PLAYBACK.md` (archiwum, poza repo) - Analiza silnikowego odtwarzania cutscen (TGL Scene Selector vs MCM AR) i odrzucona ścieżka Lua/TW3SE dla pocałunku. **Uwaga: ścieżka z researchu NIE jest obecną architekturą** - v2.0 używa natywnych scen `ar_*.w2scene` bez PChoice (§7 ARCHITECTURE).
 
 ---
