@@ -78,6 +78,22 @@ if (-not (Test-Path $inputFrag)) {
     if ($frag -notmatch 'MCM_AR_Consent') {
         Report 'Mods\modMCME_AutonomousRomance\input.settings.txt' 'ERROR' 'fragment nie zawiera bindingu MCM_AR_Consent'
     }
+    # Anti-regresja sheathing: IK_C musi trzymac vanilla akcje obok consentu
+    # (tuple w jednej linii), inaczej nadpisujace merge'e zabijaja C.
+    if ($frag -notmatch 'IK_C=\([^)]*Action=SwordSheathe[^)]*Action=MCM_AR_Consent') {
+        Report 'Mods\modMCME_AutonomousRomance\input.settings.txt' 'ERROR' 'brak tuple IK_C=(Action=SwordSheathe,Action=MCM_AR_Consent) - nadpisujacy merge zepsuje sheathing na C'
+    }
+}
+
+# --- input.xml: akcja MCM_AR_Consent widoczna w Options -> Keybindings ---
+$inputXml = Join-Path $modRoot 'input.xml.txt'
+if (-not (Test-Path $inputXml)) {
+    Report 'Mods\modMCME_AutonomousRomance\input.xml.txt' 'ERROR' 'brak input.xml.txt - MCM_AR_Consent nie pojawi sie w Keybindings'
+} else {
+    $xml = [System.IO.File]::ReadAllText($inputXml)
+    if ($xml -notmatch 'builder="Input"' -or $xml -notmatch 'actions="MCM_AR_Consent"') {
+        Report 'Mods\modMCME_AutonomousRomance\input.xml.txt' 'ERROR' 'input.xml.txt nie deklaruje Var actions="MCM_AR_Consent" z builder="Input"'
+    }
 }
 
 # --- CHANGELOG: snippet section + semver header ---

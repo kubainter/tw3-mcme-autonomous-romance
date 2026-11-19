@@ -149,7 +149,7 @@ In vanilla **Multi Companion Mod Enhanced (MCME)**, companions are passive follo
 #### 4. Non-Intrusive Player Consent Safeguard
 * Tier 3 & Tier 4 romantic initiatives never hijack player controls abruptly.
 * When a companion initiates, an on-screen HUD prompt appears with her name and intent (e.g. `[C] Kiss Yennefer`, `[C] Give Est Est to Keira`).
-* Ships its own input action `MCM_AR_Consent` - bound to **C** on keyboard and **D-pad Left/Right** on gamepad, so consent works regardless of how you remapped sheathing. The prompt itself shows your real bound key/glyph (via `ReplaceTagsToIcons`). Vanilla `'SwordSheathe'` is still honored as a fallback. Walking away or waiting 20 seconds declines the invitation. Affinity is not reduced; ignoring the prompt starts a rejection cooldown for that action.
+* Ships its own input action `MCM_AR_Consent` - bound to **C** alongside the vanilla sheathe action (C keeps sheathing your swords) and exposed in **Options → Keybindings**, so you can rebind consent like any built-in control. Gamepad consent uses the standard sheathe button (D-pad Left/Right). The prompt itself shows your real bound key/glyph (via `ReplaceTagsToIcons`). Vanilla `'SwordSheathe'` is still honored as a fallback. Walking away or waiting 20 seconds declines the invitation. Affinity is not reduced; ignoring the prompt starts a rejection cooldown for that action.
 
 #### 5. Configurable Pacing & Full Localization
 * A dedicated **Decision Tick Interval** slider (20-160 s, default 30 s) controls how often companions evaluate new initiatives - separate from the initiative cooldown per companion.
@@ -230,9 +230,11 @@ In vanilla **Multi Companion Mod Enhanced (MCME)**, companions are passive follo
    * `bin/config/r4game/user_config_matrix/pc/modMCME_AutonomousRomance.xml` → `<Witcher 3>/bin/config/r4game/user_config_matrix/pc/modMCME_AutonomousRomance.xml`
 3. Launch the game. Witcher 3 will automatically compile the scripts on first startup.
 4. **No Script Merger is needed.** Because the mod uses `@wrapMethod` annotations and touches zero base files, no merging is required.
-5. **Input bindings (consent key):** consent works out of the box — **C** on keyboard and **D-pad Left/Right** on gamepad are detected through the standard `SwordSheathe` binding. The mod also ships `Mods/modMCME_AutonomousRomance/input.settings.txt` registering a dedicated `MCM_AR_Consent` action:
-   * **TW3 Mod Manager:** merges `.txt` input fragments automatically — nothing to do.
-   * **Vortex / manual install:** append the file's contents to your `Documents\The Witcher 3\input.settings` under each matching context section (`[Exploration]`, `[Combat]`, `[Horse]`, `[Boat]`, `[Swimming]`). If skipped, consent falls back to `SwordSheathe` — fine on keyboard, but **recommended for gamepad users**: vanilla D-pad Left/Right draws swords, so without the merge your consent key is whatever Sword Sheathe is bound to (check the glyph shown in the prompt — that's your real key).
+5. **Input bindings (consent key):** consent works out of the box — **C** on keyboard and **D-pad Left/Right** on gamepad are detected through the standard `SwordSheathe` binding. The mod also ships two optional input files:
+   * `Mods/modMCME_AutonomousRomance/input.settings.txt` — adds a dedicated `MCM_AR_Consent` action **next to** the vanilla sheathe binding, so C still sheathes your swords.
+   * `Mods/modMCME_AutonomousRomance/input.xml.txt` — makes `MCM_AR_Consent` appear in **Options → Keybindings**, so you can rebind it like any built-in control.
+   * **TW3 Mod Manager:** merges both input fragments automatically — nothing to do.
+   * **Vortex / manual install:** append the `.txt` contents to your `Documents\The Witcher 3\input.settings` under each matching context section (`[Exploration]`, `[Combat]`, `[Horse]`, `[Boat]`, `[Swimming]`, etc.), and add the `<Var …>` line from `input.xml.txt` to `bin/config/r4game/user_config_matrix/pc/input.xml`. If skipped, consent falls back to `SwordSheathe` — everything keeps working, the dedicated action just isn't separately rebindable.
 
 ### First Run & Verification
 

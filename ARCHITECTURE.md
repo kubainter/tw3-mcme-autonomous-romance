@@ -296,7 +296,8 @@ T4 Scene (staged): jak T3, ale consent ZAWSZE wymagany (niezależnie od configu)
 ## 6. FLOW: Consent Engine v3 (`MCM_AR_Consent` + `SwordSheathe`)
 
 - Historia: wczesne próby nasłuchiwania na klawiszu `[E]` kolidowały z natywnym kołem dialogu MCME. Z kolei bindowanie w sekcji menu `[SCMMenuBase]` nie dispatchowało eventów podczas eksploracji świata.
-- Dedykowana akcja `MCM_AR_Consent`: w v2.0 wprowadzono własną akcję wejścia `MCM_AR_Consent`, zdefiniowaną w `input.settings.txt` pod klawisz [C] oraz D-pad w lewo i w prawo na kontrolerze.
+- Dedykowana akcja `MCM_AR_Consent`: w v2.0 wprowadzono własną akcję wejścia `MCM_AR_Consent`, zdefiniowaną w `input.settings.txt` pod klawisz [C] (oraz wcześniej D-pad w lewo i w prawo). Od 2.3.2 binding na [C] jest **tuple w jednej linii** - `IK_C=(Action=SwordSheathe,Action=MCM_AR_Consent)` - więc merge'e nadpisujące linię nie zabierają vanilla sheathing; pad korzysta z vanilla `SwordSheathe` (D-pad L/R) bez własnego wpisu w fragmencie.
+- Rebind z menu gry: `input.xml.txt` deklaruje `MCM_AR_Consent` jako `<Var builder="Input" ... displayType="INPUTPC">`, więc akcja pojawia się w Options -> Keybindings i user może ją przepiąć jak natywną kontrolkę (gra sama zapisuje `input.settings`).
 - Vanilla fallback: zachowano równoległy nasłuch na vanilla akcję `'SwordSheathe'` ([C]), dzięki czemu mod działa natychmiast po instalacji nawet bez zmergowania pliku `input.settings`.
 - Implementacja w `ShowConsentPrompt` (Interaction L863-1210):
   - Wyświetlanie promptu na ekranie HUD z ikoną realnego klawisza (`<<MCM_AR_Consent>>`).

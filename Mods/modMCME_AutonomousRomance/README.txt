@@ -168,15 +168,19 @@ INSTALLATION & REMOVAL
        Consent works out of the box: [C] on keyboard and [D-pad Left / Right]
        on gamepad are detected via the standard sword-sheathe binding.
 
-       The mod also ships an optional dedicated binding file
-       (input.settings.txt) that registers a separate MCM_AR_Consent
-       action:
-       - The Witcher 3 Mod Manager: merges it automatically on install.
-       - Vortex / manual install: copy the file's contents into
+       The mod also ships two optional input files:
+       - input.settings.txt: adds a separate MCM_AR_Consent action next to the
+         vanilla sheathe binding (C keeps sheathing swords).
+       - input.xml.txt: makes the action appear in Options -> Keybindings, so
+         you can rebind it like any built-in control.
+       - The Witcher 3 Mod Manager: merges both files automatically on install.
+       - Vortex / manual install: copy the contents of input.settings.txt into
          Documents/The Witcher 3/input.settings under each matching section
-         ([Exploration], [Combat], [Horse], [Boat], [Swimming], etc.).
-       Optional but recommended for gamepad users: vanilla D-pad Left/Right
-       also draws swords, and the dedicated binding separates consent from it.
+         ([Exploration], [Combat], [Horse], [Boat], [Swimming], etc.), and add
+         the <Var ...> line from input.xml.txt to
+         bin/config/r4game/user_config_matrix/pc/input.xml.
+       If skipped, consent falls back to the sheathe key and everything still
+       works - the dedicated action is only needed for a separate key.
 
     3. Launch the game. Scripts compile automatically on first startup.
     4. No Script Merger run needed.

@@ -5,7 +5,7 @@
 .DESCRIPTION
     Asercje na zipie z package_release.ps1:
       - wszystkie nazwy wpisow uzywaja '/' (spec ZIP, W3MM na Linux/Deck) - blad
-      - wymagane wpisy istnieja (input.settings.txt, README.txt, CHANGELOG.txt,
+      - wymagane wpisy istnieja (input.settings.txt, input.xml.txt, README.txt, CHANGELOG.txt,
         modMCME_AutonomousRomance.xml, MCM_RomanceCore.ws) - blad
       - zakazane wpisy nieobecne (MCME_AR.input.settings.txt, E2EDev, *.csv,
         *.stub.ws, *.bak/tmp/~, __folder_managed_by_vortex) - blad
@@ -54,6 +54,7 @@ Ok "entries: $($entries.Count), separatory '/'"
 # --- wymagane wpisy ---
 $required = @(
     'Mods/modMCME_AutonomousRomance/input.settings.txt',
+    'Mods/modMCME_AutonomousRomance/input.xml.txt',
     'Mods/modMCME_AutonomousRomance/README.txt',
     'Mods/modMCME_AutonomousRomance/CHANGELOG.txt',
     'Mods/modMCME_AutonomousRomance/content/scripts/local/romance/MCM_RomanceCore.ws',
@@ -101,12 +102,21 @@ if ($clEntry -and (Test-Path $changelogMd)) {
     }
 }
 
-# --- input.settings.txt zawiera MCM_AR_Consent ---
+# --- input.settings.txt zawiera MCM_AR_Consent + tuple chroni sheathing ---
 $inEntry = $entries['Mods/modMCME_AutonomousRomance/input.settings.txt']
 if ($inEntry) {
     $sr = New-Object IO.StreamReader($inEntry.Open()); $zipTxt = $sr.ReadToEnd(); $sr.Close()
     if ($zipTxt -notmatch 'MCM_AR_Consent') { Report 'input.settings.txt w paczce nie zawiera MCM_AR_Consent' }
-    else { Ok 'input.settings.txt z bindingiem' }
+    elseif ($zipTxt -notmatch 'IK_C=\([^)]*Action=SwordSheathe[^)]*Action=MCM_AR_Consent') { Report 'input.settings.txt w paczce bez tuple chroniacego sheathing' }
+    else { Ok 'input.settings.txt z bindingiem (tuple IK_C)' }
+}
+
+# --- input.xml.txt deklaruje MCM_AR_Consent w Keybindings ---
+$xmlEntry = $entries['Mods/modMCME_AutonomousRomance/input.xml.txt']
+if ($xmlEntry) {
+    $sr = New-Object IO.StreamReader($xmlEntry.Open()); $zipXml = $sr.ReadToEnd(); $sr.Close()
+    if ($zipXml -notmatch 'actions="MCM_AR_Consent"') { Report 'input.xml.txt w paczce nie deklaruje akcji MCM_AR_Consent' }
+    else { Ok 'input.xml.txt z akcja Keybindings' }
 }
 
 $zip.Dispose()

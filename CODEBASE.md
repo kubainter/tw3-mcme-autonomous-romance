@@ -50,8 +50,8 @@ w `repo\scripts\tw3se\` — do paczki trafia przez `package_release.ps1`. Źród
 * **Boot i Cykl Życia (L1-165):**
   * Wstrzyknięcie pól do gracza: `@addField(CR4Player) mcm_ar_core`, `mcm_ar_ambient`, `mcm_ar_bootlog`.
   * Punkt startowy: `@wrapMethod(CR4Player) InitRemasterSettings()` (L74) wywołuje `MCM_AR_OnPlayerReady()` (L35). Omija problem cienia priorytetów modów (np. Brothers in Arms).
-  * Rejestracja listenerów akcji klawisza zgody: `'MCM_AR_Consent'` (własna akcja moda: C + pad D-pad L/R,
-    mapowanie w `input.settings.txt`) oraz legacy `'SwordSheathe'` dla kompatybilności.
+  * Rejestracja listenerów akcji klawisza zgody: `'MCM_AR_Consent'` (własna akcja moda: C w tuple z `SwordSheathe` - `IK_C=(Action=SwordSheathe,Action=MCM_AR_Consent)`,
+    mapowanie w `input.settings.txt`; akcja widoczna w Options -> Keybindings przez `input.xml.txt`) oraz legacy `'SwordSheathe'` dla kompatybilności.
   * Uruchomienie timerów silnika w `MCM_AR_InitCore()` (L83): `MCM_AR_AutonomousTick` (L102, interwał MCM `MCM_AR_TickInterval` 20-160s, dom. 30s), `MCM_AR_AmbientTick` (L103, co 10.0s — barki + `UpdateIdleAmbient`), `MCM_AR_DowntimeTick` (L104, co 1.0s — `UpdateDowntimeWatch`), `MCM_AR_IdlePhaseTick` (L105, co 1.0s — `AdvanceIdlePhases`); `MCM_AR_AnimPumpTick` (0.01s — pompa sync-instancji) rejestrowany NA ŻĄDANIE przez `EnsureAnimPump` (L514, sam AddTimer L517) i zdejmowany gdy `arIdleJobs` puste.
 * **System Idle-Suspend (W2/I1) + przejścia animacyjne (L185-1680):**
   * Klasa `MCM_AR_IdleJob` (L185): NPC, cel, kąt, animacja, faza lokomocji (`phase`: 0 moving → 1 arrived → 2 posed), `animStart`/`animEnd`/`animPhase` (0 nie zagrano → 1 start-grany → 2 loop → 3 end-grany), `animAt` (deadline fazy), `reissueAt` (re-issue loopa), `isBed`+`bedFloor` (job łóżkowy), `syncInst`/`syncSeq` (manual-slot sync instance).
