@@ -218,18 +218,7 @@ class MCM_RomanceInteraction
 	// Walidacja riga: true dla standardowego woman_base, false dla noble_woman_base / monster rig
 	public function IsWomanBaseCompanion(npc : CNewNPC) : bool
 	{
-		var nm : name;
-		if (!npc || !npc.scmcc || !npc.scmcc.data) return false;
-		if (!npc.IsWoman()) return false;
-		if (!npc.GetMovingAgentComponent() || npc.GetMovingAgentComponent().GetName() != "woman_base") return false;
-		nm = npc.scmcc.data.nam;
-		if (nm == 'anarietta' || nm == 'anna_henrietta' || nm == 'anna' ||
-		    nm == 'vivienne' || nm == 'sq701_vivienne' ||
-		    nm == 'oriana' || nm == 'orianna' || nm == 'vampire_diva' || nm == 'anabelle')
-		{
-			return false;
-		}
-		return true;
+		return MCM_AR_IsWomanBaseCompanion(npc);
 	}
 
 	public function HasNaughtyScene(npc : CNewNPC) : bool
@@ -2113,6 +2102,24 @@ class MCM_RomanceInteraction
 			if (pt) return true;
 		}
 		return false;
+	}
+
+	// Mostek Unicorn (modMCME_AR_Unicorn) zainstalowany i tryb != 0 (off):
+	// jego grupa MCM 'MCM_AR_Unicorn' istnieje w configu gry tylko gdy
+	// zainstalowano pakiet XML mostka. Czysto konfiguracyjny odczyt -
+	// zero zaleznosci kompilacyjnej od skryptow mostu (osobny mod, WIP).
+	// Mode 0 = routing native-only -> traktujemy jak brak mostka, bo
+	// dispatch UC nie odpala i scena spada na natywna sciezke w2scene.
+	protected function IsUcReady() : bool
+	{
+		var wrapper : CInGameConfigWrapper;
+		var mode    : string;
+
+		wrapper = theGame.GetInGameConfigWrapper();
+		if (!wrapper) return false;
+		mode = wrapper.GetVarValue('MCM_AR_Unicorn', 'MCM_AR_UcMode');
+		if (StrLen(mode) == 0) return false;
+		return StringToFloat(mode) > 0.0;
 	}
 
 	// Pelne sciezki scen intymnych dla NPC bez rejestracji w specialData

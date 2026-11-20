@@ -3734,7 +3734,8 @@ exec function ar_kiss(optional npcStr : string)
 	npcStr = StrLower(npcStr);
 
 	// Jeden scan: nearestNpc = najblizszy follower (auto-pick dla pustego
-	// argumentu oraz safe-fallback gdy podane imie nie ma aktywnej towarzyszki).
+	// argumentu; imie podane jawnie MUSI dopasowac aktywna towarzyszke -
+	// fail-closed, bez podmiany celu na sasiadke).
 	MCM_AR_GetActiveCompanions(companions);
 	minDist = 999.0;
 	for (i = 0; i < companions.Size(); i += 1)
@@ -3766,8 +3767,8 @@ exec function ar_kiss(optional npcStr : string)
 		npcStr = MCM_AR_CanonCompanionName(npcStr);
 
 		// Blokada by-design na ZADANYM imieniu - noble-rig nie ma animacji
-		// kiss w ogole (brak akcji kiss w rejestrze). Odmowa przed safe-
-		// fallbackiem, zeby pytanie o noble nie podmienialo celu na sasiadke.
+		// kiss w ogole (brak akcji kiss w rejestrze). Odmowa przed dopasowaniem,
+		// zeby pytanie o noble nie podmienialo celu na sasiadke.
 		if (npcStr == "anna_henrietta")
 		{
 			thePlayer.DisplayHudMessage("[AR] anna_henrietta: no kiss tier - noble rig limit, by design");
@@ -3823,11 +3824,15 @@ exec function ar_kiss(optional npcStr : string)
 			thePlayer.DisplayHudMessage("[AR kiss] Nie znaleziono towarzyszki: " + npcStr);
 			return;
 		}
+		// Fail-closed: imie podane jawnie, ktore nie dopasowalo zadnej aktywnej
+		// towarzyszki, konczy komende bledem - NIE podmieniamy celu na
+		// najblizsza sasiadke (cichy fallback mylilby raport diagnostyczny
+		// i resetowal cooldowny pod niewlasciwa postac).
 		if (!matched)
 		{
-			thePlayer.DisplayHudMessage("[AR kiss] '" + npcStr + "' bez aktywnej towarzyszki - fallback: " + NameToString(nearestNpc.scmcc.data.nam));
-			MCM_AR_Log("[AR kiss] requested '" + npcStr + "' has no active companion - falling back to " + NameToString(nearestNpc.scmcc.data.nam));
-			npcStr = StrLower(NameToString(nearestNpc.scmcc.data.nam));
+			thePlayer.DisplayHudMessage("[AR kiss] Nie znaleziono aktywnej towarzyszki: '" + npcStr + "'");
+			MCM_AR_Log("[AR kiss] requested '" + npcStr + "' has no active companion - fail-closed, no fallback");
+			return;
 		}
 	}
 
@@ -3835,7 +3840,7 @@ exec function ar_kiss(optional npcStr : string)
 	npcStr = MCM_AR_CanonCompanionName(npcStr);
 	targetName = nearestNpc.scmcc.data.nam;
 
-	// Noble-rig jako rozwiazany cel (auto-pick/fallback trafil na followerke
+	// Noble-rig jako rozwiazany cel (auto-pick trafil na followerke
 	// noble): brak animacji kiss - odmowa zamiast generic_kiss, ktory
 	// odpadlby na guardzie IsWomanBaseCompanion.
 	if (npcStr == "anna_henrietta")
@@ -3929,6 +3934,16 @@ exec function ar_kiss(optional npcStr : string)
 	}
 	else
 	{
+		// Walidacja riga przed wymuszeniem wildcardu: auto-pick pustym
+		// argumentem moze trafic na meskiego followera (GeraltsBFF, np.
+		// Lambert/Regis) albo inna niekompatybilna towarzyszke - fail-closed
+		// zamiast cichej smierci akcji na guardzie IsWomanBaseCompanion.
+		if (!MCM_AR_IsWomanBaseCompanion(nearestNpc))
+		{
+			thePlayer.DisplayHudMessage("[AR kiss] " + NameToString(targetName) + ": niekompatybilny rig - kiss wymaga woman_base");
+			MCM_AR_Log("[AR kiss] " + NameToString(targetName) + " rejected: not a woman_base companion");
+			return;
+		}
 		core.debugForceAction = 'generic_kiss';
 		MCM_AR_Log("[AR kiss] Triggering kiss action for " + NameToString(targetName));
 	}
@@ -4057,6 +4072,27 @@ function MCM_AR_CanonCompanionName(s : string) : string
 	else if (s == "tomira")                             return "prologue_village_herbalist";
 	else if (s == "ciri")                               return "cirilla";
 	return s;
+}
+
+// Walidacja riga towarzyszki: true dla standardowego woman_base,
+// false dla noble_woman_base / monster rig / towarzyszy meskich.
+// Globalny helper (jedno zrodlo prawdy): metoda klasy akcji
+// MCM_RomanceInteraction.IsWomanBaseCompanion deleguje tutaj, a exec
+// ar_kiss uzywa go do walidacji celu przed wymuszeniem generic_kiss.
+function MCM_AR_IsWomanBaseCompanion(npc : CNewNPC) : bool
+{
+	var nm : name;
+	if (!npc || !npc.scmcc || !npc.scmcc.data) return false;
+	if (!npc.IsWoman()) return false;
+	if (!npc.GetMovingAgentComponent() || npc.GetMovingAgentComponent().GetName() != "woman_base") return false;
+	nm = npc.scmcc.data.nam;
+	if (nm == 'anarietta' || nm == 'anna_henrietta' || nm == 'anna' ||
+	    nm == 'vivienne' || nm == 'sq701_vivienne' ||
+	    nm == 'oriana' || nm == 'orianna' || nm == 'vampire_diva' || nm == 'anabelle')
+	{
+		return false;
+	}
+	return true;
 }
 
 exec function ar_intimate(optional npcStr : string)
