@@ -5,13 +5,15 @@
 .DESCRIPTION
     Asercje na zipie z package_release.ps1:
       - wszystkie nazwy wpisow uzywaja '/' (spec ZIP, W3MM na Linux/Deck) - blad
-      - wymagane wpisy istnieja (input.settings.txt, README.txt, CHANGELOG.txt,
+      - wymagane wpisy istnieja (input.settings.txt, input.xml.optional, README.txt, CHANGELOG.txt,
         modMCME_AutonomousRomance.xml, MCM_RomanceCore.ws) - blad
-      - zakazane wpisy nieobecne (MCME_AR.input.settings.txt, E2EDev, *.csv,
-        *.stub.ws, *.bak/tmp/~, __folder_managed_by_vortex) - blad
+      - zakazane wpisy nieobecne (MCME_AR.input.settings.txt, input.xml.txt [W3MM
+        auto-merge trap], E2EDev, *.csv, *.stub.ws, *.bak/tmp/~,
+        __folder_managed_by_vortex) - blad
       - MCM_RomanceTw3seDev.ws w paczce jest bajtowo stubem - blad
       - CHANGELOG.txt == snippet wyekstrahowany z CHANGELOG.md - blad
-      - input.settings.txt zawiera binding MCM_AR_Consent - blad
+      - input.settings.txt NIE nadpisuje IK_C (consent = polling, nie binding) - blad
+      - input.xml.optional deklaruje akcje MCM_AR_Consent - blad
       - sensowna liczba wpisow (>= 20) - blad
 
 .PARAMETER ZipPath
@@ -54,6 +56,7 @@ Ok "entries: $($entries.Count), separatory '/'"
 # --- wymagane wpisy ---
 $required = @(
     'Mods/modMCME_AutonomousRomance/input.settings.txt',
+    'Mods/modMCME_AutonomousRomance/input.xml.optional',
     'Mods/modMCME_AutonomousRomance/README.txt',
     'Mods/modMCME_AutonomousRomance/CHANGELOG.txt',
     'Mods/modMCME_AutonomousRomance/content/scripts/local/romance/MCM_RomanceCore.ws',
@@ -68,11 +71,26 @@ foreach ($r in $required) {
 foreach ($name in $entries.Keys) {
     $base = Split-Path $name -Leaf
     if ($base -eq 'MCME_AR.input.settings.txt') { Report "stary prefixed fragment w paczce: $name" }
+    if ($base -eq 'input.xml.txt')              { Report "input.xml.txt w paczce - W3MM auto-merge trap (szablon: input.xml.optional): $name" }
     if ($base -eq 'MCM_RomanceE2EDev.ws')       { Report "dev-only E2EDev w paczce: $name" }
     if ($base -like '*.stub.ws')                { Report "plik *.stub.ws w paczce: $name" }
     if ($base -like '*.csv')                    { Report "plik csv w paczce: $name" }
     if ($base -match '\.(bak|devbak|tmp)$' -or $base -match '~$' -or $base -eq '__folder_managed_by_vortex') {
         Report "plik niechciany w paczce: $name"
+    }
+}
+
+# --- twarda izolacja artefaktow (supply chain): w paczce bazowej moze byc ---
+# --- wylacznie jeden mod i jeden plik MCM XML. Wyciek skryptow mostka    ---
+# --- Unicorn (WIP, niekompilujacy bez modUnicornCore) lub jego martwego  ---
+# --- wpisu menu do paczki na Nexus/GitHub = hard fail builda.            ---
+foreach ($name in $entries.Keys) {
+    if ($name.StartsWith('Mods/') -and -not $name.StartsWith('Mods/modMCME_AutonomousRomance/')) {
+        Report "obcy katalog moda w paczce bazowej: $name"
+    }
+    if ($name.StartsWith('bin/config/r4game/user_config_matrix/pc/') -and
+        $name -ne 'bin/config/r4game/user_config_matrix/pc/modMCME_AutonomousRomance.xml') {
+        Report "obcy plik MCM config w paczce bazowej: $name"
     }
 }
 
@@ -101,12 +119,20 @@ if ($clEntry -and (Test-Path $changelogMd)) {
     }
 }
 
-# --- input.settings.txt zawiera MCM_AR_Consent ---
+# --- input.settings.txt NIE nadpisuje IK_C (consent = polling, nie binding) ---
 $inEntry = $entries['Mods/modMCME_AutonomousRomance/input.settings.txt']
 if ($inEntry) {
     $sr = New-Object IO.StreamReader($inEntry.Open()); $zipTxt = $sr.ReadToEnd(); $sr.Close()
-    if ($zipTxt -notmatch 'MCM_AR_Consent') { Report 'input.settings.txt w paczce nie zawiera MCM_AR_Consent' }
-    else { Ok 'input.settings.txt z bindingiem' }
+    if ($zipTxt -match 'IK_C=') { Report 'input.settings.txt w paczce nadpisuje IK_C - consent dziala przez polling SwordSheathe (W3-TIK-021)' }
+    else { Ok 'input.settings.txt bez IK_C (consent przez polling)' }
+}
+
+# --- input.xml.optional deklaruje MCM_AR_Consent w Keybindings ---
+$xmlEntry = $entries['Mods/modMCME_AutonomousRomance/input.xml.optional']
+if ($xmlEntry) {
+    $sr = New-Object IO.StreamReader($xmlEntry.Open()); $zipXml = $sr.ReadToEnd(); $sr.Close()
+    if ($zipXml -notmatch 'actions="MCM_AR_Consent"') { Report 'input.xml.optional w paczce nie deklaruje akcji MCM_AR_Consent' }
+    else { Ok 'input.xml.optional z akcja Keybindings' }
 }
 
 $zip.Dispose()

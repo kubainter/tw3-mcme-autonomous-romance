@@ -6,7 +6,7 @@
 > oraz procedurze rozszerzania moda bez tworzenia regresji.
 >
 > 📖 **Dokumentacja powiązana i badania architektury:**
-> - [`ACTION_DISPATCH_MAP.md`](file:///G:/GOG%20Galaxy/Games/The%20Witcher%203%20Wild%20Hunt%20GOTY/_ModDev/MCME_AutonomousRomance/repo/ACTION_DISPATCH_MAP.md) (w repozytorium) - Szczegółowa mapa dyspozytora akcji, logiki decyzyjnej, bramek kontekstowych i cyklu ticków.
+> - `ACTION_DISPATCH_MAP.md` (lokalna notatka robocza, poza repo) - Szczegółowa mapa dyspozytora akcji, logiki decyzyjnej, bramek kontekstowych i cyklu ticków.
 > - `..\archive\research\RESEARCH_SEAMLESS_ROMANCE_PLAYBACK.md` (archiwum, poza repo) - Analiza silnikowego odtwarzania cutscen (TGL Scene Selector vs MCM AR) i odrzucona ścieżka Lua/TW3SE dla pocałunku. **Uwaga: ścieżka z researchu NIE jest obecną architekturą** - v2.0 używa natywnych scen `ar_*.w2scene` bez PChoice (§7 ARCHITECTURE).
 
 ---
@@ -50,8 +50,7 @@ w `repo\scripts\tw3se\` — do paczki trafia przez `package_release.ps1`. Źród
 * **Boot i Cykl Życia (L1-165):**
   * Wstrzyknięcie pól do gracza: `@addField(CR4Player) mcm_ar_core`, `mcm_ar_ambient`, `mcm_ar_bootlog`.
   * Punkt startowy: `@wrapMethod(CR4Player) InitRemasterSettings()` (L74) wywołuje `MCM_AR_OnPlayerReady()` (L35). Omija problem cienia priorytetów modów (np. Brothers in Arms).
-  * Rejestracja listenerów akcji klawisza zgody: `'MCM_AR_Consent'` (własna akcja moda: C + pad D-pad L/R,
-    mapowanie w `input.settings.txt`) oraz legacy `'SwordSheathe'` dla kompatybilności.
+  * Rejestracja listenera akcji klawisza zgody: **wyłącznie** `'MCM_AR_Consent'` (własna akcja moda). Listener na vanilla `'SwordSheathe'` jest ZAKAZANY - `RegisterListener` na parze (obiekt, akcja) zastępuje natywny handler gry (`playerInput.ws:91`) i zabija sheathing (W3-TIK-021 §9). Konsent na C/padzie działa przez polling `IsPressed(GetAction('SwordSheathe'), true)` w pętli promptu.
   * Uruchomienie timerów silnika w `MCM_AR_InitCore()` (L83): `MCM_AR_AutonomousTick` (L102, interwał MCM `MCM_AR_TickInterval` 20-160s, dom. 30s), `MCM_AR_AmbientTick` (L103, co 10.0s — barki + `UpdateIdleAmbient`), `MCM_AR_DowntimeTick` (L104, co 1.0s — `UpdateDowntimeWatch`), `MCM_AR_IdlePhaseTick` (L105, co 1.0s — `AdvanceIdlePhases`); `MCM_AR_AnimPumpTick` (0.01s — pompa sync-instancji) rejestrowany NA ŻĄDANIE przez `EnsureAnimPump` (L514, sam AddTimer L517) i zdejmowany gdy `arIdleJobs` puste.
 * **System Idle-Suspend (W2/I1) + przejścia animacyjne (L185-1680):**
   * Klasa `MCM_AR_IdleJob` (L185): NPC, cel, kąt, animacja, faza lokomocji (`phase`: 0 moving → 1 arrived → 2 posed), `animStart`/`animEnd`/`animPhase` (0 nie zagrano → 1 start-grany → 2 loop → 3 end-grany), `animAt` (deadline fazy), `reissueAt` (re-issue loopa), `isBed`+`bedFloor` (job łóżkowy), `syncInst`/`syncSeq` (manual-slot sync instance).
@@ -97,9 +96,9 @@ w `repo\scripts\tw3se\` — do paczki trafia przez `package_release.ps1`. Źród
   * Consent Engine v3 `ShowConsentPrompt(text, timeout, npc)` (L863):
     * Komunikat HUD: suffix lokalizowany kluczem `ar_prompt_consent_hint` (EN: `(hold [C] ~1s or tap twice)`). Literalny `[C]` we wszystkich `ar_prompt_*` to **kotwica podmiany** - `StrReplaceAll(..., "[C]", "<<"+consentTag+">>")` + `ReplaceTagsToIcons` zamienia KAZDE wystapienie na glyph realnego bindingu (promptText i hint; `StrReplace` bez All podmienial tylko pierwsze -> bug TIK-010). Nie usuwac `[C]` z CSV!
     * Odejście gracza >12m traktowane jako odmowa.
-    * Obsługa Hold (~1.0s) i Double-Tap (<0.7s) oparte na zdarzeniach `OnMCM_AR_ConsentKey`; `nowDown = evHeld` (release) lub `DevKeyDown || evHeld` (dev - unia, pad-hold działa też w devie; wcześniej devVK ignorował eventy i pada). Latch eventowy **per-akcja**: `mcm_ar_consentHeldC`/`mcm_ar_consentHeldS` - syntetyczny `IsReleased` z `Duration,IdleTime=0.3` (pad `SwordSheathe`) nie zabija holda drugiej akcji; uzbrajany przez `pressAt >= tStart`, reset bezwarunkowy przed promptem (też w devVK). `actHeld` tylko do telemetrii. **Okno min. 20s** - `DisplayHudMessage` kolejkuje za linia barku NPC (~4-5s na ekranie); przy 10s prompt renderował się na koniec/po oknie i pressy lądowały po timeoutcie (`awaiting=0` w logach). **Wszystkie pomiary czasu przez `GetEngineTimeAsSeconds() - tStart` - NIE akumulacja `Sleep`**. Licznik tapów = `max(krawędzie VK, fakty eventowe)`; listener deduplikuje to samo fizyczne naciśnięcie odpalające obie zarejestrowane akcje (okno 0.12s).
-    * Tekst promptu renderuje glyph realnego bindingu: `<<MCM_AR_Consent>>` + `ReplaceTagsToIcons()`.
-    * Pokrycie kontekstów input: `MCM_AR_Consent` zbindowany nie tylko w 5 bazowych kontekstach gameplay (Exploration/Combat/Horse/Boat/Swimming), lecz też w overlay-contextach, które mogą siedzieć na stosie wejścia podczas promptu (`Scene` tylko klawiatura - D-pad nawiguje tam dialogi, `ScriptedAction`, `SCENE_IS_STARTING_HACK`, `JumpClimb`, `Diving`, `ThrowHold`, `ThrowHoldChain`, `LootPopup`, `BoatPassenger`, replacery Ciri). Bez tego binding w aktywnym kontekście nie istnieje → zero zbocz akcji i eventów listenera.
+    * Obsługa Hold (~1.0s) i Double-Tap (<0.7s) przez **polling** `IsPressed(GetAction(...), true)` obu akcji (`nowDown = actHeld || evHeld`; `evHeld` = pas bezpieczeństwa dla listenera `MCM_AR_Consent`: `mcm_ar_consentHeldC`/`mcm_ar_consentHeldS` uzbrajane `pressAt >= tStart`, reset przed promptem). W dev: `DevKeyDown || evHeld`. **Pad:** binding `SwordSheathe` ma `State=Duration,IdleTime=0.3` - akcja odpala JEDNORAZOWO po >=0.3s, `value` pulsuje bez stanu "held". Detekcja pada nie przez `IsPressed`, lecz przez edge na `theInput.GetLastActivationTime('SwordSheathe')` (timestamp skacze przy każdej aktywacji, baseline przed pętlą); jeden gest D-pad = consent, gate `LastUsedGamepad() || GetLastUsedGamepadType()==IDT_Steam` (zweryfikowane live 20.11: hold D-pad L/R akceptuje). **Okno min. 20s** - `DisplayHudMessage` kolejkuje za linia barku NPC (~4-5s na ekranie); przy 10s prompt renderował się na koniec/po oknie i pressy lądowały po timeoutcie (`awaiting=0` w logach). **Wszystkie pomiary czasu przez `GetEngineTimeAsSeconds() - tStart` - NIE akumulacja `Sleep`**. Licznik tapów = `max(krawędzie VK, fakty eventowe, tapEdges)`; `tapEdges` liczy krawędzie pollingu z debounce 0.15s (migotanie `action.value` przytrzymanego klawisza nie liczy się jako tap).
+    * Tekst promptu renderuje glyphy OBOJGA mapowań (`[C] / [D-pad icon]`): tag `<<akcja,idx>>` wybiera `keys[idx]` z `GetCurrentKeysForActionStr`; klasyfikacja pad vs PC przez porównanie z `GetPadKeysForActionStr` - działa dla dowolnego rebindu. Fallback `<<akcja>>` = `keys[0]` gdy nic nie znaleziono.
+    * Pokrycie kontekstów: konsent działa w każdym kontekście, w którym vanilla C = `SwordSheathe` (Exploration/Combat/Horse/JumpClimb/ThrowHold/ThrowHoldChain, pad D-pad L/R) - polling czyta akcję niezależnie od sekcji `input.settings`. Dedykowany `MCM_AR_Consent` jest opcjonalny: wymaga deklaracji w `legacy\base\input_qwerty.ini` + bindingu w `input.settings` (inaczej gra wycina akcję przy zapisie).
     * Diagnostyka dev (`ar_log.txt`): `consent: ctx=` przy starcie promptu (aktywny `theInput.GetContext()`), sonda `consent probe:` co ~1s (ctx + VK + `GetActionValue` obu akcji + licznik faktu), `consent ev:` na samej górze listenera (każde wywołanie, zanim odpadnie na bramkach - odróżnia "brak eventu" od "event bez press-edge").
   * Odtwarzanie Scen i Integracja MCME (L1216-2110):
     * `PlayKissScene(npc)` / `PlayHugScene(npc)`: rozwiązują ścieżkę przez `AutonomousScenePath(npc, isHug)` i grają naszą scenę `ar_*.w2scene` (per-NPC strip PChoice: Input→sekcja gestu→Output) przez `PlayScene`. Brak mapowania = `false`. **NIGDY nie kieruj akcji kiss/hug na sceny `*FollowWithKiss.w2scene`** - te pliki należą do MCME (zawierają `PChoice` i menu dialogowe) i służą wyłącznie własnemu pipeline MCME.
@@ -121,7 +120,7 @@ w `repo\scripts\tw3se\` — do paczki trafia przez `package_release.ps1`. Źród
   * `TryExecute(npc, player, ctx, out eligCount, optional ambientOnly)`: filtrowanie wg NPC, kanału, sprawdzanie bramek, losowanie ważone (`weight`) i wywołanie `Execute()`.
   * `TryExecuteTimeCritical(npc, player, ctx)` + `HasTimeCriticalEligible(...)`: wariant ambient dla akcji `isTimeCritical` - bez losowania (max `weight`), wołany przed `TryExecute` w pętli ambient; helper używany do ominięcia losu presetu gadatliwości.
 * **Wrappery i Zdarzenia Globalne (L2685-2776):**
-  * `event OnMCM_AR_ConsentKey(action)`: rejestruje stan naciśnięcia klawisza consent (`'MCM_AR_Consent'` + legacy `'SwordSheathe'`); `FactsAdd` do licznika tapów z deduplikacją 0.12s (te same fizyczne pressy odpalają obie akcje w jednej klatce); latch holda per-akcja (`consentHeldC`/`consentHeldS`) - `IsReleased` jednej akcji nie zeruje trzymania drugiej.
+  * `event OnMCM_AR_ConsentKey(action)`: obsługuje wyłącznie własną akcję `'MCM_AR_Consent'` (listener na vanilla `'SwordSheathe'` usunięty - zastąpiłby natywny handler gry, W3-TIK-021 §9); `FactsAdd` do licznika tapów z deduplikacją 0.12s; latch holda (`consentHeldC`). Konsent na C/padzie pochodzi z pollingu w pętli promptu.
   * `MCM_AR_AreRivals(a, b)`: helper par rywalizujących (yen↔triss) dla konfrontacji zazdrości.
   * `MCM_AR_GetCompanionDisplayName(npc)` (L2696): resolver czytelnych nazw dla HUD.
   * `MCM_AR_ProbeAnim(npc, animName)` (L2753): sonda sprawdzająca obecność animacji slotowej w modelu NPC.
@@ -213,46 +212,46 @@ Sceny intymne Tier 4 (`RTT_Scene`) korzystają z NaughtyPoints zarejestrowanych 
 
 ## 3. Kompletny Indeks Konsoli Debugującej (38 komend `exec` w źródłach; 35 trafiają do paczki, 3 dev-only z `MCM_RomanceE2EDev.ws` są usuwane ze stagingu)
 
-| `ar_unhide()` | `Core.ws:L2889` | Awaryjne odkrycie towarzyszek zasłoniętych po scenie (`SetHideInGame(false)` + `NaughtyManager.ShowAllExcept`) — komenda recovery, celowo pominięta w README gracza |
 | Komenda konsoli | Plik źródłowy | Działanie |
 | --- | --- | --- |
-| `ar_test()` | `Core.ws:L78` | undefined |
-| `ar_status()` | `Core.ws:L2796` | undefined |
-| `ar_reset()` | `Core.ws:L2911` | undefined |
-| `ar_force()` | `Core.ws:L2933` | undefined |
-| `ar_devreset()` | `Core.ws:L2955` | undefined |
-| `ar_idlenow()` | `Core.ws:L2973` | undefined |
-| `ar_downtime()` | `Core.ws:L2985` | undefined |
-| `ar_consent()` | `Core.ws:L3041` | undefined |
-| `ar_affinity(npc, n)` | `Core.ws:L2944` | Dodaje `n` punktów zażyłości dla wskazanego NPC |
-| `ar_trigger()` | `Core.ws:L3076` | undefined |
-| `ar_logdump(optional n)` | `Core.ws:L2977` | Wypisuje na HUD ostatnie `n` linii z bufora logów |
-| `ar_bootlog()` | `Core.ws:L3124` | undefined |
-| `ar_diag()` | `Core.ws:L3141` | undefined |
-| `ar_line(npc, lineId)` | `Core.ws:L3078` | Odtwarza wybraną kwestię dialogową na żywo (test audio) |
-| `ar_probeanim(npc, anim)` | `Core.ws:L3103` | Sprawdza obecność animacji slotowej w modelu postaci |
-| `ar_probeanim2(target, anim)` | `Core.ws:L3127` | Wariant proba animacji na dowolnym celu |
-| `ar_probesync()` | `Core.ws:L3332` | undefined |
-| `ar_probesyncstop()` | `Core.ws:L3354` | undefined |
-| `ar_npcsweep()` | `Core.ws:L3366` | undefined |
-| `ar_probeinject(target, animset, anim)` | `Core.ws:L3277` | Test wstrzyknięcia animacji z animsetu |
-| `ar_dance(optional npc)` | `Core.ws:L3665` | Test: wymusza jeden taniec lub odmowę dla towarzyszki w drużynie, bez bramki tawerna/ognisko. Nazwy: priscilla, triss, keira, shani, tomira, cerys, ves, ciri, philippa, yen, ciri_refuse |
-| `ar_debug(optional mode)` | `Core.ws:L3360` | Włącza/wyłącza powiadomienia o tickach na ekranie HUD |
-| `ar_eval()` | `Core.ws:L3512` | undefined |
-| `ar_neartags()` | `Core.ws:L3606` | undefined |
-| `ar_taverndebug()` | `Core.ws:L3660` | undefined |
-| `ar_kiss(optional npc)` | `Core.ws:L3578` | Natychmiastowy bezpośredni pocałunek ze wskazaną towarzyszką (v2.0) |
-| `ar_intimate(optional npc)` | `Core.ws` | Test/Wymuszenie: natychmiastowe zaproszenie do intymnosci (T4) lub informacja na HUD/w konsoli o braku obslugi dla danego NPC (v2.1) |
-| `ar_hug()` | `Core.ws:L3885` | undefined |
-| `ar_dress(optional npc)` | `QoL.ws:L211` | Zmienia strój towarzyszki na normalny |
-| `ar_undress(optional npc)` | `QoL.ws:L220` | Zmienia strój towarzyszki na bieliznę |
-| `ar_naked(optional npc)` | `QoL.ws:L234` | Zmienia strój towarzyszki na nagość |
-| `ar_gift(optional npc)` | `QoL.ws:L250` | Wręcza butelkę alkoholu z ekwipunku (+3 affinity) |
-| `ar_devinfo()` | `Tw3seDev.ws:L151` | undefined |
-| `ar_reload()` | `Tw3seDev.ws:L174` | undefined |
-| `ar_e2e_rebuild_registry()` | `E2EDev.ws:L919` | undefined |
-| `ar_test_e2e()` | `E2EDev.ws:L933` | undefined |
-| `ar_tour_scenes(optional npc)` | `E2EDev.ws:L1094` | **DEV-ONLY** (wycięty z paczki): tour po scenach danej postaci (gift→kiss/hug→T4) |
+| `ar_test()` | `Core.ws:L78` | Natychmiastowy test obecności moda i uchwytu `thePlayer` (`MCM_AR_OnPlayerReady`) |
+| `ar_status()` | `Core.ws:L2815` | Zrzut stanu: wykryte towarzyszki, stan bezpieczny, aktywne cooldowny, zażyłość |
+| `ar_unhide()` | `Core.ws:L2907` | Awaryjne odkrycie towarzyszek zasłoniętych po scenie (`SetHideInGame(false)` + `NaughtyManager.ShowAllExcept`) — komenda recovery, celowo pominięta w README gracza |
+| `ar_reset()` | `Core.ws:L2929` | Zeruje wszystkie cooldowny akcji dla wykrytych towarzyszek |
+| `ar_force()` | `Core.ws:L2951` | Toggle `ForceRomance` (sandbox): max affinity, pomijanie bramek fabularnych |
+| `ar_devreset()` | `Core.ws:L2973` | Awaryjny reset stanu sesji AR (odblokowanie locków i faktów) |
+| `ar_idlenow()` | `Core.ws:L2991` | Wymusza próg postoju — suspend bez czekania 50 s (wynik: `ar_diag`/`ar_logdump`) |
+| `ar_downtime()` | `Core.ws:L3003` | Sonda downtime: stan klasyfikatora i watchera |
+| `ar_consent()` | `Core.ws:L3059` | Toggle `MCM_AR_RequireConsent` (wymóg promptu `[C]` dla Tier 3+4) z konsoli |
+| `ar_affinity(npc, n)` | `Core.ws:L3080` | Dodaje `n` punktów zażyłości dla wskazanego NPC |
+| `ar_trigger()` | `Core.ws:L3094` | Zeruje cooldowny i natychmiast wymusza tick decyzyjny moda |
+| `ar_logdump(optional n)` | `Core.ws:L3113` | Wypisuje na HUD ostatnie `n` linii z bufora logów |
+| `ar_bootlog()` | `Core.ws:L3142` | Dump bootloga na HUD (linie sprzed powstania core — głównie ścieżka `InitRemasterSettings`) |
+| `ar_diag()` | `Core.ws:L3159` | Dump diagnostyki do `user.settings` (`[AR_Diag]`) — kanał czytelny z dysku |
+| `ar_line(npc, lineId)` | `Core.ws:L3214` | Odtwarza wybraną kwestię dialogową na żywo (test audio) |
+| `ar_probeanim(npc, anim)` | `Core.ws:L3239` | Sprawdza obecność animacji slotowej w modelu postaci |
+| `ar_probeanim2(target, anim)` | `Core.ws:L3263` | Wariant proba animacji na dowolnym celu |
+| `ar_probesync()` | `Core.ws:L3350` | Sonda sync-instancji: tworzy prawdziwy idle-job i leci `StartIdleSyncAnim` — test pozy bez medytacji |
+| `ar_probesyncstop()` | `Core.ws:L3372` | Zwalnia testową sync-instancję z `ar_probesync` |
+| `ar_npcsweep()` | `Core.ws:L3384` | Sweep unstick: sekwencja release zdejmuje zaciętą flagę `IsInGameplayScene` na towarzyszkach (z logiem przed/po) |
+| `ar_probeinject(target, animset, anim)` | `Core.ws:L3414` | Test wstrzyknięcia animacji z animsetu |
+| `ar_dance(optional npc)` | `Core.ws:L3941` | Test: wymusza jeden taniec lub odmowę dla towarzyszki w drużynie, bez bramki tawerna/ognisko. Nazwy: priscilla, triss, keira, shani, tomira, cerys, ves, ciri, philippa, yen, ciri_refuse |
+| `ar_debug(optional mode)` | `Core.ws:L3497` | Włącza/wyłącza powiadomienia o tickach na ekranie HUD |
+| `ar_eval()` | `Core.ws:L3531` | Dry-run bramek: dla każdej towarzyszki affinity, cooldown i które akcje są eligible/zablokowane |
+| `ar_neartags()` | `Core.ws:L3625` | Wypisuje tagi encji w promieniu 10 m (audyt wykrywania `campfire`) |
+| `ar_taverndebug()` | `Core.ws:L3679` | Sonda tawerny: `player_in_inn`, `IsInInterior`, `MCM_AR_IsInTavern` + skan nazw encji |
+| `ar_kiss(optional npc)` | `Core.ws:L3715` | Natychmiastowy bezpośredni pocałunek: aliasy kanoniczne, najbliższa towarzyszka dla pustego arg., `generic_kiss` dla rozszerzonego rosteru |
+| `ar_intimate(optional npc)` | `Core.ws:L4059` | Test/Wymuszenie: natychmiastowe zaproszenie do intymnosci (T4) lub informacja na HUD/w konsoli o braku obslugi dla danego NPC (v2.1) |
+| `ar_hug()` | `Core.ws:L4015` | Natychmiastowy test bezokienkowego uścisku Ciri |
+| `ar_dress(optional npc)` | `QoL.ws:L190` | Zmienia strój towarzyszki na normalny |
+| `ar_undress(optional npc)` | `QoL.ws:L199` | Zmienia strój towarzyszki na bieliznę |
+| `ar_naked(optional npc)` | `QoL.ws:L213` | Zmienia strój towarzyszki na nagość |
+| `ar_gift(optional npc)` | `QoL.ws:L229` | Wręcza butelkę alkoholu z ekwipunku (+3 affinity) |
+| `ar_devinfo()` | `Tw3seDev.ws:L151` | **DEV** self-test mostka TW3SE (wersja, zapis pliku, pipe) |
+| `ar_reload()` | `Tw3seDev.ws:L174` | **DEV** `ReloadScripts` przez TW3SE (po powrocie uruchom `ar_devreset`) |
+| `ar_e2e_rebuild_registry()` | `E2EDev.ws:L919` | **DEV-ONLY** przebudowa rejestru akcji na żywo (`registry.Init()`) |
+| `ar_test_e2e()` | `E2EDev.ws:L933` | **DEV-ONLY** pełny suite E2E: asercje silnikowe (stan rdzenia, rejestr, Affinity, dry-run bramek) |
+| `ar_tour_scenes(optional npc)` | `E2EDev.ws:L1119` | **DEV-ONLY** (wycięty z paczki): tour po scenach danej postaci (gift→kiss/hug→T4) |
 
 ---
 

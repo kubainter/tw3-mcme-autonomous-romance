@@ -108,7 +108,8 @@ w `PlayBark` - osobne pliki-sondy nie są już potrzebne.
         │         sam gdy arIdleJobs puste)
         ├─ new MCM_AR_ConfigWrapper (lazy; Filar 3 konfiguracji)
         ├─ theInput.RegisterListener(this,'OnMCM_AR_ConsentKey','MCM_AR_Consent')
-        ├─ theInput.RegisterListener(this,'OnMCM_AR_ConsentKey','SwordSheathe') (legacy)
+        ├─ (BRAK listenera na 'SwordSheathe' - tylko polling; listener zastapilby
+         natywny handler gry, W3-TIK-021 §9)
         └─ core.ResetAllCooldowns()
 ```
 
@@ -293,14 +294,16 @@ T4 Scene (staged): jak T3, ale consent ZAWSZE wymagany (niezależnie od configu)
        → re-stamp greetSeenTime (NPC schowani HideAllExcept ≠ „powrót po absencji")
 ```
 
-## 6. FLOW: Consent Engine v3 (`MCM_AR_Consent` + `SwordSheathe`)
+## 6. FLOW: Consent Engine v4 (polling `SwordSheathe` + opcjonalny `MCM_AR_Consent`)
 
 - Historia: wczesne próby nasłuchiwania na klawiszu `[E]` kolidowały z natywnym kołem dialogu MCME. Z kolei bindowanie w sekcji menu `[SCMMenuBase]` nie dispatchowało eventów podczas eksploracji świata.
-- Dedykowana akcja `MCM_AR_Consent`: w v2.0 wprowadzono własną akcję wejścia `MCM_AR_Consent`, zdefiniowaną w `input.settings.txt` pod klawisz [C] oraz D-pad w lewo i w prawo na kontrolerze.
-- Vanilla fallback: zachowano równoległy nasłuch na vanilla akcję `'SwordSheathe'` ([C]), dzięki czemu mod działa natychmiast po instalacji nawet bez zmergowania pliku `input.settings`.
+- Konsent na C/padzie: **polling** - pętla promptu czyta `IsPressed(GetAction(consentAct), true)` wyłącznie dla aktywnej akcji zgody (`MCM_AR_Consent` gdy zbindowana, inaczej `SwordSheathe`); fragment `input.settings.txt` nie binduje żadnego klawisza (tuple `(Action=A,Action=B)` jest nieprawidłową składnią - silnik bierze pierwszą akcję, a nieznane akcje są wycinane przy zapisie).
+- Rebind (opcjonalny): akcja musi być zadeklarowana w `legacy\base\input_qwerty.ini` (np. `IK_Z=(Action=MCM_AR_Consent)`) + binding w `input.settings`; `input.xml.optional` (szablon w paczce) dodaje wiersz w Options -> Keybindings, gdy fragment zostanie ręcznie wklejony do `input.xml`. Nazwa `input.xml.txt` jest zakazana w drzewie moda - W3MM auto-merguje ją do `input.xml` u każdego gracza (surowy displayName + ciche ciecie bindingu). Bez deklaracji w `input_qwerty.ini` gra wycina binding przy zapisie.
+- Vanilla sheathing: listener na `'SwordSheathe'` jest **zakazany** - `RegisterListener` na parze (obiekt, akcja) zastępuje natywny handler gry (`playerInput.ws:91`, `OnCommSheatheAny`) i zabija chowanie miecza (W3-TIK-021 §9). Obserwacja wyłącznie przez polling.
 - Implementacja w `ShowConsentPrompt` (Interaction L863-1210):
-  - Wyświetlanie promptu na ekranie HUD z ikoną realnego klawisza (`<<MCM_AR_Consent>>`).
-  - Dwuetapowa detekcja zgody: przytrzymanie klawisza przez ok. 1.0s (Hold) lub szybkie podwójne naciśnięcie w czasie <0.7s (Double-Tap).
+  - Wyświetlanie promptu na ekranie HUD z glyphami obu mapowań (`[C] / [D-pad]`): `<<akcja,idx>>` wybiera `keys[idx]`; pad vs PC klasyfikowany przez `GetPadKeysForActionStr` (odporny na rebindy).
+  - Dwuetapowa detekcja zgody: przytrzymanie klawisza przez ok. 1.0s (Hold) lub szybkie podwójne naciśnięcie w czasie <0.7s (Double-Tap) - polling `IsPressed` aktywnej akcji zgody.
+  - Pad: binding akcji zgody ma `State=Duration,IdleTime=0.3` - odpala raz po >=0.3s bez stanu "held"; edge na `GetLastActivationTime` (baseline przed pętlą) łapie kazdy gest, gate `LastUsedGamepad() || (IDT_Steam && !LastUsedPCInput())` (klawiatura nadal wymaga hold/2x tap, stale-IDT_Steam nie odpala szybkiej ścieżki). Jeden gest D-pad L/R = consent.
   - Latch zdarzeń per-akcja (`mcm_ar_consentHeldC` i `mcm_ar_consentHeldS`): zwolnienie syntetycznego zdarzenia pada nie zeruje holda drugiej zarejestrowanej akcji.
   - Okno czasowe min. 20s: prompt nie znika zbyt szybko za kolejką napisów dialogowych i barków NPC.
   - Odmowa: odejście gracza na dystans >12m lub upływ limitu czasu promptu uruchamia backoff odmowy (300s -> 900s -> 1800s).
@@ -405,7 +408,7 @@ W klasie bazowej `MCM_RomanceInteraction` wprowadzono latentną funkcję `PlayDr
 
 ### Akcje taneczne (`MCM_AR_Dance_Base` / `MCM_AR_DanceRefuse_Base`, v2.1)
 
-Ambient T1: towarzyszka tańczy przy graczu w kontekście biesiadnym. Bramka środowiskowa w `GetExtraBlockReason`: `ctx.isInTavern || (ctx.isNearCampfire && ctx.isNight)` → `no_dance_scene`. Dodatkowo w `Dance_Base`: pusty `GetDanceAnimsForNpc(targetNpc)` → `no_dance_anim` (mapowanie `nam`→zestaw: `woman_dance` dla triss/keira/shani/priscilla/ciri-Adult, `woman_cheering` dla cerys/tomira; reszta → `""` → `no_dance_anim`). Sekwencja `RunDanceSequence` = `MCM_AR_ProbeAnim` + `Sleep` per krok (~15.5 s dla woman_dance; cheering 4 loopy). `DanceRefuse_Base` = ta sama bramka środowiskowa, wykonanie to sam bark odmowy (minAffinity 30, cd 600 s, weight 8 vs 16 dla dance). Od v2.2.1 obie sekwencje (`RunDanceSequence`/`PlayDrinkingAnimation`) wołają `RemoveIdleJobFor(npc)` na starcie i trzymają `MCM_AR_AmbientBusy` przez czas trwania (wrappery → `...Inner`), więc nie kolidują z idle-sit jobami.
+Ambient T1: towarzyszka tańczy przy graczu w kontekście biesiadnym. Bramka środowiskowa w `GetExtraBlockReason`: `ctx.isInTavern || (ctx.isNearCampfire && ctx.isNight)` → `no_dance_scene`. Dodatkowo w `Dance_Base`: pusty `GetDanceAnimsForNpc(targetNpc)` → `no_dance_anim` (mapowanie `nam`→zestaw: `woman_dance` dla triss/keira/shani/priscilla/cerys/tomira/ciri-Adult; reszta → `""` → `no_dance_anim`; `woman_cheering_arena_*` to klaskanie, nie taniec — gałąź usunięta). Sekwencja `RunDanceSequence` = `MCM_AR_ProbeAnim` + `Sleep` per krok (~15.5 s dla `woman_dance`). `DanceRefuse_Base` = ta sama bramka środowiskowa, wykonanie to sam bark odmowy (minAffinity 30, cd 600 s, weight 8 vs 16 dla dance). Od v2.2.1 obie sekwencje (`RunDanceSequence`/`PlayDrinkingAnimation`) wołają `RemoveIdleJobFor(npc)` na starcie i trzymają `MCM_AR_AmbientBusy` przez czas trwania (wrappery → `...Inner`), więc nie kolidują z idle-sit jobami.
 
 Stan rejestracji (zweryfikowane 2026-11-05): 11 akcji — tańce `priscilla`, `cerys`, `triss`, `keira`, `shani`, `tomira`, `ciri` (Adult) oraz odmowy `philippa`, `yen`, `ves`, `ciri` (Lore). `ar_dance(npc)` wymusza każdą z nich przez `TryExecuteSpecificAction`, który wywołuje `Execute` bez bramki środowiskowej.
 
@@ -421,7 +424,7 @@ cooldown akcji -> backoff po odmowie -> `minAffinity` (pomijane w trybie ForceRo
 | cirilla | ciri_hug, ciri_kiss†, ciri_intimate_invite†, ciri_night_filler, ciri_dance†, ciri_dance_refuse | T3 (T4 opt-in) | Domyślnie więź rodzinna; †=tylko MCM_AR_CiriMode=Adult (w Lore-Friendly no_scene/lore_mode) |
 | anna_henrietta | anarietta_oneliner_flirt, anarietta_postcombat_pride, anarietta_intimate_invite, anarietta_tavern_drink, anarietta_gift_request, anarietta_night_filler | T1,T2,T4 | Pałac Beauclair; duma po walce; wino; T4 = naughty\anarietta; brak kiss (noble rig) |
 | sq701_vivienne | vivienne_oneliner_flirt, vivienne_campfire_mystery, vivienne_intimate_invite, vivienne_tavern_drink, vivienne_gift_request, vivienne_night_filler | T1,T2,T4 | Ognisko w dziczy; T4 = naughty\vivienne; brak kiss (noble rig) |
-| becca (Cerys) | cerys_oneliner_flirt, cerys_postcombat_skellige, cerys_night_invitation†, cerys_tavern_drink, cerys_gift_request, cerys_night_filler, cerys_dance | T1-T3 | Skelligijska duma; nocna propozycja (kiss); T4 przez generic_intimate_invite; taniec woman_cheering |
+| becca (Cerys) | cerys_oneliner_flirt, cerys_postcombat_skellige, cerys_night_invitation†, cerys_tavern_drink, cerys_gift_request, cerys_night_filler, cerys_dance | T1-T3 | Skelligijska duma; nocna propozycja (kiss); T4 przez generic_intimate_invite; taniec woman_dance |
 | syanna | syanna_oneliner_flirt, syanna_postcombat, syanna_kiss, syanna_intimate_invite, syanna_gift_request, syanna_night_filler | T1-T4 | Cynizm; dedykowany T4 cloud sex (naughty\syanna); kiss ar_* |
 | philippa_eilhart | philippa_oneliner_flirt, philippa_care, philippa_kiss, philippa_gift_request, philippa_night_filler, philippa_dance_refuse | T1-T3 | Opieka po walce (HP+combat gate v2.2.1); kiss ar_*; odmowa tańca; T4 przez generic |
 | ves | ves_oneliner_flirt, ves_campfire, ves_kiss, ves_tavern_drink, ves_gift_request, ves_night_filler, ves_dance_refuse | T1-T3 | Żołnierski szacunek; toast w karczmie; kiss ar_*; odmowa tańca; T4 przez generic |
@@ -432,7 +435,7 @@ cooldown akcji -> backoff po odmowie -> `minAffinity` (pomijane w trybie ForceRo
 | margarita | margarita_oneliner_flirt, margarita_care, margarita_kiss, margarita_gift_request, margarita_night_filler | T1-T3 | Opieka (HP+combat gate); kiss ar_*; T4 przez generic (scena naughty\margaritta - typo upstream) |
 | vampire_diva (Orianna) | orianna_oneliner_flirt, orianna_care, orianna_intimate_invite, orianna_gift_request, orianna_night_filler | T1,T2,T4 | Opieka (HP+combat gate); T4 = naughty\oriana cutscene; brak kiss (noble rig) |
 | rosa_var_attre | rosa_oneliner_flirt, rosa_kiss, rosa_gift_request, rosa_night_filler | T1-T3 | Kiss ar_rosa_kiss; T4 przez generic |
-| prologue_village_herbalist (Tomira) | tomira_oneliner_flirt, tomira_kiss, tomira_gift_request, tomira_night_filler, tomira_dance | T1-T3 | Kiss ar_tomira_kiss; taniec woman_cheering; T4 przez generic |
+| prologue_village_herbalist (Tomira) | tomira_oneliner_flirt, tomira_kiss, tomira_gift_request, tomira_night_filler, tomira_dance | T1-T3 | Kiss ar_tomira_kiss; taniec woman_dance; T4 przez generic |
 | (generyczne, targetNpc='') | ar_weather_bark, ar_horse_bark, ar_boat_bark, ar_interior_bark, ar_afterglow, ar_jealousy_aftermath (T1) + generic_flirt_bark (T1), generic_care (T2), generic_kiss (T3), generic_intimate_invite (T4 woman_base: ognisko/NaughtyPoint) | T1-T4 | Wildcardi: pogoda/koń/łodź/interior; afterglow i jealousy = isTimeCritical; T4 generic obowiązuje IsWomanBaseCompanion i wyklucza ciri/CiriMode |
 
 \* Gate `no_scene` (`usesAutonomousKiss`/`usesAutonomousHug` w `GetBlockReason`) pozostaje aktywnym bezpiecznikiem: akcja scenowa bez wpisu w `AutonomousScenePath` jest odfiltrowywana przed promptem zgody. Projektowe wyjątki `no_scene`: `ciri_kiss`/`ciri_intimate_invite` w trybie Lore-Friendly. Noble-trio (Anna/Vivienne/Orianna) nie ma akcji kiss w rejestrze — rig `noble_woman_base` bez banku `woman_dialog`. T4 dla większości woman_base to wyłącznie `generic_intimate_invite` (v2.2.0); dedykowane `*_intimate_invite` mają tylko syanna/anarietta/vivienne/orianna/ciri(Adult).
@@ -512,7 +515,7 @@ Bezpieczeństwo save'ów: tylko fakty `mcme_ar_*` + RAM - usunięcie moda = czys
 | `theGame.GetNPCsByTag('GeraltsBFF',out)` | CGame | lista companionów |
 | `theGame.GetEntitiesByTag('campfire',out)` | CGame | wykrywanie ogniska <6 m |
 | `FactsQuerySum/FactsAdd/FactsSet/FactsRemove` | engine | affinity, consent, debug, `player_in_inn` |
-| `theInput.RegisterListener/GetActionValue/GetLastActivationTime('SwordSheathe')` | CInput | consent [C] |
+| `theInput.GetAction/IsPressed/GetActionValue('SwordSheathe')` (polling, bez listenera) | CInput | consent [C] |
 | `player.BlockAction/UnblockAction(EIAB_Movement,'MCM_AR_interaction')` | CR4Player | lock HardStage |
 | `thePlayer.IsInCombat/IsSwimming/IsOnBoat/IsInInterior/GetUsedVehicle` | CR4Player | gating kontekstu |
 | `DisplayHudMessage` | CR4Player | HUD |

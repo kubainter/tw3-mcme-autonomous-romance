@@ -1,82 +1,30 @@
-[Exploration]
-IK_C=(Action=MCM_AR_Consent)
-IK_Pad_DigitLeft=(Action=MCM_AR_Consent)
-IK_Pad_DigitRight=(Action=MCM_AR_Consent)
-
-[Combat]
-IK_C=(Action=MCM_AR_Consent)
-IK_Pad_DigitLeft=(Action=MCM_AR_Consent)
-IK_Pad_DigitRight=(Action=MCM_AR_Consent)
-
-[Horse]
-IK_C=(Action=MCM_AR_Consent)
-IK_Pad_DigitLeft=(Action=MCM_AR_Consent)
-IK_Pad_DigitRight=(Action=MCM_AR_Consent)
-
-[Boat]
-IK_C=(Action=MCM_AR_Consent)
-IK_Pad_DigitLeft=(Action=MCM_AR_Consent)
-IK_Pad_DigitRight=(Action=MCM_AR_Consent)
-
-[Swimming]
-IK_C=(Action=MCM_AR_Consent)
-IK_Pad_DigitLeft=(Action=MCM_AR_Consent)
-IK_Pad_DigitRight=(Action=MCM_AR_Consent)
-
-[BoatPassenger]
-IK_C=(Action=MCM_AR_Consent)
-IK_Pad_DigitLeft=(Action=MCM_AR_Consent)
-IK_Pad_DigitRight=(Action=MCM_AR_Consent)
-
-[Combat_Replacer_Ciri]
-IK_C=(Action=MCM_AR_Consent)
-IK_Pad_DigitLeft=(Action=MCM_AR_Consent)
-IK_Pad_DigitRight=(Action=MCM_AR_Consent)
-
-[Exploration_Replacer_Ciri]
-IK_C=(Action=MCM_AR_Consent)
-IK_Pad_DigitLeft=(Action=MCM_AR_Consent)
-IK_Pad_DigitRight=(Action=MCM_AR_Consent)
-
-[Horse_Replacer_Ciri]
-IK_C=(Action=MCM_AR_Consent)
-IK_Pad_DigitLeft=(Action=MCM_AR_Consent)
-IK_Pad_DigitRight=(Action=MCM_AR_Consent)
-
-[Diving]
-IK_C=(Action=MCM_AR_Consent)
-IK_Pad_DigitLeft=(Action=MCM_AR_Consent)
-IK_Pad_DigitRight=(Action=MCM_AR_Consent)
-
-[JumpClimb]
-IK_C=(Action=MCM_AR_Consent)
-IK_Pad_DigitLeft=(Action=MCM_AR_Consent)
-IK_Pad_DigitRight=(Action=MCM_AR_Consent)
-
-[ThrowHold]
-IK_C=(Action=MCM_AR_Consent)
-IK_Pad_DigitLeft=(Action=MCM_AR_Consent)
-IK_Pad_DigitRight=(Action=MCM_AR_Consent)
-
-[ThrowHoldChain]
-IK_C=(Action=MCM_AR_Consent)
-IK_Pad_DigitLeft=(Action=MCM_AR_Consent)
-IK_Pad_DigitRight=(Action=MCM_AR_Consent)
-
-[LootPopup]
-IK_C=(Action=MCM_AR_Consent)
-IK_Pad_DigitLeft=(Action=MCM_AR_Consent)
-IK_Pad_DigitRight=(Action=MCM_AR_Consent)
-
-[SCENE_IS_STARTING_HACK]
-IK_C=(Action=MCM_AR_Consent)
-IK_Pad_DigitLeft=(Action=MCM_AR_Consent)
-IK_Pad_DigitRight=(Action=MCM_AR_Consent)
-
-[ScriptedAction]
-IK_C=(Action=MCM_AR_Consent)
-IK_Pad_DigitLeft=(Action=MCM_AR_Consent)
-IK_Pad_DigitRight=(Action=MCM_AR_Consent)
-
-[Scene]
-IK_C=(Action=MCM_AR_Consent)
+; MCME Autonomous Romance - fragment input.settings (Settings Updater / W3MM)
+;
+; Ten fragment CELOWO nie zawiera zadnego bindingu (zero linii "IK_") i nie
+; dotyka klawisza IK_C w zadnym kontekscie.
+;
+; Zgoda (consent) dziala przez POLLING vanilla akcji "SwordSheathe":
+;   - C zachowuje sie jak w vanilla (chowa/odbezpiecza miecz),
+;   - gdy na ekranie wisi prompt zgody, przytrzymanie C ~1 s albo 2x tap C
+;     akceptuje romans.
+; Polling to pasywne GetAction/IsPressed w petli zgody - mod NIE rejestruje
+; listenera na vanilla akcji, wiec natywny handler gry (OnCommSheatheAny,
+; playerInput.ws) pozostaje nietkniety i sheathing na C dziala (W3-TIK-021 par.9).
+;
+; Historia: poprzednie wersje tego pliku podpinaly zgode pod C liniami
+; w formacie krotki (tuple) - "IK_C" z dwiema akcjami w jednym bindingu
+; (SwordSheathe + MCM_AR_Consent). Ta skladnia jest NIEPRAWIDLOWA: gra
+; normalizuje ja do pierwszej akcji, wiec consent nigdy nie byl realnie
+; podpiety, a fragment jedynie nadpisywal vanilla binding. Linie usuniete.
+;
+; Dedytkowany klawisz zgody (opcjonalnie, recznie) - README, sekcja
+; "Rebinding the consent key (optional)": akcja MCM_AR_Consent musi byc
+; zadeklarowana w bin\config\r4game\legacy\base\input_qwerty.ini, wpisana
+; w Documents\The Witcher 3\input.settings (ten sam kontekst) i opcjonalnie
+; dopisana do bin\config\r4game\user_config_matrix\pc\input.xml.
+; Nie wysylamy domyslnego klawisza w tym fragmencie - nie ma uniwersalnie
+; wolnego klawisza, a kazdy dedykowany binding wymaga recznej deklaracji.
+;
+; Merge komentarzowego fragmentu jest bezpieczny: Settings Updater / W3MM
+; dokladaja te linie do Documents\The Witcher 3\input.settings, a gra ignoruje
+; wpisy zaczynajace sie od ';'.

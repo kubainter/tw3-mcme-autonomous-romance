@@ -108,6 +108,38 @@ if (Test-Path $e2eDevInStaging) {
     Write-Host "[release] MCM_RomanceE2EDev.ws usuniety z paczki (dev-only)" -ForegroundColor Yellow
 }
 
+# Opcjonalny most Unicorn - osobny ZIP (package_bridge.ps1), NIE wchodzi
+# do paczki bazowej: bez modUnicornCore jego skrypty nie kompiluja sie,
+# a XML sam utworzylby martwa strone menu u graczy bez mostu.
+$bridgeModInStaging = Join-Path $stagingDir 'Mods\modMCME_AR_Unicorn'
+$bridgeXmlInStaging = Join-Path $stagingDir 'bin\config\r4game\user_config_matrix\pc\modMCME_AR_Unicorn.xml'
+if (Test-Path $bridgeModInStaging) {
+    Remove-Item -Path $bridgeModInStaging -Recurse -Force
+    Write-Host "[release] modMCME_AR_Unicorn wyciety (osobny release)" -ForegroundColor Yellow
+}
+if (Test-Path $bridgeXmlInStaging) {
+    Remove-Item -Path $bridgeXmlInStaging -Force
+    Write-Host "[release] modMCME_AR_Unicorn.xml wyciety (osobny release)" -ForegroundColor Yellow
+}
+# Plan 005 wprowadzi dlc\dlcMCME_AR_Unicorn (paczki animacji) - wycinaj
+# juz teraz, zeby przyszly folder mostu nie wyciekl do paczki bazowej.
+$bridgeDlcInStaging = Join-Path $stagingDir 'dlc\dlcMCME_AR_Unicorn'
+if (Test-Path $bridgeDlcInStaging) {
+    Remove-Item -Path $bridgeDlcInStaging -Recurse -Force
+    Write-Host "[release] dlcMCME_AR_Unicorn wyciety (osobny release)" -ForegroundColor Yellow
+}
+
+# W3MM auto-merge trap: plik input.xml.txt w katalogu moda jest wstrzykiwany
+# do input.xml u kazdego gracza (surowy displayName w Keybindings + ciche
+# ciecie bindingu przy zapisie). Szablon dla zaawansowanych zyje jako
+# input.xml.optional i przechodzi do paczki pod ta nazwa - nazwa
+# auto-mergowana jest zakazana w stagingu (ci_rules.ps1 pilnuje repo).
+$inputXmlTrap = Get-ChildItem -Path (Join-Path $stagingDir 'Mods') -Recurse -Filter 'input.xml.txt' -File -ErrorAction SilentlyContinue
+if ($inputXmlTrap) {
+    Write-Host "[FAIL] input.xml.txt w stagingu - W3MM auto-merge trap; szablon trzymaj jako input.xml.optional" -ForegroundColor Red
+    exit 1
+}
+
 # Remove any unwanted files from staging
 Get-ChildItem -Path $stagingDir -Recurse -Include "*.bak", "*.devbak", "*.tmp", "*~", "*.csv", "__folder_managed_by_vortex" | Remove-Item -Force
 

@@ -1,4 +1,5 @@
 ;meta[language=de]
+;meta[version=162]
 ; id      |key(hex)|key(str)| text
 2118800001|        |panel_AutonomousRomance|Autonome Romanze
 2118800002|        |panel_MCM_AR|Autonome Romanze
@@ -138,7 +139,7 @@
 2118800139|        |ar_thanks_tomira|Das wird mehr helfen, als du weißt. Danke, Geralt.
 2118800140|        |option_mcm_ar_opt_barkpreset|Begleiter-Gespräche (1=Leise, 2=Standard, 3=Gesprächig)
 2118800141|        |option_MCM_AR_BarkPreset|Begleiter-Gespräche (1=Leise, 2=Standard, 3=Gesprächig)
-2118800142|        |preset_Mods_AutonomousRomance|Autonome Romanze v2.3.0
+2118800142|        |preset_Mods_AutonomousRomance|Autonome Romanze v2.3.2
 2118800143|        |ar_prompt_rosa_kiss|[C] Küss Rosa
 2118800144|        |ar_line_rosa_kiss|Geralt... Nicht so schnell. Lass mich dich anschauen.
 2118800145|        |ar_afterglow_rosa|Nicht schlecht. Obwohl meine Fechtform immer noch schärfer ist als deine.
@@ -289,3 +290,18 @@
 2118800294|        |ar_line_generic_care|Noch am Leben? Gut. Setz dich und hol Luft. Ich behalte die Straße im Auge.
 2118800295|        |ar_prompt_generic_kiss|[C] Küsse sie
 2118800296|        |ar_line_generic_kiss|Komm her, Hexer. Der Moment ist richtig.
+2118800329|        |preset_value_mcm_ar_uc_preset_default|Standard (Unicorn bevorzugt, nativer Fallback)
+2118800330|        |preset_value_mcm_ar_uc_preset_off|Unicorn deaktiviert (nur native Szenen)
+2118800331|        |option_mcm_ar_uc_opt_mode|Unicorn-Szenen-Backend (0=Aus / 1=Bevorzugt+Fallback / 2=Nur Unicorn / 3=Mix)
+2118800332|        |option_MCM_AR_UcMode|Unicorn-Szenen-Backend (0=Aus / 1=Bevorzugt+Fallback / 2=Nur Unicorn / 3=Mix)
+2118800333|        |option_mcm_ar_uc_opt_allowrough|Unicorn: hartere Szenen-Tags erlauben
+2118800334|        |option_MCM_AR_UcAllowRough|Unicorn: hartere Szenen-Tags erlauben
+2118800335|        |Mods.AutonomousRomance.Unicorn|Autonomous Romance - Unicorn
+2118800336|        |panel_Mods.AutonomousRomance.Unicorn|Autonomous Romance - Unicorn
+2118800337|        |Mods.MCMEUnicorn|Autonomous Romance - Unicorn
+2118800338|        |panel_MCMEUnicorn|Autonomous Romance - Unicorn
+2118800339|        |panel_Mods.MCMEUnicorn|Autonomous Romance - Unicorn
+2118800340|        |panel_Mods_MCMEUnicorn|Autonomous Romance - Unicorn
+2118800341|        |preset_Mods.MCMEUnicorn|Voreinstellungen
+2118800342|        |preset_MCMEUnicorn|Voreinstellungen
+2118800343|        |preset_Mods_MCMEUnicorn|Autonome Romanze - Unicorn

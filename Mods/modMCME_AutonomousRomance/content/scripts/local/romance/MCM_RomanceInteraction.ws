@@ -218,18 +218,7 @@ class MCM_RomanceInteraction
 	// Walidacja riga: true dla standardowego woman_base, false dla noble_woman_base / monster rig
 	public function IsWomanBaseCompanion(npc : CNewNPC) : bool
 	{
-		var nm : name;
-		if (!npc || !npc.scmcc || !npc.scmcc.data) return false;
-		if (!npc.IsWoman()) return false;
-		if (!npc.GetMovingAgentComponent() || npc.GetMovingAgentComponent().GetName() != "woman_base") return false;
-		nm = npc.scmcc.data.nam;
-		if (nm == 'anarietta' || nm == 'anna_henrietta' || nm == 'anna' ||
-		    nm == 'vivienne' || nm == 'sq701_vivienne' ||
-		    nm == 'oriana' || nm == 'orianna' || nm == 'vampire_diva' || nm == 'anabelle')
-		{
-			return false;
-		}
-		return true;
+		return MCM_AR_IsWomanBaseCompanion(npc);
 	}
 
 	public function HasNaughtyScene(npc : CNewNPC) : bool
@@ -863,38 +852,6 @@ class MCM_RomanceInteraction
 			if (followStopped && npc && npc.scmcc) npc.scmcc.StartFollowing();
 			return 1;
 		}
-		if (animSet == "woman_cheering")
-		{
-			if (!MCM_AR_ProbeAnim(npc, 'woman_cheering_arena_loop_1'))
-			{
-				if (followStopped && npc && npc.scmcc) npc.scmcc.StartFollowing();
-				return 0;
-			}
-			Sleep(4.0);
-			if (!DanceStepOk(npc))
-			{
-				if (followStopped && npc && npc.scmcc) npc.scmcc.StartFollowing();
-				return 2;
-			}
-			MCM_AR_ProbeAnim(npc, 'woman_cheering_arena_loop_2');
-			Sleep(4.0);
-			if (!DanceStepOk(npc))
-			{
-				if (followStopped && npc && npc.scmcc) npc.scmcc.StartFollowing();
-				return 2;
-			}
-			MCM_AR_ProbeAnim(npc, 'woman_cheering_arena_loop_3');
-			Sleep(4.0);
-			if (!DanceStepOk(npc))
-			{
-				if (followStopped && npc && npc.scmcc) npc.scmcc.StartFollowing();
-				return 2;
-			}
-			MCM_AR_ProbeAnim(npc, 'woman_cheering_arena_loop_4');
-			Sleep(4.0);
-			if (followStopped && npc && npc.scmcc) npc.scmcc.StartFollowing();
-			return 1;
-		}
 		if (followStopped && npc && npc.scmcc) npc.scmcc.StartFollowing();
 		return 0;
 	}
@@ -1156,6 +1113,8 @@ class MCM_RomanceInteraction
 		var devVK        : bool;
 		var prevAction   : bool;
 		var vkTaps       : int;
+		var tapEdges     : int;
+		var falseSince   : float;
 		var tStart       : float;
 		var pl           : CR4Player;
 		var evHeld       : bool;
@@ -1163,8 +1122,19 @@ class MCM_RomanceInteraction
 		var prevEvHeld   : bool;
 		var consentTag   : string;
 		var consentKeys  : array<EInputKey>;
+		var consentPadKeys : array<EInputKey>;
+		var consentGlyph : string;
 		var holdStartT   : float;
 		var lastProbe    : float;
+		var lastSsActT   : float;
+		var ssActT       : float;
+		var ssTaps       : int;
+		var consentAct   : name;
+		var keyIdx       : int;
+		var j            : int;
+		var padIdx       : int;
+		var kbIdx        : int;
+		var keyIsPad     : bool;
 
 		if (timeoutSec < 20.0) timeoutSec = 20.0;
 		step = 0.05;
@@ -1174,6 +1144,9 @@ class MCM_RomanceInteraction
 		holdStartT = -99.0;
 		tapsSeen = 0;
 		vkTaps = 0;
+		tapEdges = 0;
+		ssTaps = 0;
+		falseSince = -99.0;
 		pressedFresh = false;
 		lastProbe = 0.0;
 		tStart = theGame.GetEngineTimeAsSeconds();
@@ -1183,8 +1156,6 @@ class MCM_RomanceInteraction
 		devVK = MCM_AR_DevActive();
 		vkC = MCM_AR_DevConfigKey('ar_consent_key');
 		if (vkC == 0) vkC = 0x43;
-		prevAction = IsPressed(theInput.GetAction('MCM_AR_Consent'), true)
-		          || IsPressed(theInput.GetAction('SwordSheathe'), true);
 		pl = GetWitcherPlayer();
 		if (pl)
 		{
@@ -1211,10 +1182,65 @@ class MCM_RomanceInteraction
 		{
 			consentTag = "SwordSheathe";
 		}
+		// Izolacja wejscia (audit-007): gdy gracz zbindowal dedykowana
+		// MCM_AR_Consent, akcja SwordSheathe nie moze dawac consentu -
+		// rozdzielenie zgody od chowania broni musi byc pelne. Pollujemy
+		// wylacznie aktywna akcje zgody (stan held + krawedzie activacji).
+		if (consentTag == "MCM_AR_Consent")
+		{
+			consentAct = 'MCM_AR_Consent';
+		}
+		else
+		{
+			consentAct = 'SwordSheathe';
+		}
+		prevAction = IsPressed(theInput.GetAction(consentAct), true);
+		// Glyph: pokazujemy OBIE strony mapowania (PC + pad). <<akcja,idx>>
+		// renderuje keys[idx] z GetCurrentKeysForActionStr; pad-key wykrywamy
+		// przez porownanie z GetPadKeysForActionStr - dziala dla dowolnego
+		// rebindu usera, nie tylko vanilla D-pad.
+		theInput.GetCurrentKeysForActionStr(consentTag, consentKeys);
+		theInput.GetPadKeysForActionStr(consentTag, consentPadKeys);
+		kbIdx = -1;
+		padIdx = -1;
+		for (keyIdx = 0; keyIdx < consentKeys.Size(); keyIdx += 1)
+		{
+			keyIsPad = false;
+			for (j = 0; j < consentPadKeys.Size(); j += 1)
+			{
+				if (consentKeys[keyIdx] == consentPadKeys[j])
+				{
+					keyIsPad = true;
+					break;
+				}
+			}
+			if (keyIsPad)
+			{
+				if (padIdx < 0) padIdx = keyIdx;
+			}
+			else if (kbIdx < 0)
+			{
+				kbIdx = keyIdx;
+			}
+		}
+		consentGlyph = "";
+		if (kbIdx >= 0)
+		{
+			consentGlyph = "<<" + consentTag + "," + kbIdx + ">>";
+		}
+		if (padIdx >= 0)
+		{
+			if (StrLen(consentGlyph) > 0) consentGlyph += " / ";
+			consentGlyph += "<<" + consentTag + "," + padIdx + ">>";
+		}
+		if (StrLen(consentGlyph) == 0)
+		{
+			consentGlyph = "<<" + consentTag + ">>";
+		}
 		fullPrompt = ReplaceTagsToIcons(StrReplaceAll(
 			promptText + "  " + AR_T("ar_prompt_consent_hint", "(hold [C] ~1s or tap twice)"),
 			"[C]",
-			"<<" + consentTag + ">>"));
+			consentGlyph));
 
 		FactsRemove('mcme_ar_consent_given');
 		FactsAdd('mcme_ar_consent_given', 0);
@@ -1223,6 +1249,11 @@ class MCM_RomanceInteraction
 
 		thePlayer.DisplayHudMessage(fullPrompt);
 		MCM_AR_Log("[AR] Consent prompt shown, waiting max " + (int)timeoutSec + "s for hold/2x tap (consent key)");
+
+		// Baseline czasu aktywacji aktywnej akcji zgody - liczymy tylko
+		// aktywacje po pokazaniu promptu (pad: binding Duration odpala
+		// raz za press).
+		lastSsActT = theInput.GetLastActivationTime(consentAct);
 
 		while (elapsed < timeoutSec)
 		{
@@ -1245,8 +1276,7 @@ class MCM_RomanceInteraction
 				return false;
 			}
 
-			actHeld = IsPressed(theInput.GetAction('MCM_AR_Consent'), true)
-			       || IsPressed(theInput.GetAction('SwordSheathe'), true);
+			actHeld = IsPressed(theInput.GetAction(consentAct), true);
 			evHeld = (thePlayer.mcm_ar_consentHeldC || thePlayer.mcm_ar_consentHeldS)
 			      && thePlayer.mcm_ar_consentPressAt >= tStart;
 			if (devVK)
@@ -1271,21 +1301,57 @@ class MCM_RomanceInteraction
 			}
 			else
 			{
-				nowDown = evHeld;
-				// cien: dywergencja event-vs-action.value trafia do loga
-				if (evHeld != prevEvHeld && evHeld != actHeld)
-				{
-					MCM_AR_Log("[AR] consent dywergencja: evHeld=" + evHeld +
-					           " actHeld=" + actHeld + " @" + elapsed + "s");
-				}
+				// Pasywny polling aktywnej akcji zgody - SwordSheathe nie ma juz
+				// listenera (zastapilby natywny handler gry, W3-TIK-021 §9).
+				// evHeld jest teraz redundantne (actHeld polluje akcje zgody),
+				// zostaje jako pas bezpieczenstwa dla listenera MCM_AR_Consent.
+				nowDown = actHeld || evHeld;
 				prevEvHeld = evHeld;
 			}
 			prevAction = actHeld;
+			// Pad: binding akcji zgody ma State=Duration - akcja odpala raz
+			// za przytrzymanie D-pad (>=0.3s), value pulsuje i nie daje stanu
+			// "held" do pollownia. GetLastActivationTime wykrywa kazda taka
+			// aktywacje; jeden swiadomy gest D-pad = consent (analog holda [C]).
+			// Gate na LastUsedGamepad, zeby klik C na klawiaturze nadal wymagal
+			// hold/2x tap zamiast akceptowac od pierwszego pressa.
+			ssActT = theInput.GetLastActivationTime(consentAct);
+			if (ssActT != lastSsActT)
+			{
+				lastSsActT = ssActT;
+				// Klawiatura: tap < interwalu pollu wpada miedzy odczyty
+				// IsPressed i jest niewidoczny (listenera na SwordSheathe
+				// celowo nie ma - patrz MCM_AR_OnPlayerReady). Edge
+				// activation-time jest niezawodnym licznikiem pressow i
+				// dokleja sie do licznika tapow nizej (dedup przez max).
+				ssTaps += 1;
+				// Arm dopiero po 0.5s promptu: filtruje aktywacje "zostawione"
+				// z chwili przed promptem i wyscig, w ktorym klik C na
+				// klawiaturze dociera, zanim LastUsedGamepad zdazy sie
+				// przelaczyc na klawiature (review NVIDIA #1).
+				// IDT_Steam trzyma sie takze gdy gracz wrocil na klawiature/
+				// mysz (typ ostatnio widzianego pada, nie aktualnego
+				// urzadzenia) - LastUsedPCInput odcina szybka sciezke dla
+				// wejscia PC: klawiatura nadal wymaga hold/2x tap (audit-008).
+				if (elapsed > 0.5 && (theInput.LastUsedGamepad() || (theInput.GetLastUsedGamepadType() == IDT_Steam && !theInput.LastUsedPCInput())))
+				{
+					FactsRemove('mcme_ar_awaiting_consent');
+					FactsRemove('mcme_ar_consent_given');
+					MCM_AR_Log("[AR] Consent accepted (pad D-pad activation) after " + elapsed + "s");
+					return true;
+				}
+			}
 			if (nowDown && !prevDown)
 			{
 				pressedFresh = true;
 				holdStartT = elapsed;
-				if (devVK) vkTaps += 1;
+				// Debounce: krotka przerwa (<0.15s) to migotanie action.value
+				// przytrzymanego klawisza, nie nowe tapniecie.
+				if (elapsed - falseSince >= 0.15)
+				{
+					tapEdges += 1;
+					if (devVK) vkTaps += 1;
+				}
 			}
 			if (nowDown && pressedFresh)
 			{
@@ -1303,12 +1369,27 @@ class MCM_RomanceInteraction
 				heldFor = 0.0;
 				pressedFresh = false;
 			}
+			// Debounce liczy dlugosc przerwy: falseSince ustawiamy TYLKO na
+			// krawedzi zwolnienia, nie co klatke (inaczej kazdy press wypada
+			// jeden step po "up" i warunek >=0.15 nigdy nie przechodzi).
+			if (!nowDown && prevDown)
+			{
+				falseSince = elapsed;
+			}
 			prevDown = nowDown;
 
 			nowTaps = FactsQuerySum('mcme_ar_consent_given');
 			if (devVK && vkTaps > nowTaps)
 			{
 				nowTaps = vkTaps;
+			}
+			if (tapEdges > nowTaps)
+			{
+				nowTaps = tapEdges;
+			}
+			if (ssTaps > nowTaps)
+			{
+				nowTaps = ssTaps;
 			}
 			if (nowTaps > tapsSeen)
 			{
@@ -2020,6 +2101,24 @@ class MCM_RomanceInteraction
 			if (pt) return true;
 		}
 		return false;
+	}
+
+	// Mostek Unicorn (modMCME_AR_Unicorn) zainstalowany i tryb != 0 (off):
+	// jego grupa MCM 'MCM_AR_Unicorn' istnieje w configu gry tylko gdy
+	// zainstalowano pakiet XML mostka. Czysto konfiguracyjny odczyt -
+	// zero zaleznosci kompilacyjnej od skryptow mostu (osobny mod, WIP).
+	// Mode 0 = routing native-only -> traktujemy jak brak mostka, bo
+	// dispatch UC nie odpala i scena spada na natywna sciezke w2scene.
+	protected function IsUcReady() : bool
+	{
+		var wrapper : CInGameConfigWrapper;
+		var mode    : string;
+
+		wrapper = theGame.GetInGameConfigWrapper();
+		if (!wrapper) return false;
+		mode = wrapper.GetVarValue('MCM_AR_Unicorn', 'MCM_AR_UcMode');
+		if (StrLen(mode) == 0) return false;
+		return StringToFloat(mode) > 0.0;
 	}
 
 	// Pelne sciezki scen intymnych dla NPC bez rejestracji w specialData

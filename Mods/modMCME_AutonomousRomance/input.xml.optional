@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<UserConfig>
+	<Group builder="Input" id="PCInput" displayName="controls_pc" tags="keybinds">
+		<VisibleVars>
+			<Var builder="Input" id="MCM_AR_Consent" displayName="Consent (MCME AR)" displayType="INPUTPC" actions="MCM_AR_Consent"/>
+		</VisibleVars>
+	</Group>
+</UserConfig>

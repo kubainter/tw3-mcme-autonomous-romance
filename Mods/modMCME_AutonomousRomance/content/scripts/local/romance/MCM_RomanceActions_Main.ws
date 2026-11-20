@@ -1782,7 +1782,15 @@ class MCM_AR_Ciri_IntimateInvite extends MCM_RomanceInteraction
 		// specialData.naughtyScene z paczek MCME omija NaughtyScenePath,
 		// wiec gate trybu musi siedziec tutaj, na poziomie akcji.
 		if (!thePlayer.MCM_AR_GetConfig().IsCiriAdultMode()) return "lore_mode";
-		if (!IsOnNaughtyPoint()) return "no_naughty_point";
+		// Kontekst zewnetrznego ogniska tylko z mostkiem Unicorn: Ciri
+		// rozwiazuje natywna scene naughty\ciri (mod_spawn_companions),
+		// ktora bez NaughtyPointu <=20m pada po consencie - albo (sciezka
+		// specialData) odtworzylaby scene lozkowa w powietrzu. Mostek ma
+		// wlasny dispatch plenerowy z wykluczeniami furniture (audit-010).
+		if (!IsOnNaughtyPoint() && !(IsUcReady() && ctx.isNearCampfire && !ctx.isInInterior && !ctx.isInTavern))
+		{
+			return "no_naughty_point";
+		}
 		return IntimateSceneBlockReason(npc);
 	}
 
@@ -1847,7 +1855,6 @@ class MCM_AR_Generic_IntimateInvite extends MCM_RomanceInteraction
 		ok = ApproachAndConsent(npc, player, 2.2, AR_T("ar_prompt_intimate_invite", "Spend an intimate moment together [C]"), true);
 		if (!ok)
 		{
-			EndSoft(npc);
 			return false;
 		}
 

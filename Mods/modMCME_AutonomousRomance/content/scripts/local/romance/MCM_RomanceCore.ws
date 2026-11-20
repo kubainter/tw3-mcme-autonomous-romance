@@ -1,7 +1,7 @@
 /*****************************************************************************/
 /* MCME Autonomous Romance - Core Module                                     */
 /* Główna pętla, timery i context tracker                                    */
-/* Wersja: 2.3.0  |  Wymaga: modMCME_Remastered 5.00+                       */
+/* Wersja: 2.3.3  |  Wymaga: modMCME_Remastered 5.00+                       */
 /*****************************************************************************/
 
 // Singleton dostępny globalnie, inicjowany przy spawnie gracza
@@ -61,7 +61,10 @@ function MCM_AR_OnPlayerReady()
 	}
 
 	theInput.RegisterListener(this, 'OnMCM_AR_ConsentKey', 'MCM_AR_Consent');
-	theInput.RegisterListener(this, 'OnMCM_AR_ConsentKey', 'SwordSheathe');
+	// NIGDY nie rejestruj listenera na vanilla akcji na CR4Player: rejestracja
+	// na (obiekt, akcja) ZASTEPUJE natywny handler gry (playerInput.ws:91,
+	// OnCommSheatheAny na SwordSheathe) i zabija sheathing (W3-TIK-021 §9).
+	// SwordSheathe obserwujemy wylacznie pollingiem w petli zgody.
 
 	// Bezpiecznik: latent-abort ShowConsentPrompt mogl zostawic fakty
 	// (obiekt zniszczony w trakcie Sleep - cleanup petli nie strzeli).
@@ -417,6 +420,9 @@ statemachine class MCM_AutonomousRomanceCore
 		var mac       : CMovingPhysicalAgentComponent;
 
 		if (!job.npc || !IsNameValid(anim)) return false;
+		// Unicorn bridge: aktor w scenie UC / grace - syncAnim nie moze
+		// przetrzymac go w pozie (mode-1 freeze z reconu).
+		if (IsUcMarkedNpc(job.npc)) return false;
 		StopIdleSyncAnim(job);
 
 		job.syncInst = new CAnimationManualSlotSyncInstance in job.npc;
@@ -871,6 +877,7 @@ statemachine class MCM_AutonomousRomanceCore
 			if (!npc.HasTag('mod_scm_IsFollowing')) continue;
 			if (npc.wasInTalkInteraction || npc.IsInGameplayScene() || npc.IsSpeaking()) continue;
 			if (IsNpcBusy(npc)) continue;
+			if (IsUcMarkedNpc(npc)) continue;
 
 			dist = VecDistance(npc.GetWorldPosition(), playerPos);
 			if (dist > 15.0 && npc != dtBedPartner) continue;
@@ -1435,6 +1442,12 @@ statemachine class MCM_AutonomousRomanceCore
 						" speak=" + npc.IsSpeaking() +
 						" own=" + (npc == busyNpc));
 				}
+				continue;
+			}
+			// Unicorn bridge: aktor w scenie UC / grace - nie claimuj do joba.
+			if (IsUcMarkedNpc(npc))
+			{
+				skipBusy += 1;
 				continue;
 			}
 			// Sekwencja ambientowa w toku (taniec/picie): ProbeAnim grywa
@@ -2053,12 +2066,24 @@ statemachine class MCM_AutonomousRomanceCore
 				busyNpc = NULL;
 			}
 		}
+		// Unicorn bridge (opcjonalny modMCME_AR_Unicorn): jakakolwiek scena
+		// UC w toku = staged-busy globalnie. Bez mostu fakt nigdy nie
+		// istnieje - check to czysty FactsQuerySum, zero kosztu.
+		if (FactsQuerySum('mcme_ar_uc_active') > 0) return true;
 		return interactionBusy;
 	}
 
 	public function IsNpcBusy(npc : CNewNPC) : bool
 	{
 		return interactionBusy && busyNpc == npc;
+	}
+
+	// Unicorn bridge: per-actor marker mcme_ar_uc_on_<nam> - aktor w scenie
+	// UC albo w oknie grace po niej (fakt ma expires - crash nie zawiesi).
+	public function IsUcMarkedNpc(npc : CNewNPC) : bool
+	{
+		if (!npc || !npc.scmcc || !npc.scmcc.data) return false;
+		return FactsQuerySum("mcme_ar_uc_on_" + NameToString(npc.scmcc.data.nam)) > 0;
 	}
 
 	// Awaryjny reset stanu RUNTIME (nie cooldownow/affinity): po ReloadScripts
@@ -3376,6 +3401,7 @@ exec function ar_npcsweep()
 			" scene=" + npc.IsInGameplayScene() +
 			" speak=" + npc.IsSpeaking(), true);
 		npc.ActionCancelAll();
+		npc.RaiseForceEvent('ForceIdle');
 		npc.StopAllScenes();
 		broke = theGame.GetSyncAnimManager().BreakSyncIfPossible(npc);
 		MCM_AR_Log("[AR] sweep " + npc.GetDisplayName() +
@@ -3691,117 +3717,243 @@ exec function ar_taverndebug()
 // Natychmiastowy test bezokienkowego pocałunku z dowolną towarzyszką
 exec function ar_kiss(optional npcStr : string)
 {
-	var core : MCM_AutonomousRomanceCore;
+	var core       : MCM_AutonomousRomanceCore;
+	var companions : array<CNewNPC>;
+	var nearestNpc : CNewNPC;
+	var minDist    : float;
+	var dist       : float;
+	var i          : int;
+	var cmpStr     : string;
+	var matched    : bool;
+	var actionName : name;
+	var targetName : name;
+
 	core = MCM_AR_GetCore();
-	if (core)
+	if (!core) return;
+
+	npcStr = StrLower(npcStr);
+
+	// Jeden scan: nearestNpc = najblizszy follower (auto-pick dla pustego
+	// argumentu; imie podane jawnie MUSI dopasowac aktywna towarzyszke -
+	// fail-closed, bez podmiany celu na sasiadke).
+	MCM_AR_GetActiveCompanions(companions);
+	minDist = 999.0;
+	for (i = 0; i < companions.Size(); i += 1)
 	{
-		npcStr = StrLower(npcStr);
-		if (npcStr == "yen" || npcStr == "yennefer")
+		if (!companions[i] || !companions[i].scmcc || !companions[i].scmcc.data) continue;
+		if (!companions[i].HasTag('mod_scm_IsFollowing')) continue;
+		dist = VecDistance(thePlayer.GetWorldPosition(), companions[i].GetWorldPosition());
+		if (dist < minDist)
 		{
-			core.debugForceAction = 'yen_night_invitation';
-			core.debugForceTarget = 'yennefer';
+			minDist = dist;
+			nearestNpc = companions[i];
 		}
-		else if (npcStr == "keira" || npcStr == "keira_metz")
+	}
+
+	if (npcStr == "")
+	{
+		if (nearestNpc)
 		{
-			core.debugForceAction = 'keira_night_proposal';
-			core.debugForceTarget = 'keira_metz';
+			npcStr = StrLower(NameToString(nearestNpc.scmcc.data.nam));
 		}
-		else if (npcStr == "shani")
+		else
 		{
-			core.debugForceAction = 'shani_night_relax';
-			core.debugForceTarget = 'shani';
+			thePlayer.DisplayHudMessage("[AR kiss] Brak aktywnej towarzyszki w poblizu. Podaj imie: ar_kiss(\"keira\")");
+			return;
 		}
-		else if (npcStr == "anarietta" || npcStr == "henrietta" || npcStr == "anna_henrietta")
+	}
+	else
+	{
+		npcStr = MCM_AR_CanonCompanionName(npcStr);
+
+		// Blokada by-design na ZADANYM imieniu - noble-rig nie ma animacji
+		// kiss w ogole (brak akcji kiss w rejestrze). Odmowa przed dopasowaniem,
+		// zeby pytanie o noble nie podmienialo celu na sasiadke.
+		if (npcStr == "anna_henrietta")
 		{
 			thePlayer.DisplayHudMessage("[AR] anna_henrietta: no kiss tier - noble rig limit, by design");
 			return;
 		}
-		else if (npcStr == "vivienne" || npcStr == "sq701_vivienne")
+		if (npcStr == "sq701_vivienne")
 		{
 			thePlayer.DisplayHudMessage("[AR] vivienne: no kiss tier - noble rig limit, by design");
 			return;
 		}
-		else if (npcStr == "cerys" || npcStr == "becca")
-		{
-			core.debugForceAction = 'cerys_night_invitation';
-			core.debugForceTarget = 'becca';
-		}
-		else if (npcStr == "syanna")
-		{
-			core.debugForceAction = 'syanna_kiss';
-			core.debugForceTarget = 'syanna';
-		}
-		else if (npcStr == "philippa" || npcStr == "filippa" || npcStr == "philippa_eilhart")
-		{
-			core.debugForceAction = 'philippa_kiss';
-			core.debugForceTarget = 'philippa_eilhart';
-		}
-		else if (npcStr == "ves")
-		{
-			core.debugForceAction = 'ves_kiss';
-			core.debugForceTarget = 'ves';
-		}
-		else if (npcStr == "salma" || npcStr == "mh303_succbus_v2")
-		{
-			core.debugForceAction = 'salma_kiss';
-			core.debugForceTarget = 'mh303_succbus_v2';
-		}
-		else if (npcStr == "priscilla" || npcStr == "pryscilla")
-		{
-			core.debugForceAction = 'priscilla_kiss';
-			core.debugForceTarget = 'priscilla';
-		}
-		else if (npcStr == "edna" || npcStr == "edna_var_attre")
-		{
-			core.debugForceAction = 'edna_kiss';
-			core.debugForceTarget = 'edna_var_attre';
-		}
-		else if (npcStr == "fringilla" || npcStr == "fringilla_vigo")
-		{
-			core.debugForceAction = 'fringilla_kiss';
-			core.debugForceTarget = 'fringilla_vigo';
-		}
-		else if (npcStr == "margarita" || npcStr == "margaritta")
-		{
-			core.debugForceAction = 'margarita_kiss';
-			core.debugForceTarget = 'margarita';
-		}
-		else if (npcStr == "orianna" || npcStr == "oriana" || npcStr == "vampire_diva")
+		if (npcStr == "vampire_diva")
 		{
 			thePlayer.DisplayHudMessage("[AR] orianna: no kiss tier - noble rig limit, by design");
 			return;
 		}
-		else if (npcStr == "rosa" || npcStr == "rosa_var_attre")
+
+		// Dopasowanie scisle
+		matched = false;
+		for (i = 0; i < companions.Size(); i += 1)
 		{
-			core.debugForceAction = 'rosa_kiss';
-			core.debugForceTarget = 'rosa_var_attre';
-		}
-		else if (npcStr == "tomira" || npcStr == "prologue_village_herbalist")
-		{
-			core.debugForceAction = 'tomira_kiss';
-			core.debugForceTarget = 'prologue_village_herbalist';
-		}
-		else if (npcStr == "ciri" || npcStr == "cirilla")
-		{
-			if (thePlayer.MCM_AR_GetConfig().IsCiriAdultMode())
+			if (!companions[i] || !companions[i].scmcc || !companions[i].scmcc.data) continue;
+			cmpStr = StrLower(NameToString(companions[i].scmcc.data.nam));
+			if (cmpStr == npcStr || MCM_AR_CanonCompanionName(cmpStr) == npcStr
+				|| (companions[i].scmcc.data.niceName != '' && StrLower(NameToString(companions[i].scmcc.data.niceName)) == npcStr)
+				|| StrLower(MCM_AR_GetCompanionDisplayName(companions[i])) == npcStr)
 			{
-				core.debugForceAction = 'ciri_kiss';
+				nearestNpc = companions[i];
+				matched = true;
+				break;
 			}
-			else
+		}
+
+		// Dopasowanie elastyczne substring jako fallback
+		if (!matched && StrLen(npcStr) >= 3)
+		{
+			for (i = 0; i < companions.Size(); i += 1)
 			{
-				core.debugForceAction = 'ciri_hug';
+				if (!companions[i] || !companions[i].scmcc || !companions[i].scmcc.data) continue;
+				cmpStr = StrLower(NameToString(companions[i].scmcc.data.nam));
+				if (StrContains(cmpStr, npcStr) || StrContains(npcStr, cmpStr)
+					|| (companions[i].scmcc.data.niceName != '' && StrContains(StrLower(NameToString(companions[i].scmcc.data.niceName)), npcStr))
+					|| StrContains(StrLower(MCM_AR_GetCompanionDisplayName(companions[i])), npcStr))
+				{
+					nearestNpc = companions[i];
+					matched = true;
+					break;
+				}
 			}
-			core.debugForceTarget = 'cirilla';
+		}
+
+		if (!nearestNpc)
+		{
+			thePlayer.DisplayHudMessage("[AR kiss] Nie znaleziono towarzyszki: " + npcStr);
+			return;
+		}
+		// Fail-closed: imie podane jawnie, ktore nie dopasowalo zadnej aktywnej
+		// towarzyszki, konczy komende bledem - NIE podmieniamy celu na
+		// najblizsza sasiadke (cichy fallback mylilby raport diagnostyczny
+		// i resetowal cooldowny pod niewlasciwa postac).
+		if (!matched)
+		{
+			thePlayer.DisplayHudMessage("[AR kiss] Nie znaleziono aktywnej towarzyszki: '" + npcStr + "'");
+			MCM_AR_Log("[AR kiss] requested '" + npcStr + "' has no active companion - fail-closed, no fallback");
+			return;
+		}
+	}
+
+	// Kanonikalizacja rozwiazanego nam (np. follower z nam 'anarietta').
+	npcStr = MCM_AR_CanonCompanionName(npcStr);
+	targetName = nearestNpc.scmcc.data.nam;
+
+	// Noble-rig jako rozwiazany cel (auto-pick trafil na followerke
+	// noble): brak animacji kiss - odmowa zamiast generic_kiss, ktory
+	// odpadlby na guardzie IsWomanBaseCompanion.
+	if (npcStr == "anna_henrietta")
+	{
+		thePlayer.DisplayHudMessage("[AR] anna_henrietta: no kiss tier - noble rig limit, by design");
+		return;
+	}
+	if (npcStr == "sq701_vivienne")
+	{
+		thePlayer.DisplayHudMessage("[AR] vivienne: no kiss tier - noble rig limit, by design");
+		return;
+	}
+	if (npcStr == "vampire_diva")
+	{
+		thePlayer.DisplayHudMessage("[AR] orianna: no kiss tier - noble rig limit, by design");
+		return;
+	}
+
+	// Dedykowane akcje kiss wg kanonicznego nam; rozszerzony roster
+	// woman_base bez dedykowanej akcji dostaje wildcard generic_kiss.
+	if (npcStr == "yennefer")
+	{
+		core.debugForceAction = 'yen_night_invitation';
+	}
+	else if (npcStr == "keira_metz")
+	{
+		core.debugForceAction = 'keira_night_proposal';
+	}
+	else if (npcStr == "shani")
+	{
+		core.debugForceAction = 'shani_night_relax';
+	}
+	else if (npcStr == "becca")
+	{
+		core.debugForceAction = 'cerys_night_invitation';
+	}
+	else if (npcStr == "syanna")
+	{
+		core.debugForceAction = 'syanna_kiss';
+	}
+	else if (npcStr == "philippa_eilhart")
+	{
+		core.debugForceAction = 'philippa_kiss';
+	}
+	else if (npcStr == "ves")
+	{
+		core.debugForceAction = 'ves_kiss';
+	}
+	else if (npcStr == "mh303_succbus_v2")
+	{
+		core.debugForceAction = 'salma_kiss';
+	}
+	else if (npcStr == "priscilla")
+	{
+		core.debugForceAction = 'priscilla_kiss';
+	}
+	else if (npcStr == "edna_var_attre")
+	{
+		core.debugForceAction = 'edna_kiss';
+	}
+	else if (npcStr == "fringilla_vigo")
+	{
+		core.debugForceAction = 'fringilla_kiss';
+	}
+	else if (npcStr == "margarita")
+	{
+		core.debugForceAction = 'margarita_kiss';
+	}
+	else if (npcStr == "rosa_var_attre")
+	{
+		core.debugForceAction = 'rosa_kiss';
+	}
+	else if (npcStr == "prologue_village_herbalist")
+	{
+		core.debugForceAction = 'tomira_kiss';
+	}
+	else if (npcStr == "triss")
+	{
+		core.debugForceAction = 'triss_kiss_invite';
+	}
+	else if (npcStr == "cirilla")
+	{
+		if (thePlayer.MCM_AR_GetConfig().IsCiriAdultMode())
+		{
+			core.debugForceAction = 'ciri_kiss';
 		}
 		else
 		{
-			core.debugForceAction = 'triss_kiss_invite';
-			core.debugForceTarget = 'triss';
+			core.debugForceAction = 'ciri_hug';
 		}
-		core.ResetAllCooldowns();
-		MCM_AR_KickStagedTick(core);
-		thePlayer.DisplayHudMessage("[AR] Bezposredni pocalunek: " + core.debugForceTarget);
 	}
+	else
+	{
+		// Walidacja riga przed wymuszeniem wildcardu: auto-pick pustym
+		// argumentem moze trafic na meskiego followera (GeraltsBFF, np.
+		// Lambert/Regis) albo inna niekompatybilna towarzyszke - fail-closed
+		// zamiast cichej smierci akcji na guardzie IsWomanBaseCompanion.
+		if (!MCM_AR_IsWomanBaseCompanion(nearestNpc))
+		{
+			thePlayer.DisplayHudMessage("[AR kiss] " + NameToString(targetName) + ": niekompatybilny rig - kiss wymaga woman_base");
+			MCM_AR_Log("[AR kiss] " + NameToString(targetName) + " rejected: not a woman_base companion");
+			return;
+		}
+		core.debugForceAction = 'generic_kiss';
+		MCM_AR_Log("[AR kiss] Triggering kiss action for " + NameToString(targetName));
+	}
+	core.debugForceTarget = targetName;
+
+	actionName = core.debugForceAction;
+	core.ResetAllCooldowns();
+	MCM_AR_KickStagedTick(core);
+	thePlayer.DisplayHudMessage("[AR] Bezposredni pocalunek: " + core.debugForceTarget);
+	MCM_AR_Log("[AR] ar_kiss: wymuszono akcje " + NameToString(actionName) + " dla " + NameToString(targetName));
 }
 
 exec function ar_dance(optional npcStr : string)
@@ -3920,6 +4072,27 @@ function MCM_AR_CanonCompanionName(s : string) : string
 	else if (s == "tomira")                             return "prologue_village_herbalist";
 	else if (s == "ciri")                               return "cirilla";
 	return s;
+}
+
+// Walidacja riga towarzyszki: true dla standardowego woman_base,
+// false dla noble_woman_base / monster rig / towarzyszy meskich.
+// Globalny helper (jedno zrodlo prawdy): metoda klasy akcji
+// MCM_RomanceInteraction.IsWomanBaseCompanion deleguje tutaj, a exec
+// ar_kiss uzywa go do walidacji celu przed wymuszeniem generic_kiss.
+function MCM_AR_IsWomanBaseCompanion(npc : CNewNPC) : bool
+{
+	var nm : name;
+	if (!npc || !npc.scmcc || !npc.scmcc.data) return false;
+	if (!npc.IsWoman()) return false;
+	if (!npc.GetMovingAgentComponent() || npc.GetMovingAgentComponent().GetName() != "woman_base") return false;
+	nm = npc.scmcc.data.nam;
+	if (nm == 'anarietta' || nm == 'anna_henrietta' || nm == 'anna' ||
+	    nm == 'vivienne' || nm == 'sq701_vivienne' ||
+	    nm == 'oriana' || nm == 'orianna' || nm == 'vampire_diva' || nm == 'anabelle')
+	{
+		return false;
+	}
+	return true;
 }
 
 exec function ar_intimate(optional npcStr : string)

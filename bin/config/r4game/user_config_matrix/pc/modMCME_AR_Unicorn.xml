@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserConfig>
+    <Group id="MCM_AR_Unicorn" displayName="Mods.MCMEUnicorn">
+
+        <PresetsArray>
+            <Preset id="0" displayName="mcm_ar_uc_preset_default">
+                <Entry varId="MCM_AR_UcMode"       value="1"/>
+                <Entry varId="MCM_AR_UcAllowRough" value="1"/>
+            </Preset>
+            <Preset id="1" displayName="mcm_ar_uc_preset_off">
+                <Entry varId="MCM_AR_UcMode"       value="0"/>
+                <Entry varId="MCM_AR_UcAllowRough" value="1"/>
+            </Preset>
+        </PresetsArray>
+
+        <VisibleVars>
+            <Var id="MCM_AR_UcMode"
+                 displayName="mcm_ar_uc_opt_mode"
+                 displayType="SLIDER;0;3;3"
+                 defaultValue="1"/>
+
+            <Var id="MCM_AR_UcAllowRough"
+                 displayName="mcm_ar_uc_opt_allowrough"
+                 displayType="TOGGLE"
+                 defaultValue="1"/>
+        </VisibleVars>
+
+    </Group>
+</UserConfig>

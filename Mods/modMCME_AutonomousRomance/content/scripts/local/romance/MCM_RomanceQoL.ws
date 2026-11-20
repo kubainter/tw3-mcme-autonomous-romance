@@ -138,28 +138,7 @@ function OnChange(element : SCMMenu_BaseElement)
 // Normalizacja aliasow komend na wewnetrzne scmcc.data.nam.
 function MCM_AR_NormalizeCompanionName(input : string) : string
 {
-	var s : string;
-	s = StrLower(input);
-	if (s == "yen" || s == "yennefer")                                return "yennefer";
-	if (s == "triss")                                                 return "triss";
-	if (s == "ciri" || s == "cirilla")                                return "cirilla";
-	if (s == "keira" || s == "keira_metz")                            return "keira_metz";
-	if (s == "shani")                                                 return "shani";
-	if (s == "anarietta" || s == "anna" || s == "anna_henrietta")     return "anna_henrietta";
-	if (s == "vivienne" || s == "sq701_vivienne")                     return "sq701_vivienne";
-	if (s == "cerys" || s == "becca")                                 return "becca";
-	if (s == "syanna")                                                return "syanna";
-	if (s == "philippa" || s == "filippa" || s == "philippa_eilhart") return "philippa_eilhart";
-	if (s == "ves")                                                   return "ves";
-	if (s == "salma" || s == "mh303_succbus_v2")                      return "mh303_succbus_v2";
-	if (s == "priscilla" || s == "pryscilla")                         return "priscilla";
-	if (s == "edna" || s == "edna_var_attre")                         return "edna_var_attre";
-	if (s == "fringilla" || s == "fringilla_vigo")                    return "fringilla_vigo";
-	if (s == "margarita" || s == "margaritta")                        return "margarita";
-	if (s == "orianna" || s == "oriana" || s == "vampire_diva")       return "vampire_diva";
-	if (s == "rosa" || s == "rosa_var_attre")                         return "rosa_var_attre";
-	if (s == "tomira" || s == "prologue_village_herbalist")           return "prologue_village_herbalist";
-	return s;
+	return MCM_AR_CanonCompanionName(StrLower(input));
 }
 
 function MCM_AR_FindCompanion(npcStr : string) : CNewNPC

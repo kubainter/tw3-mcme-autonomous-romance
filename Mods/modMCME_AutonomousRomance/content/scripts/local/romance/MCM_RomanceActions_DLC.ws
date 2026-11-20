@@ -2020,7 +2020,8 @@ class MCM_AR_Priscilla_Dance extends MCM_AR_Dance_Base
 	default lineKey   = "ar_line_priscilla_dance";
 }
 
-// Cerys: skelligijskie hulanie (woman_cheering), nie sensualny taniec.
+// Cerys: tancerka woman_dance jak reszta kobiet; woman_cheering_arena_*
+// to klaskanie/wiwatowanie (zweryfikowane w grze), nie taniec - nie uzywac.
 class MCM_AR_Cerys_Dance extends MCM_AR_Dance_Base
 {
 	default id        = 'cerys_dance';
