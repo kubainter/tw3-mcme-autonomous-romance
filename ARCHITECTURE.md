@@ -108,7 +108,8 @@ w `PlayBark` - osobne pliki-sondy nie są już potrzebne.
         │         sam gdy arIdleJobs puste)
         ├─ new MCM_AR_ConfigWrapper (lazy; Filar 3 konfiguracji)
         ├─ theInput.RegisterListener(this,'OnMCM_AR_ConsentKey','MCM_AR_Consent')
-        ├─ theInput.RegisterListener(this,'OnMCM_AR_ConsentKey','SwordSheathe') (legacy)
+        ├─ (BRAK listenera na 'SwordSheathe' - tylko polling; listener zastapilby
+         natywny handler gry, W3-TIK-021 §9)
         └─ core.ResetAllCooldowns()
 ```
 
@@ -293,15 +294,16 @@ T4 Scene (staged): jak T3, ale consent ZAWSZE wymagany (niezależnie od configu)
        → re-stamp greetSeenTime (NPC schowani HideAllExcept ≠ „powrót po absencji")
 ```
 
-## 6. FLOW: Consent Engine v3 (`MCM_AR_Consent` + `SwordSheathe`)
+## 6. FLOW: Consent Engine v4 (polling `SwordSheathe` + opcjonalny `MCM_AR_Consent`)
 
 - Historia: wczesne próby nasłuchiwania na klawiszu `[E]` kolidowały z natywnym kołem dialogu MCME. Z kolei bindowanie w sekcji menu `[SCMMenuBase]` nie dispatchowało eventów podczas eksploracji świata.
-- Dedykowana akcja `MCM_AR_Consent`: w v2.0 wprowadzono własną akcję wejścia `MCM_AR_Consent`, zdefiniowaną w `input.settings.txt` pod klawisz [C] (oraz wcześniej D-pad w lewo i w prawo). Od 2.3.2 binding na [C] jest **tuple w jednej linii** - `IK_C=(Action=SwordSheathe,Action=MCM_AR_Consent)` - więc merge'e nadpisujące linię nie zabierają vanilla sheathing; pad korzysta z vanilla `SwordSheathe` (D-pad L/R) bez własnego wpisu w fragmencie.
-- Rebind z menu gry: `input.xml.txt` deklaruje `MCM_AR_Consent` jako `<Var builder="Input" ... displayType="INPUTPC">`, więc akcja pojawia się w Options -> Keybindings i user może ją przepiąć jak natywną kontrolkę (gra sama zapisuje `input.settings`).
-- Vanilla fallback: zachowano równoległy nasłuch na vanilla akcję `'SwordSheathe'` ([C]), dzięki czemu mod działa natychmiast po instalacji nawet bez zmergowania pliku `input.settings`.
+- Konsent na C/padzie: **polling** - pętla promptu czyta `IsPressed(GetAction('SwordSheathe'), true)` obok `MCM_AR_Consent`; fragment `input.settings.txt` nie binduje żadnego klawisza (tuple `(Action=A,Action=B)` jest nieprawidłową składnią - silnik bierze pierwszą akcję, a nieznane akcje są wycinane przy zapisie).
+- Rebind (opcjonalny): akcja musi być zadeklarowana w `legacy\base\input_qwerty.ini` (np. `IK_Z=(Action=MCM_AR_Consent)`) + binding w `input.settings`; `input.xml.txt` dodaje wiersz w Options -> Keybindings, gdy fragment zostanie zmergowany. Bez deklaracji w `input_qwerty.ini` gra wycina binding przy zapisie.
+- Vanilla sheathing: listener na `'SwordSheathe'` jest **zakazany** - `RegisterListener` na parze (obiekt, akcja) zastępuje natywny handler gry (`playerInput.ws:91`, `OnCommSheatheAny`) i zabija chowanie miecza (W3-TIK-021 §9). Obserwacja wyłącznie przez polling.
 - Implementacja w `ShowConsentPrompt` (Interaction L863-1210):
-  - Wyświetlanie promptu na ekranie HUD z ikoną realnego klawisza (`<<MCM_AR_Consent>>`).
-  - Dwuetapowa detekcja zgody: przytrzymanie klawisza przez ok. 1.0s (Hold) lub szybkie podwójne naciśnięcie w czasie <0.7s (Double-Tap).
+  - Wyświetlanie promptu na ekranie HUD z glyphami obu mapowań (`[C] / [D-pad]`): `<<akcja,idx>>` wybiera `keys[idx]`; pad vs PC klasyfikowany przez `GetPadKeysForActionStr` (odporny na rebindy).
+  - Dwuetapowa detekcja zgody: przytrzymanie klawisza przez ok. 1.0s (Hold) lub szybkie podwójne naciśnięcie w czasie <0.7s (Double-Tap) - polling `IsPressed` obu akcji.
+  - Pad: `SwordSheathe` ma `State=Duration,IdleTime=0.3` - odpala raz po >=0.3s bez stanu "held"; edge na `GetLastActivationTime` (baseline przed pętlą) łapie kazdy gest, gate `LastUsedGamepad` (klawiatura nadal wymaga hold/2x tap). Jeden gest D-pad L/R = consent.
   - Latch zdarzeń per-akcja (`mcm_ar_consentHeldC` i `mcm_ar_consentHeldS`): zwolnienie syntetycznego zdarzenia pada nie zeruje holda drugiej zarejestrowanej akcji.
   - Okno czasowe min. 20s: prompt nie znika zbyt szybko za kolejką napisów dialogowych i barków NPC.
   - Odmowa: odejście gracza na dystans >12m lub upływ limitu czasu promptu uruchamia backoff odmowy (300s -> 900s -> 1800s).
@@ -513,7 +515,7 @@ Bezpieczeństwo save'ów: tylko fakty `mcme_ar_*` + RAM - usunięcie moda = czys
 | `theGame.GetNPCsByTag('GeraltsBFF',out)` | CGame | lista companionów |
 | `theGame.GetEntitiesByTag('campfire',out)` | CGame | wykrywanie ogniska <6 m |
 | `FactsQuerySum/FactsAdd/FactsSet/FactsRemove` | engine | affinity, consent, debug, `player_in_inn` |
-| `theInput.RegisterListener/GetActionValue/GetLastActivationTime('SwordSheathe')` | CInput | consent [C] |
+| `theInput.GetAction/IsPressed/GetActionValue('SwordSheathe')` (polling, bez listenera) | CInput | consent [C] |
 | `player.BlockAction/UnblockAction(EIAB_Movement,'MCM_AR_interaction')` | CR4Player | lock HardStage |
 | `thePlayer.IsInCombat/IsSwimming/IsOnBoat/IsInInterior/GetUsedVehicle` | CR4Player | gating kontekstu |
 | `DisplayHudMessage` | CR4Player | HUD |

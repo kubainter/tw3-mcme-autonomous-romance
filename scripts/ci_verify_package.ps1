@@ -11,7 +11,8 @@
         *.stub.ws, *.bak/tmp/~, __folder_managed_by_vortex) - blad
       - MCM_RomanceTw3seDev.ws w paczce jest bajtowo stubem - blad
       - CHANGELOG.txt == snippet wyekstrahowany z CHANGELOG.md - blad
-      - input.settings.txt zawiera binding MCM_AR_Consent - blad
+      - input.settings.txt NIE nadpisuje IK_C (consent = polling, nie binding) - blad
+      - input.xml.txt deklaruje akcje MCM_AR_Consent - blad
       - sensowna liczba wpisow (>= 20) - blad
 
 .PARAMETER ZipPath
@@ -102,13 +103,12 @@ if ($clEntry -and (Test-Path $changelogMd)) {
     }
 }
 
-# --- input.settings.txt zawiera MCM_AR_Consent + tuple chroni sheathing ---
+# --- input.settings.txt NIE nadpisuje IK_C (consent = polling, nie binding) ---
 $inEntry = $entries['Mods/modMCME_AutonomousRomance/input.settings.txt']
 if ($inEntry) {
     $sr = New-Object IO.StreamReader($inEntry.Open()); $zipTxt = $sr.ReadToEnd(); $sr.Close()
-    if ($zipTxt -notmatch 'MCM_AR_Consent') { Report 'input.settings.txt w paczce nie zawiera MCM_AR_Consent' }
-    elseif ($zipTxt -notmatch 'IK_C=\([^)]*Action=SwordSheathe[^)]*Action=MCM_AR_Consent') { Report 'input.settings.txt w paczce bez tuple chroniacego sheathing' }
-    else { Ok 'input.settings.txt z bindingiem (tuple IK_C)' }
+    if ($zipTxt -match 'IK_C=') { Report 'input.settings.txt w paczce nadpisuje IK_C - consent dziala przez polling SwordSheathe (W3-TIK-021)' }
+    else { Ok 'input.settings.txt bez IK_C (consent przez polling)' }
 }
 
 # --- input.xml.txt deklaruje MCM_AR_Consent w Keybindings ---

@@ -1,7 +1,7 @@
 ================================================================================
 MCME AUTONOMOUS ROMANCE
 The Witcher 3: Wild Hunt - Remaster (v5.00+)
-Version: 2.3.0
+Version: 2.3.3
 Author: Botan
 ================================================================================
 
@@ -77,9 +77,11 @@ HOW IT WORKS IN GAME
 
   * Player Control First (Consent Key):
     Romantic invitations display a 20-second HUD prompt showing your
-    actual bound button (keyboard [C] or gamepad D-pad Left / Right).
-    Hold for about a second or double-tap to accept. Walk away or let the timer
-    expire to decline. No affinity is lost; ignoring the prompt starts a rejection cooldown for that action.
+    actual bound buttons (keyboard and gamepad side by side). On
+    keyboard, hold the shown key for about a second or double-tap it;
+    on gamepad, one deliberate D-pad press confirms. Walk away or let
+    the timer expire to decline. No affinity is lost; ignoring the prompt
+    starts a rejection cooldown for that action.
 
 ================================================================================
 SUPPORTED COMPANIONS
@@ -165,22 +167,22 @@ INSTALLATION & REMOVAL
        will not install correctly in Vortex.
 
     2. Input Bindings (Consent Key):
-       Consent works out of the box: [C] on keyboard and [D-pad Left / Right]
-       on gamepad are detected via the standard sword-sheathe binding.
+       Consent works out of the box: the mod detects [C] on keyboard and
+       [D-pad Left / Right] on gamepad by passively polling the standard
+       sword-sheathe binding. It never intercepts or rebinds the vanilla
+       action, so sword sheathing keeps working.
 
-       The mod also ships two optional input files:
-       - input.settings.txt: adds a separate MCM_AR_Consent action next to the
-         vanilla sheathe binding (C keeps sheathing swords).
-       - input.xml.txt: makes the action appear in Options -> Keybindings, so
-         you can rebind it like any built-in control.
-       - The Witcher 3 Mod Manager: merges both files automatically on install.
-       - Vortex / manual install: copy the contents of input.settings.txt into
-         Documents/The Witcher 3/input.settings under each matching section
-         ([Exploration], [Combat], [Horse], [Boat], [Swimming], etc.), and add
-         the <Var ...> line from input.xml.txt to
-         bin/config/r4game/user_config_matrix/pc/input.xml.
-       If skipped, consent falls back to the sheathe key and everything still
-       works - the dedicated action is only needed for a separate key.
+       A dedicated consent key is optional:
+       - input.settings.txt ships no key bindings; it documents the design.
+       - To rebind consent to its own key, add
+         IK_<key>=(Action=MCM_AR_Consent) to the matching context in
+         bin/config/r4game/legacy/base/input_qwerty.ini AND in
+         Documents/The Witcher 3/input.settings. The first step is required:
+         without it the game treats the action as unknown and strips the
+         binding on its next write.
+       - Optionally add the <Var ...> line from input.xml.txt to
+         bin/config/r4game/user_config_matrix/pc/input.xml to get a row in
+         Options -> Keybindings.
 
     3. Launch the game. Scripts compile automatically on first startup.
     4. No Script Merger run needed.

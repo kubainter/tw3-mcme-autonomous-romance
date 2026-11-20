@@ -7,7 +7,7 @@
 [![Issues][issues-shield]][issues-url]
 [![License][license-shield]][license-url]
 [![The Witcher 3: Remastered](https://img.shields.io/badge/Witcher%203-Remastered%20v5.00%2B-blue.svg?style=for-the-badge&logo=gogdotcom)](https://www.thewitcher.com/)
-[![Release Version](https://img.shields.io/badge/Version-v2.3.1-brightgreen.svg?style=for-the-badge)](CHANGELOG.md)
+[![Release Version](https://img.shields.io/badge/Version-v2.3.3-brightgreen.svg?style=for-the-badge)](CHANGELOG.md)
 
 [![Dependency](https://img.shields.io/badge/Dependency-MCME%20Remastered-orange.svg?style=for-the-badge)](https://www.nexusmods.com/witcher3/mods/13144)
 [![Script Merger](https://img.shields.io/badge/Script%20Merger-Zero%20Conflicts-brightgreen.svg?style=for-the-badge)](#zero-script-merger-conflicts)
@@ -149,7 +149,7 @@ In vanilla **Multi Companion Mod Enhanced (MCME)**, companions are passive follo
 #### 4. Non-Intrusive Player Consent Safeguard
 * Tier 3 & Tier 4 romantic initiatives never hijack player controls abruptly.
 * When a companion initiates, an on-screen HUD prompt appears with her name and intent (e.g. `[C] Kiss Yennefer`, `[C] Give Est Est to Keira`).
-* Ships its own input action `MCM_AR_Consent` - bound to **C** alongside the vanilla sheathe action (C keeps sheathing your swords) and exposed in **Options → Keybindings**, so you can rebind consent like any built-in control. Gamepad consent uses the standard sheathe button (D-pad Left/Right). The prompt itself shows your real bound key/glyph (via `ReplaceTagsToIcons`). Vanilla `'SwordSheathe'` is still honored as a fallback. Walking away or waiting 20 seconds declines the invitation. Affinity is not reduced; ignoring the prompt starts a rejection cooldown for that action.
+* Consent rides the standard sheathe key — **C** on keyboard, **D-pad Left/Right** on gamepad — read passively inside the prompt loop (held state on keyboard; activation edge on gamepad, whose D-pad `Duration` binding fires once per press). Vanilla sword sheathing is never touched: registering a script listener on the vanilla `SwordSheathe` action replaces the game's own sheathe handler (engine quirk), so the mod deliberately does not do that. The prompt shows your real bound keys for both keyboard and pad (via `ReplaceTagsToIcons`). A dedicated `MCM_AR_Consent` action is still available if you want a separate consent key — see Installation. Walking away or waiting 20 seconds declines the invitation. Affinity is not reduced; ignoring the prompt starts a rejection cooldown for that action.
 
 #### 5. Configurable Pacing & Full Localization
 * A dedicated **Decision Tick Interval** slider (20-160 s, default 30 s) controls how often companions evaluate new initiatives - separate from the initiative cooldown per companion.
@@ -230,11 +230,10 @@ In vanilla **Multi Companion Mod Enhanced (MCME)**, companions are passive follo
    * `bin/config/r4game/user_config_matrix/pc/modMCME_AutonomousRomance.xml` → `<Witcher 3>/bin/config/r4game/user_config_matrix/pc/modMCME_AutonomousRomance.xml`
 3. Launch the game. Witcher 3 will automatically compile the scripts on first startup.
 4. **No Script Merger is needed.** Because the mod uses `@wrapMethod` annotations and touches zero base files, no merging is required.
-5. **Input bindings (consent key):** consent works out of the box — **C** on keyboard and **D-pad Left/Right** on gamepad are detected through the standard `SwordSheathe` binding. The mod also ships two optional input files:
-   * `Mods/modMCME_AutonomousRomance/input.settings.txt` — adds a dedicated `MCM_AR_Consent` action **next to** the vanilla sheathe binding, so C still sheathes your swords.
-   * `Mods/modMCME_AutonomousRomance/input.xml.txt` — makes `MCM_AR_Consent` appear in **Options → Keybindings**, so you can rebind it like any built-in control.
-   * **TW3 Mod Manager:** merges both input fragments automatically — nothing to do.
-   * **Vortex / manual install:** append the `.txt` contents to your `Documents\The Witcher 3\input.settings` under each matching context section (`[Exploration]`, `[Combat]`, `[Horse]`, `[Boat]`, `[Swimming]`, etc.), and add the `<Var …>` line from `input.xml.txt` to `bin/config/r4game/user_config_matrix/pc/input.xml`. If skipped, consent falls back to `SwordSheathe` — everything keeps working, the dedicated action just isn't separately rebindable.
+5. **Input bindings (consent key):** consent works out of the box — **C** on keyboard and **D-pad Left/Right** on gamepad are detected through the standard `SwordSheathe` binding (passive polling; the mod never rebinds or intercepts the vanilla action, so sword sheathing keeps working). A dedicated consent key is optional:
+   * `Mods/modMCME_AutonomousRomance/input.settings.txt` ships no key bindings — it only documents the design (consent needs no binding).
+   * **Rebinding consent to its own key:** add `IK_<key>=(Action=MCM_AR_Consent)` to the matching context in `bin/config/r4game/legacy/base/input_qwerty.ini` **and** in `Documents\The Witcher 3\input.settings`. The first step is required — without it the game treats the action as unknown and strips the binding on its next write. Optionally add the `<Var …>` line from `input.xml.txt` to `bin/config/r4game/user_config_matrix/pc/input.xml` to get a row in **Options → Keybindings**.
+   * **Vortex / manual install:** nothing to merge for the default experience.
 
 ### First Run & Verification
 
@@ -278,7 +277,7 @@ Navigate to **Options → Mods → Autonomous Romance**:
 
 When a companion approaches Geralt for a romantic date or intimate scene:
 1. A subtle HUD notification appears with her name and intent (e.g. `[C] Kiss Yennefer`, `[C] Give Est Est to Keira`) - the prompt renders the **actual key/button bound on your setup** (keyboard or gamepad glyph), not a hardcoded letter.
-2. You have **20 seconds** to respond - hold the shown key (default **C** / gamepad **D-pad Left or Right**) for about a second, or double-tap it quickly.
+2. You have **20 seconds** to respond - on keyboard, hold the shown key (default **C**) for about a second or double-tap it; on gamepad, one deliberate **D-pad Left or Right** press confirms.
 3. On accept, the cutscene or romantic dialogue smoothly initiates.
 4. If you walk more than ~12 m away or let the timer expire, the companion offers an understanding remark. Declining or ignoring the prompt starts an escalating rejection cooldown for that action (5, 15, then 30 minutes); affinity is not reduced.
 

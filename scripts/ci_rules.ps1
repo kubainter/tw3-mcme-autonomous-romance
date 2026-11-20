@@ -9,7 +9,11 @@
         (.Contains jest udowodnione dzialajace w Remastered, nie flagujemy)
       - obecnosc ru.w3strings.csv (RU obsluguje zewnetrzny mod - zakaz w repo) - blad
       - regresja rename: MCME_AR.input.settings.txt nie moze wrocic - blad
-      - input.settings.txt musi zawierac binding MCM_AR_Consent - blad
+      - RegisterListener na vanilla akcji 'SwordSheathe' w .ws (rejestracja na pare
+        (obiekt, akcja) ZASTEPUJE natywny handler gry i zabija sheathing, W3-TIK-021) - blad
+        (linie komentarza // sa pomijane)
+      - input.settings.txt nie moze nadpisywac IK_C - consent dziala przez polling - blad
+      - input.xml.txt musi deklarowac Var actions="MCM_AR_Consent" - blad
       - CHANGELOG.md musi miec sekcje [Nexus Mods Changelog Snippet] z blokiem ```text - blad
       - najnowszy naglowek wersji w CHANGELOG musi parsowac jako semver - blad
       - badge Version-vX.Y.Z w README.md musi pasowac do najnowszego naglowka CHANGELOG - blad
@@ -59,6 +63,17 @@ foreach ($f in $wsFiles) {
         $ln = ($raw.Substring(0, $m.Index) -split "`n").Count
         Report "${rel}:$ln" 'WARN' 'metoda kolekcji .Find/.IndexOf - sprawdz czy typ ja wspiera (regula 10 AGENTS.md)'
     }
+    # Anti-regresja sheathing (W3-TIK-021): listener na vanilla akcji 'SwordSheathe'
+    # ZASTEPUJE natywny handler gry (playerInput.ws OnCommSheatheAny) i zabija C.
+    # Linie komentarza (// ...) sa pomijane - w kodzie zyja komentarze objasniajace zakaz.
+    $lineNo = 0
+    foreach ($line in ($raw -split "\r?\n")) {
+        $lineNo++
+        if ($line -match '^\s*//') { continue }
+        if ($line -match "RegisterListener\s*\([^)]*'SwordSheathe'") {
+            Report "${rel}:$lineNo" 'ERROR' "RegisterListener na vanilla akcji 'SwordSheathe' zabija sheathing - obserwuj ja pollingiem (W3-TIK-021)"
+        }
+    }
 }
 
 # --- zakaz ru.w3strings.csv ---
@@ -75,13 +90,11 @@ if (-not (Test-Path $inputFrag)) {
     Report 'Mods\modMCME_AutonomousRomance\input.settings.txt' 'ERROR' 'brak input.settings.txt w rootcie moda'
 } else {
     $frag = [System.IO.File]::ReadAllText($inputFrag)
-    if ($frag -notmatch 'MCM_AR_Consent') {
-        Report 'Mods\modMCME_AutonomousRomance\input.settings.txt' 'ERROR' 'fragment nie zawiera bindingu MCM_AR_Consent'
-    }
-    # Anti-regresja sheathing: IK_C musi trzymac vanilla akcje obok consentu
-    # (tuple w jednej linii), inaczej nadpisujace merge'e zabijaja C.
-    if ($frag -notmatch 'IK_C=\([^)]*Action=SwordSheathe[^)]*Action=MCM_AR_Consent') {
-        Report 'Mods\modMCME_AutonomousRomance\input.settings.txt' 'ERROR' 'brak tuple IK_C=(Action=SwordSheathe,Action=MCM_AR_Consent) - nadpisujacy merge zepsuje sheathing na C'
+    # Consent dziala przez polling vanilla SwordSheathe - fragment NIE moze dotykac
+    # IK_C w zadnym kontekscie (stara skladnia krotki "IK_C" z dwiema akcjami byla
+    # nieprawidlowa: gra normalizowala ja do pierwszej akcji).
+    if ($frag -match 'IK_C=') {
+        Report 'Mods\modMCME_AutonomousRomance\input.settings.txt' 'ERROR' 'fragment nadpisuje IK_C - consent dziala przez polling SwordSheathe, nie przez binding (W3-TIK-021)'
     }
 }
 

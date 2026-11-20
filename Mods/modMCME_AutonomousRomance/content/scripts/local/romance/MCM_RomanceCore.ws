@@ -61,7 +61,10 @@ function MCM_AR_OnPlayerReady()
 	}
 
 	theInput.RegisterListener(this, 'OnMCM_AR_ConsentKey', 'MCM_AR_Consent');
-	theInput.RegisterListener(this, 'OnMCM_AR_ConsentKey', 'SwordSheathe');
+	// NIGDY nie rejestruj listenera na vanilla akcji na CR4Player: rejestracja
+	// na (obiekt, akcja) ZASTEPUJE natywny handler gry (playerInput.ws:91,
+	// OnCommSheatheAny na SwordSheathe) i zabija sheathing (W3-TIK-021 §9).
+	// SwordSheathe obserwujemy wylacznie pollingiem w petli zgody.
 
 	// Bezpiecznik: latent-abort ShowConsentPrompt mogl zostawic fakty
 	// (obiekt zniszczony w trakcie Sleep - cleanup petli nie strzeli).
@@ -417,6 +420,9 @@ statemachine class MCM_AutonomousRomanceCore
 		var mac       : CMovingPhysicalAgentComponent;
 
 		if (!job.npc || !IsNameValid(anim)) return false;
+		// Unicorn bridge: aktor w scenie UC / grace - syncAnim nie moze
+		// przetrzymac go w pozie (mode-1 freeze z reconu).
+		if (IsUcMarkedNpc(job.npc)) return false;
 		StopIdleSyncAnim(job);
 
 		job.syncInst = new CAnimationManualSlotSyncInstance in job.npc;
@@ -871,6 +877,7 @@ statemachine class MCM_AutonomousRomanceCore
 			if (!npc.HasTag('mod_scm_IsFollowing')) continue;
 			if (npc.wasInTalkInteraction || npc.IsInGameplayScene() || npc.IsSpeaking()) continue;
 			if (IsNpcBusy(npc)) continue;
+			if (IsUcMarkedNpc(npc)) continue;
 
 			dist = VecDistance(npc.GetWorldPosition(), playerPos);
 			if (dist > 15.0 && npc != dtBedPartner) continue;
@@ -1435,6 +1442,12 @@ statemachine class MCM_AutonomousRomanceCore
 						" speak=" + npc.IsSpeaking() +
 						" own=" + (npc == busyNpc));
 				}
+				continue;
+			}
+			// Unicorn bridge: aktor w scenie UC / grace - nie claimuj do joba.
+			if (IsUcMarkedNpc(npc))
+			{
+				skipBusy += 1;
 				continue;
 			}
 			// Sekwencja ambientowa w toku (taniec/picie): ProbeAnim grywa
@@ -2053,12 +2066,24 @@ statemachine class MCM_AutonomousRomanceCore
 				busyNpc = NULL;
 			}
 		}
+		// Unicorn bridge (opcjonalny modMCME_AR_Unicorn): jakakolwiek scena
+		// UC w toku = staged-busy globalnie. Bez mostu fakt nigdy nie
+		// istnieje - check to czysty FactsQuerySum, zero kosztu.
+		if (FactsQuerySum('mcme_ar_uc_active') > 0) return true;
 		return interactionBusy;
 	}
 
 	public function IsNpcBusy(npc : CNewNPC) : bool
 	{
 		return interactionBusy && busyNpc == npc;
+	}
+
+	// Unicorn bridge: per-actor marker mcme_ar_uc_on_<nam> - aktor w scenie
+	// UC albo w oknie grace po niej (fakt ma expires - crash nie zawiesi).
+	public function IsUcMarkedNpc(npc : CNewNPC) : bool
+	{
+		if (!npc || !npc.scmcc || !npc.scmcc.data) return false;
+		return FactsQuerySum("mcme_ar_uc_on_" + NameToString(npc.scmcc.data.nam)) > 0;
 	}
 
 	// Awaryjny reset stanu RUNTIME (nie cooldownow/affinity): po ReloadScripts
@@ -3376,6 +3401,7 @@ exec function ar_npcsweep()
 			" scene=" + npc.IsInGameplayScene() +
 			" speak=" + npc.IsSpeaking(), true);
 		npc.ActionCancelAll();
+		npc.RaiseForceEvent('ForceIdle');
 		npc.StopAllScenes();
 		broke = theGame.GetSyncAnimManager().BreakSyncIfPossible(npc);
 		MCM_AR_Log("[AR] sweep " + npc.GetDisplayName() +
