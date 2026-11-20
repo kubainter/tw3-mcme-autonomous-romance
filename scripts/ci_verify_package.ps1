@@ -80,6 +80,20 @@ foreach ($name in $entries.Keys) {
     }
 }
 
+# --- twarda izolacja artefaktow (supply chain): w paczce bazowej moze byc ---
+# --- wylacznie jeden mod i jeden plik MCM XML. Wyciek skryptow mostka    ---
+# --- Unicorn (WIP, niekompilujacy bez modUnicornCore) lub jego martwego  ---
+# --- wpisu menu do paczki na Nexus/GitHub = hard fail builda.            ---
+foreach ($name in $entries.Keys) {
+    if ($name.StartsWith('Mods/') -and -not $name.StartsWith('Mods/modMCME_AutonomousRomance/')) {
+        Report "obcy katalog moda w paczce bazowej: $name"
+    }
+    if ($name.StartsWith('bin/config/r4game/user_config_matrix/pc/') -and
+        $name -ne 'bin/config/r4game/user_config_matrix/pc/modMCME_AutonomousRomance.xml') {
+        Report "obcy plik MCM config w paczce bazowej: $name"
+    }
+}
+
 # --- Tw3seDev == stub ---
 $stubPath = Join-Path $RepoRoot 'scripts\tw3se\MCM_RomanceTw3seDev.stub.ws'
 $tw3seEntry = $entries['Mods/modMCME_AutonomousRomance/content/scripts/local/romance/MCM_RomanceTw3seDev.ws']

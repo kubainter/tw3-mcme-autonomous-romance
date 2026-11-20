@@ -1,7 +1,7 @@
 /*****************************************************************************/
 /* MCME Autonomous Romance - Core Module                                     */
 /* Główna pętla, timery i context tracker                                    */
-/* Wersja: 2.3.1  |  Wymaga: modMCME_Remastered 5.00+                       */
+/* Wersja: 2.3.3  |  Wymaga: modMCME_Remastered 5.00+                       */
 /*****************************************************************************/
 
 // Singleton dostępny globalnie, inicjowany przy spawnie gracza
