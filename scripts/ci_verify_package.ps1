@@ -5,14 +5,15 @@
 .DESCRIPTION
     Asercje na zipie z package_release.ps1:
       - wszystkie nazwy wpisow uzywaja '/' (spec ZIP, W3MM na Linux/Deck) - blad
-      - wymagane wpisy istnieja (input.settings.txt, input.xml.txt, README.txt, CHANGELOG.txt,
+      - wymagane wpisy istnieja (input.settings.txt, input.xml.optional, README.txt, CHANGELOG.txt,
         modMCME_AutonomousRomance.xml, MCM_RomanceCore.ws) - blad
-      - zakazane wpisy nieobecne (MCME_AR.input.settings.txt, E2EDev, *.csv,
-        *.stub.ws, *.bak/tmp/~, __folder_managed_by_vortex) - blad
+      - zakazane wpisy nieobecne (MCME_AR.input.settings.txt, input.xml.txt [W3MM
+        auto-merge trap], E2EDev, *.csv, *.stub.ws, *.bak/tmp/~,
+        __folder_managed_by_vortex) - blad
       - MCM_RomanceTw3seDev.ws w paczce jest bajtowo stubem - blad
       - CHANGELOG.txt == snippet wyekstrahowany z CHANGELOG.md - blad
       - input.settings.txt NIE nadpisuje IK_C (consent = polling, nie binding) - blad
-      - input.xml.txt deklaruje akcje MCM_AR_Consent - blad
+      - input.xml.optional deklaruje akcje MCM_AR_Consent - blad
       - sensowna liczba wpisow (>= 20) - blad
 
 .PARAMETER ZipPath
@@ -55,7 +56,7 @@ Ok "entries: $($entries.Count), separatory '/'"
 # --- wymagane wpisy ---
 $required = @(
     'Mods/modMCME_AutonomousRomance/input.settings.txt',
-    'Mods/modMCME_AutonomousRomance/input.xml.txt',
+    'Mods/modMCME_AutonomousRomance/input.xml.optional',
     'Mods/modMCME_AutonomousRomance/README.txt',
     'Mods/modMCME_AutonomousRomance/CHANGELOG.txt',
     'Mods/modMCME_AutonomousRomance/content/scripts/local/romance/MCM_RomanceCore.ws',
@@ -70,6 +71,7 @@ foreach ($r in $required) {
 foreach ($name in $entries.Keys) {
     $base = Split-Path $name -Leaf
     if ($base -eq 'MCME_AR.input.settings.txt') { Report "stary prefixed fragment w paczce: $name" }
+    if ($base -eq 'input.xml.txt')              { Report "input.xml.txt w paczce - W3MM auto-merge trap (szablon: input.xml.optional): $name" }
     if ($base -eq 'MCM_RomanceE2EDev.ws')       { Report "dev-only E2EDev w paczce: $name" }
     if ($base -like '*.stub.ws')                { Report "plik *.stub.ws w paczce: $name" }
     if ($base -like '*.csv')                    { Report "plik csv w paczce: $name" }
@@ -111,12 +113,12 @@ if ($inEntry) {
     else { Ok 'input.settings.txt bez IK_C (consent przez polling)' }
 }
 
-# --- input.xml.txt deklaruje MCM_AR_Consent w Keybindings ---
-$xmlEntry = $entries['Mods/modMCME_AutonomousRomance/input.xml.txt']
+# --- input.xml.optional deklaruje MCM_AR_Consent w Keybindings ---
+$xmlEntry = $entries['Mods/modMCME_AutonomousRomance/input.xml.optional']
 if ($xmlEntry) {
     $sr = New-Object IO.StreamReader($xmlEntry.Open()); $zipXml = $sr.ReadToEnd(); $sr.Close()
-    if ($zipXml -notmatch 'actions="MCM_AR_Consent"') { Report 'input.xml.txt w paczce nie deklaruje akcji MCM_AR_Consent' }
-    else { Ok 'input.xml.txt z akcja Keybindings' }
+    if ($zipXml -notmatch 'actions="MCM_AR_Consent"') { Report 'input.xml.optional w paczce nie deklaruje akcji MCM_AR_Consent' }
+    else { Ok 'input.xml.optional z akcja Keybindings' }
 }
 
 $zip.Dispose()

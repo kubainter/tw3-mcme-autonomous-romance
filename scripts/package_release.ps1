@@ -129,6 +129,17 @@ if (Test-Path $bridgeDlcInStaging) {
     Write-Host "[release] dlcMCME_AR_Unicorn wyciety (osobny release)" -ForegroundColor Yellow
 }
 
+# W3MM auto-merge trap: plik input.xml.txt w katalogu moda jest wstrzykiwany
+# do input.xml u kazdego gracza (surowy displayName w Keybindings + ciche
+# ciecie bindingu przy zapisie). Szablon dla zaawansowanych zyje jako
+# input.xml.optional i przechodzi do paczki pod ta nazwa - nazwa
+# auto-mergowana jest zakazana w stagingu (ci_rules.ps1 pilnuje repo).
+$inputXmlTrap = Get-ChildItem -Path (Join-Path $stagingDir 'Mods') -Recurse -Filter 'input.xml.txt' -File -ErrorAction SilentlyContinue
+if ($inputXmlTrap) {
+    Write-Host "[FAIL] input.xml.txt w stagingu - W3MM auto-merge trap; szablon trzymaj jako input.xml.optional" -ForegroundColor Red
+    exit 1
+}
+
 # Remove any unwanted files from staging
 Get-ChildItem -Path $stagingDir -Recurse -Include "*.bak", "*.devbak", "*.tmp", "*~", "*.csv", "__folder_managed_by_vortex" | Remove-Item -Force
 

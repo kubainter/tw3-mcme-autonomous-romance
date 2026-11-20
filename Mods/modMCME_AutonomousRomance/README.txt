@@ -180,7 +180,7 @@ INSTALLATION & REMOVAL
          Documents/The Witcher 3/input.settings. The first step is required:
          without it the game treats the action as unknown and strips the
          binding on its next write.
-       - Optionally add the <Var ...> line from input.xml.txt to
+       - Optionally add the <Var ...> line from input.xml.optional to
          bin/config/r4game/user_config_matrix/pc/input.xml to get a row in
          Options -> Keybindings.
 

@@ -232,7 +232,7 @@ In vanilla **Multi Companion Mod Enhanced (MCME)**, companions are passive follo
 4. **No Script Merger is needed.** Because the mod uses `@wrapMethod` annotations and touches zero base files, no merging is required.
 5. **Input bindings (consent key):** consent works out of the box — **C** on keyboard and **D-pad Left/Right** on gamepad are detected through the standard `SwordSheathe` binding (passive polling; the mod never rebinds or intercepts the vanilla action, so sword sheathing keeps working). A dedicated consent key is optional:
    * `Mods/modMCME_AutonomousRomance/input.settings.txt` ships no key bindings — it only documents the design (consent needs no binding).
-   * **Rebinding consent to its own key:** add `IK_<key>=(Action=MCM_AR_Consent)` to the matching context in `bin/config/r4game/legacy/base/input_qwerty.ini` **and** in `Documents\The Witcher 3\input.settings`. The first step is required — without it the game treats the action as unknown and strips the binding on its next write. Optionally add the `<Var …>` line from `input.xml.txt` to `bin/config/r4game/user_config_matrix/pc/input.xml` to get a row in **Options → Keybindings**.
+   * **Rebinding consent to its own key:** add `IK_<key>=(Action=MCM_AR_Consent)` to the matching context in `bin/config/r4game/legacy/base/input_qwerty.ini` **and** in `Documents\The Witcher 3\input.settings`. The first step is required — without it the game treats the action as unknown and strips the binding on its next write. Optionally add the `<Var …>` line from `input.xml.optional` to `bin/config/r4game/user_config_matrix/pc/input.xml` to get a row in **Options → Keybindings**.
    * **Vortex / manual install:** nothing to merge for the default experience.
 
 ### First Run & Verification

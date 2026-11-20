@@ -13,7 +13,8 @@
         (obiekt, akcja) ZASTEPUJE natywny handler gry i zabija sheathing, W3-TIK-021) - blad
         (linie komentarza // sa pomijane)
       - input.settings.txt nie moze nadpisywac IK_C - consent dziala przez polling - blad
-      - input.xml.txt musi deklarowac Var actions="MCM_AR_Consent" - blad
+      - input.xml.optional musi deklarowac Var actions="MCM_AR_Consent",
+        a input.xml.txt (auto-merge W3MM) nie moze istniec - blad
       - CHANGELOG.md musi miec sekcje [Nexus Mods Changelog Snippet] z blokiem ```text - blad
       - najnowszy naglowek wersji w CHANGELOG musi parsowac jako semver - blad
       - badge Version-vX.Y.Z w README.md musi pasowac do najnowszego naglowka CHANGELOG - blad
@@ -99,14 +100,21 @@ if (-not (Test-Path $inputFrag)) {
 }
 
 # --- input.xml: akcja MCM_AR_Consent widoczna w Options -> Keybindings ---
-$inputXml = Join-Path $modRoot 'input.xml.txt'
+# Szablon zyje jako input.xml.optional (reczne wklejenie do input.xml).
+# Nazwa input.xml.txt jest zakazana w drzewie moda: W3MM auto-merguje
+# *.xml.txt do input.xml u kazdego gracza -> surowy displayName
+# "Consent (MCME AR)" w Keybindings + ciche ciecie bindingu przy zapisie.
+$inputXml = Join-Path $modRoot 'input.xml.optional'
 if (-not (Test-Path $inputXml)) {
-    Report 'Mods\modMCME_AutonomousRomance\input.xml.txt' 'ERROR' 'brak input.xml.txt - MCM_AR_Consent nie pojawi sie w Keybindings'
+    Report 'Mods\modMCME_AutonomousRomance\input.xml.optional' 'ERROR' 'brak input.xml.optional - MCM_AR_Consent nie pojawi sie w Keybindings'
 } else {
     $xml = [System.IO.File]::ReadAllText($inputXml)
     if ($xml -notmatch 'builder="Input"' -or $xml -notmatch 'actions="MCM_AR_Consent"') {
-        Report 'Mods\modMCME_AutonomousRomance\input.xml.txt' 'ERROR' 'input.xml.txt nie deklaruje Var actions="MCM_AR_Consent" z builder="Input"'
+        Report 'Mods\modMCME_AutonomousRomance\input.xml.optional' 'ERROR' 'input.xml.optional nie deklaruje Var actions="MCM_AR_Consent" z builder="Input"'
     }
+}
+if (Test-Path (Join-Path $modRoot 'input.xml.txt')) {
+    Report 'Mods\modMCME_AutonomousRomance\input.xml.txt' 'ERROR' 'input.xml.txt wrocil - W3MM auto-merge trap; szablon trzymaj jako input.xml.optional'
 }
 
 # --- CHANGELOG: snippet section + semver header ---
