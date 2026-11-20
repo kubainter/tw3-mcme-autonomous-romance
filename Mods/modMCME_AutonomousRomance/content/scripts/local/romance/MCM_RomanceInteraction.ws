@@ -1156,7 +1156,6 @@ class MCM_RomanceInteraction
 		devVK = MCM_AR_DevActive();
 		vkC = MCM_AR_DevConfigKey('ar_consent_key');
 		if (vkC == 0) vkC = 0x43;
-		prevAction = false;
 		pl = GetWitcherPlayer();
 		if (pl)
 		{
