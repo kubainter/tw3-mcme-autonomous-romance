@@ -1140,6 +1140,7 @@ class MCM_RomanceInteraction
 		var lastSsActT   : float;
 		var ssActT       : float;
 		var ssTaps       : int;
+		var consentAct   : name;
 		var keyIdx       : int;
 		var j            : int;
 		var padIdx       : int;
@@ -1166,8 +1167,7 @@ class MCM_RomanceInteraction
 		devVK = MCM_AR_DevActive();
 		vkC = MCM_AR_DevConfigKey('ar_consent_key');
 		if (vkC == 0) vkC = 0x43;
-		prevAction = IsPressed(theInput.GetAction('MCM_AR_Consent'), true)
-		          || IsPressed(theInput.GetAction('SwordSheathe'), true);
+		prevAction = false;
 		pl = GetWitcherPlayer();
 		if (pl)
 		{
@@ -1194,6 +1194,19 @@ class MCM_RomanceInteraction
 		{
 			consentTag = "SwordSheathe";
 		}
+		// Izolacja wejscia (audit-007): gdy gracz zbindowal dedykowana
+		// MCM_AR_Consent, akcja SwordSheathe nie moze dawac consentu -
+		// rozdzielenie zgody od chowania broni musi byc pelne. Pollujemy
+		// wylacznie aktywna akcje zgody (stan held + krawedzie activacji).
+		if (consentTag == "MCM_AR_Consent")
+		{
+			consentAct = 'MCM_AR_Consent';
+		}
+		else
+		{
+			consentAct = 'SwordSheathe';
+		}
+		prevAction = IsPressed(theInput.GetAction(consentAct), true);
 		// Glyph: pokazujemy OBIE strony mapowania (PC + pad). <<akcja,idx>>
 		// renderuje keys[idx] z GetCurrentKeysForActionStr; pad-key wykrywamy
 		// przez porownanie z GetPadKeysForActionStr - dziala dla dowolnego
@@ -1249,9 +1262,10 @@ class MCM_RomanceInteraction
 		thePlayer.DisplayHudMessage(fullPrompt);
 		MCM_AR_Log("[AR] Consent prompt shown, waiting max " + (int)timeoutSec + "s for hold/2x tap (consent key)");
 
-		// Baseline czasu aktywacji SwordSheathe - liczymy tylko aktywacje
-		// po pokazaniu promptu (pad: binding Duration odpala raz za press).
-		lastSsActT = theInput.GetLastActivationTime('SwordSheathe');
+		// Baseline czasu aktywacji aktywnej akcji zgody - liczymy tylko
+		// aktywacje po pokazaniu promptu (pad: binding Duration odpala
+		// raz za press).
+		lastSsActT = theInput.GetLastActivationTime(consentAct);
 
 		while (elapsed < timeoutSec)
 		{
@@ -1274,8 +1288,7 @@ class MCM_RomanceInteraction
 				return false;
 			}
 
-			actHeld = IsPressed(theInput.GetAction('MCM_AR_Consent'), true)
-			       || IsPressed(theInput.GetAction('SwordSheathe'), true);
+			actHeld = IsPressed(theInput.GetAction(consentAct), true);
 			evHeld = (thePlayer.mcm_ar_consentHeldC || thePlayer.mcm_ar_consentHeldS)
 			      && thePlayer.mcm_ar_consentPressAt >= tStart;
 			if (devVK)
@@ -1300,21 +1313,21 @@ class MCM_RomanceInteraction
 			}
 			else
 			{
-				// Polling obu akcji (pasywny odczyt) - SwordSheathe nie ma juz
+				// Pasywny polling aktywnej akcji zgody - SwordSheathe nie ma juz
 				// listenera (zastapilby natywny handler gry, W3-TIK-021 §9).
-				// evHeld jest teraz redundantne (actHeld polluje obie akcje),
+				// evHeld jest teraz redundantne (actHeld polluje akcje zgody),
 				// zostaje jako pas bezpieczenstwa dla listenera MCM_AR_Consent.
 				nowDown = actHeld || evHeld;
 				prevEvHeld = evHeld;
 			}
 			prevAction = actHeld;
-			// Pad: binding SwordSheathe ma State=Duration - akcja odpala raz
+			// Pad: binding akcji zgody ma State=Duration - akcja odpala raz
 			// za przytrzymanie D-pad (>=0.3s), value pulsuje i nie daje stanu
 			// "held" do pollownia. GetLastActivationTime wykrywa kazda taka
 			// aktywacje; jeden swiadomy gest D-pad = consent (analog holda [C]).
 			// Gate na LastUsedGamepad, zeby klik C na klawiaturze nadal wymagal
 			// hold/2x tap zamiast akceptowac od pierwszego pressa.
-			ssActT = theInput.GetLastActivationTime('SwordSheathe');
+			ssActT = theInput.GetLastActivationTime(consentAct);
 			if (ssActT != lastSsActT)
 			{
 				lastSsActT = ssActT;
@@ -1328,7 +1341,11 @@ class MCM_RomanceInteraction
 				// z chwili przed promptem i wyscig, w ktorym klik C na
 				// klawiaturze dociera, zanim LastUsedGamepad zdazy sie
 				// przelaczyc na klawiature (review NVIDIA #1).
-				if (elapsed > 0.5 && (theInput.LastUsedGamepad() || theInput.GetLastUsedGamepadType() == IDT_Steam))
+				// IDT_Steam trzyma sie takze gdy gracz wrocil na klawiature/
+				// mysz (typ ostatnio widzianego pada, nie aktualnego
+				// urzadzenia) - LastUsedPCInput odcina szybka sciezke dla
+				// wejscia PC: klawiatura nadal wymaga hold/2x tap (audit-008).
+				if (elapsed > 0.5 && (theInput.LastUsedGamepad() || (theInput.GetLastUsedGamepadType() == IDT_Steam && !theInput.LastUsedPCInput())))
 				{
 					FactsRemove('mcme_ar_awaiting_consent');
 					FactsRemove('mcme_ar_consent_given');
