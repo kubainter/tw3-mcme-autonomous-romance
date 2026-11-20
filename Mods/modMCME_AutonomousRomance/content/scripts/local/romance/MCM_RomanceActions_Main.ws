@@ -1782,7 +1782,10 @@ class MCM_AR_Ciri_IntimateInvite extends MCM_RomanceInteraction
 		// specialData.naughtyScene z paczek MCME omija NaughtyScenePath,
 		// wiec gate trybu musi siedziec tutaj, na poziomie akcji.
 		if (!thePlayer.MCM_AR_GetConfig().IsCiriAdultMode()) return "lore_mode";
-		if (!IsOnNaughtyPoint()) return "no_naughty_point";
+		if (!IsOnNaughtyPoint() && !(ctx.isNearCampfire && !ctx.isInInterior && !ctx.isInTavern))
+		{
+			return "no_naughty_point";
+		}
 		return IntimateSceneBlockReason(npc);
 	}
 
