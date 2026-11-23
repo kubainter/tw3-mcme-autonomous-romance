@@ -1,32 +1,34 @@
-; MCME Autonomous Romance - fragment input.settings (Settings Updater / W3MM)
+; MCME Autonomous Romance - input.settings fragment (Settings Updater / W3MM)
 ;
-; Ten fragment CELOWO nie zawiera zadnego bindingu (zero linii "IK_") i nie
-; dotyka klawisza IK_C w zadnym kontekscie.
+; This fragment INTENTIONALLY contains no bindings (zero "IK_" lines) and
+; does not touch the IK_C key in any context.
 ;
-; Zgoda (consent) dziala przez POLLING vanilla akcji "SwordSheathe":
-;   - C zachowuje sie jak w vanilla (chowa/odbezpiecza miecz),
-;   - gdy na ekranie wisi prompt zgody, przytrzymanie C ~1 s albo 2x tap C
-;     akceptuje romans.
-; Polling to pasywne GetAction/IsPressed w petli zgody - mod NIE rejestruje
-; listenera na vanilla akcji, wiec natywny handler gry (OnCommSheatheAny,
-; playerInput.ws) pozostaje nietkniety i sheathing na C dziala (W3-TIK-021 par.9).
+; Consent works through POLLING of the vanilla "SwordSheathe" action:
+;   - C behaves like vanilla (sheathe/undraw the sword),
+;   - while a consent prompt is on screen, holding C for ~1 s or tapping
+;     C twice accepts the romance.
+; Polling is a passive GetAction/IsPressed read inside the consent loop -
+; the mod does NOT register a listener on the vanilla action, so the game's
+; native handler (OnCommSheatheAny, playerInput.ws) stays untouched and
+; sheathing on C keeps working (W3-TIK-021 par.9).
 ;
-; Historia: poprzednie wersje tego pliku podpinaly zgode pod C liniami
-; w formacie krotki (tuple) - "IK_C" z dwiema akcjami w jednym bindingu
-; (SwordSheathe + MCM_AR_Consent). Ta skladnia jest NIEPRAWIDLOWA: gra
-; normalizuje ja do pierwszej akcji, wiec consent nigdy nie byl realnie
-; podpiety, a fragment jedynie nadpisywal vanilla binding. Linie usuniete.
+; History: earlier versions of this file bound consent to C via tuple
+; syntax - "IK_C" carrying two actions in one binding (SwordSheathe +
+; MCM_AR_Consent). That syntax is INVALID: the game normalizes it to the
+; first action only, so consent was never really bound and the fragment
+; merely overwrote the vanilla binding. Lines removed.
 ;
-; Dedytkowany klawisz zgody (opcjonalnie, recznie) - README, sekcja
-; "Input Bindings (Consent Key)": akcja MCM_AR_Consent musi byc
-; zadeklarowana w bin\config\r4game\legacy\base\input_qwerty.ini, wpisana
-; w Documents\The Witcher 3\input.settings (ten sam kontekst) i opcjonalnie
-; dopisana do bin\config\r4game\user_config_matrix\pc\input.xml.
-; Przykladowa linia do przeklejenia (klawisz Z - wolny w vanilla):
+; Dedicated consent key (optional, manual) - see README, section
+; "Input Bindings (Consent Key)" or consent-key.snippet.txt: the
+; MCM_AR_Consent action must be declared in
+; bin\config\r4game\legacy\base\input_qwerty.ini, bound in
+; Documents\The Witcher 3\input.settings (same context), and optionally
+; added to bin\config\r4game\user_config_matrix\pc\input.xml.
+; Ready-made example line (key Z - free in vanilla):
 ;   IK_Z=(Action=MCM_AR_Consent)
-; Nie wysylamy domyslnego klawisza w tym fragmencie - kazdy dedykowany
-; binding wymaga recznej deklaracji, a Z moze byc juz zajety przez inne mody.
+; We ship no default key in this fragment - every dedicated binding needs
+; manual declaration, and Z may already be taken by other mods.
 ;
-; Merge komentarzowego fragmentu jest bezpieczny: Settings Updater / W3MM
-; dokladaja te linie do Documents\The Witcher 3\input.settings, a gra ignoruje
-; wpisy zaczynajace sie od ';'.
+; Merging this comment-only fragment is safe: Settings Updater / W3MM
+; append these lines to Documents\The Witcher 3\input.settings, and the
+; game ignores entries starting with ';'.
