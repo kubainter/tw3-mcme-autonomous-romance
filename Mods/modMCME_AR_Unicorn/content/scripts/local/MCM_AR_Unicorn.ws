@@ -110,6 +110,12 @@ function MCM_AR_UcIsMarked(npc : CNewNPC) : bool
 	return FactsQuerySum("mcme_ar_uc_on_" + NameToString(npc.scmcc.data.nam)) > 0;
 }
 
+function MCM_AR_UcClearActor(npc : CNewNPC)
+{
+	if (!npc || !npc.scmcc || !npc.scmcc.data) return;
+	FactsRemove("mcme_ar_uc_on_" + NameToString(npc.scmcc.data.nam));
+}
+
 function MCM_AR_UcMarkThreadActors(t : CUnicornThread, expiresSec : int)
 {
 	var actors : array<CActor>;
@@ -175,6 +181,10 @@ function MCM_AR_UcEnsureInit() : bool
 
 	// Przelaczniki efektow (raz na sesje): npc_reactions i stats to
 	// globalny szum poza naszymi scenami; dreams i monologue zostaja.
+	// Tryb 0 = mostek wylaczony: effects/packs/ForbidActor to side-effecty
+	// bridge'a i nie ruszamy recznych scen UC. Listener zostaje - busy-fakty
+	// musza dzialac takze dla uc_start spoza dispatchu.
+	if (MCM_AR_UcMode() <= 0) return true;
 	if (!mcm_ar_uc_fxDone)
 	{
 		u.SetEffectEnabled('npc_reactions', false);
@@ -348,76 +358,88 @@ function MCM_AR_UcEligibleRig(npc : CNewNPC) : bool
 	return (n == "woman_base" || n == "noble_woman_base");
 }
 
-// Mapa charakterow -> tagi scen (plan 003, alfabet wg klucza glownego).
+// Mapa charakterow -> tagi scen (plan 015: pelna matryca per-NPC).
 // Gramatyka UC: 'A' wymagany, '-A' wyklucz, '~A,~B' przynajmniej jeden.
-// Klucze = scmcc.data.nam (StrLower); aliasy tam gdzie roster uzywa
-// dwoch nazw. Nieznany nam -> default.
+// Wiersz = ~includes (akty/mood) + '-' osobiste veto dopasowane do lore.
+// Klucze = scmcc.data.nam (StrLower); aliasy w jednym if. Nieznany nam ->
+// DEFAULT z pelnym zestawem veto (pula >=12 nawet przy rough=0).
+// ~Anal w wierszach domme (anna/oriana/syanna/salma) jest inert przy
+// AllowRough=0 - globalny suffix TagsFinal dokleja -Anal i wygrywa;
+// przy rough=1 tag przepuszcza anal-capable scenes (za projekt).
 function MCM_AR_UcTagsForNpc(nm : name) : string
 {
 	var n : string;
 	n = StrLower(NameToString(nm));
 
-	// Dominant/Aggressive-lean: bez 'Vaginal' - sceny Dominant w paczce to
-	// DomSub (Anal/Oral/Femdom), nie Vaginal. rough=0 zostaje para Femdom.
-	if (n == "cerys" || n == "becca")
-	{
-		// AllowRough=0: TagsFinal dokleja -Aggressive, wiec ~Aggressive w grupie
-		// wymaganej zostawialoby konflikt wymagaj+wyklucz (dziala tylko tolerancja
-		// parsera). Czyste ~Dominant daje te sama pule bez konfliktu.
-		if (!MCM_AR_UcAllowRough()) return "~Dominant";
-		return "~Aggressive,~Dominant";
-	}
-	if (n == "edna_var_attre")
-		return "Vaginal,~Teasing,~Loving";
+	if (n == "anarietta" || n == "anna_henrietta" || n == "anna")
+		return "~Vaginal,~Anal,~Dominant,~Femdom,~Titfuck,~BoobJob,-Armbinder,-DeviousDevice,-Object,-XCross,-Bound,-Cuffs";
+	if (n == "becca" || n == "cerys")
+		return "~Vaginal,~Dominant,~Aggressive,~Titfuck,~BoobJob,-Armbinder,-DeviousDevice,-Object,-Yoke,-XCross";
+	if (n == "cirilla" || n == "ciri")
+		return "~Vaginal,~Kissing,~foreplay,~Loving,~FootJob,~ThighJob,-Rough,-Bound,-Armbinder,-DeviousDevice,-Object,-Yoke,-XCross,-Anal,-Fetish,-Discipline,-Aggressive,-Dominant,-Femdom";
+	if (n == "edna" || n == "edna_var_attre")
+		return "~Vaginal,~Oral,~Dominant,~Femdom,~Aggressive,~Titfuck,~BoobJob,-Armbinder,-DeviousDevice,-Object,-XCross,-Bound,-Cuffs";
 	if (n == "fringilla" || n == "fringilla_vigo")
-		return "Vaginal,~Teasing,~Loving";
+		return "~Vaginal,~Oral,~Dominant,~Loving,~Titfuck,~BoobJob,-Bound,-Armbinder,-DeviousDevice,-Object,-XCross";
 	if (n == "keira" || n == "keira_metz")
-		return "Vaginal,~Teasing,~Loving";
-	if (n == "margarita")
-		return "Vaginal,~Loving";
+		return "~Vaginal,~Oral,~Dominant,~Titfuck,~BoobJob,-Bound,-Armbinder,-DeviousDevice,-Object,-XCross,-Rough";
+	if (n == "margarita" || n == "margaritta")
+		return "~Vaginal,~Oral,~HandJob,~Kissing,~Loving,~FootJob,~ThighJob,-Rough,-Bound,-Armbinder,-DeviousDevice,-Object,-Yoke,-XCross,-Anal,-Fetish,-Discipline,-Dominant,-Femdom";
+	if (n == "mh303_succbus_v2" || n == "salma")
+		return "~Vaginal,~Oral,~Anal,~Dominant,~Femdom,~Titfuck,~BoobJob,-Armbinder,-DeviousDevice,-Object,-XCross";
 	if (n == "philippa" || n == "filippa" || n == "philippa_eilhart")
-		return "~Dominant";
+		return "~Vaginal,~Dominant,~Femdom,~Aggressive,~Titfuck,~BoobJob,-Armbinder,-DeviousDevice,-Object,-Yoke,-XCross";
 	if (n == "priscilla" || n == "pryscilla")
-		return "Vaginal,~Loving,~Missionary";
-	if (n == "q603_circus_artist_companion" || n == "eveline_gallo")
-		return "Vaginal,~Teasing,~Loving";
-	if (n == "rosa_var_attre")
-		return "Vaginal,~Teasing,~Loving";
+		return "~Vaginal,~Kissing,~foreplay,~Loving,~FootJob,~ThighJob,-Rough,-Bound,-Armbinder,-DeviousDevice,-Object,-Yoke,-XCross,-Anal,-Fetish,-Discipline,-Dominant,-Femdom";
+	if (n == "prologue_village_herbalist" || n == "tomira")
+		return "~Vaginal,~Oral,~HandJob,~Kissing,~Loving,~FootJob,~ThighJob,-Rough,-Bound,-Armbinder,-DeviousDevice,-Object,-Yoke,-XCross,-Anal,-Fetish,-Discipline,-Dominant,-Femdom";
+	if (n == "rosa" || n == "rosa_var_attre")
+		return "~Vaginal,~Oral,~HandJob,~Dirty,~Loving,-Rough,-Bound,-Armbinder,-DeviousDevice,-Object,-Yoke,-XCross,-Fetish";
 	if (n == "shani")
-		return "Vaginal,~Loving,~Missionary";
+		return "~Vaginal,~Oral,~HandJob,~Kissing,~Loving,~FootJob,~ThighJob,-Rough,-Bound,-Armbinder,-DeviousDevice,-Object,-Yoke,-XCross,-Anal,-Fetish,-Discipline,-Dominant,-Femdom";
+	if (n == "sq701_vivienne" || n == "vivienne")
+		return "~Vaginal,~Oral,~Kissing,~Loving,~FootJob,~ThighJob,-Rough,-Bound,-Armbinder,-DeviousDevice,-Object,-Yoke,-XCross,-Anal,-Fetish,-Discipline,-Dominant,-Femdom";
+	if (n == "syanna")
+		return "~Vaginal,~Anal,~Dominant,~Aggressive,~Titfuck,~BoobJob,-Armbinder,-DeviousDevice,-Object,-XCross,-Bound,-Cuffs";
 	if (n == "triss")
-		return "Vaginal,~Loving";
+		return "~Vaginal,~Oral,~HandJob,~Kissing,~Loving,~FootJob,~ThighJob,-Rough,-Bound,-Armbinder,-DeviousDevice,-Object,-Yoke,-XCross,-Anal,-Fetish,-Discipline,-Dominant,-Femdom";
 	if (n == "ves")
-		return "Vaginal,~Teasing,~Loving";
-	if (n == "vivienne" || n == "sq701_vivienne" || n == "anarietta" ||
-	    n == "anna_henrietta" || n == "anna" || n == "orianna" || n == "oriana" ||
-	    n == "vampire_diva" || n == "anabelle")
-		return "Vaginal,~Loving";
+		return "~Vaginal,~Oral,~Dominant,~Femdom,~Titfuck,~BoobJob,-Armbinder,-DeviousDevice,-Object,-XCross";
+	if (n == "vampire_diva" || n == "orianna" || n == "oriana")
+		return "~Vaginal,~Anal,~Dominant,~Femdom,~Aggressive,~Titfuck,~BoobJob,-Armbinder,-DeviousDevice,-Object,-XCross,-Bound,-Cuffs";
 	if (n == "yennefer" || n == "yen")
-		return "~Dominant";
+		return "~Vaginal,~Oral,~Dominant,~Femdom,~Aggressive,~Titfuck,~BoobJob,-Bound,-Armbinder,-DeviousDevice,-Object,-XCross";
 
-	// Default + reszta rostera (tomira, rosa, jutta, sasha...): łagodnie.
-	return "Vaginal,~Loving";
+	// DEFAULT: tamara, iris, corinne, sasha, jutta, yoana, eveline, lussi...
+	return "~Vaginal,~Loving,-Rough,-Bound,-Armbinder,-DeviousDevice,-Object,-Yoke,-XCross,-DD,-Anal,-Dominant,-Femdom,-Fetish,-Discipline";
 }
 
 // Sukcesywnie doklejane wykluczenia: consent zawsze, rough gdy AllowRough=0.
+// 'Sex' = wymagany tag globalny (plan 015): odcina kiss-only sceny
+// (skiss1/spankstan); foreplay sceny tag Sex maja, wiec przepuszcza.
 function MCM_AR_UcTagsFinal(nm : name) : string
 {
 	var tags : string;
-	tags = MCM_AR_UcTagsForNpc(nm) + ",-Forced,-Humiliation";
+	tags = "Sex," + MCM_AR_UcTagsForNpc(nm) + ",-Forced,-Humiliation";
 	if (!MCM_AR_UcAllowRough())
 	{
-		tags += ",-Aggressive,-Bound,-Yoke";
+		tags += ",-Aggressive,-Bound,-Yoke,-XCross,-Rough,-Anal,-Armbinder,-DeviousDevice,-Object,-DD,-DomSub,-Discipline,-Fetish,-Cuffs,-Spanking";
 	}
 	return tags;
 }
 
-// Kontekst meblowy: furn=2 (NaughtyPoint) dokleja ~Bed, furn=1 (teren)
-// odcina sceny meblowe, ktorych na otwartym nie postawimy.
+// Kontekst meblowy: furn=2 (NaughtyPoint) odcina sceny stojace/klekajace/
+// kucajace i kotwiczone przy scianie (-Wall; SweetSpot to nie sciana;
+// ~Bed odrzucone - OR-merge wplywaloby na kazdy wiersz). UWAGA: engine
+// furniture=2 jest no-op na sciezce
+// ScenesFor+StartSceneEx (preferencja mebli dziala tylko w start_scene) -
+// ten suffix jest jedynym filtrem postawy. furn=1 (teren) odcina sceny
+// meblowe; -Wall,-InvisFurn,-Furniture dodane bo engine odrzuca je w
+// StartSceneEx(furn=1), a ScenesFor by ich nie policzyl (pool poison).
 function MCM_AR_UcContextSuffix(furn : int) : string
 {
-	if (furn == 2) return ",~Bed";
-	return ",-Bed,-Chair,-Table,-Yoke,-XCross";
+	if (furn == 2) return ",-Standing,-Kneeling,-Squatting,-Wall";
+	return ",-Bed,-Chair,-Table,-Wall,-InvisFurn,-Furniture,-Yoke,-XCross";
 }
 
 // Tag dominujacy do SetPreference (mnoznik przyjemnosci, NIE selekcja scen).
@@ -426,17 +448,25 @@ function MCM_AR_UcPrefTagFor(nm : name) : name
 	var n : string;
 	n = StrLower(NameToString(nm));
 
+	if (n == "anarietta" || n == "anna_henrietta" || n == "anna") return 'Dominant';
 	if (n == "cerys" || n == "becca") return 'Aggressive';
-	if (n == "edna_var_attre") return 'Teasing';
-	if (n == "fringilla" || n == "fringilla_vigo") return 'Teasing';
-	if (n == "keira" || n == "keira_metz") return 'Teasing';
+	if (n == "cirilla" || n == "ciri") return 'Loving';
+	if (n == "edna" || n == "edna_var_attre") return 'Dominant';
+	if (n == "fringilla" || n == "fringilla_vigo") return 'Loving';
+	if (n == "keira" || n == "keira_metz") return 'Dominant';
+	if (n == "margarita" || n == "margaritta") return 'Loving';
+	if (n == "mh303_succbus_v2" || n == "salma") return 'Dominant';
 	if (n == "philippa" || n == "filippa" || n == "philippa_eilhart") return 'Dominant';
 	if (n == "priscilla" || n == "pryscilla") return 'Loving';
-	if (n == "q603_circus_artist_companion" || n == "eveline_gallo") return 'Teasing';
-	if (n == "rosa_var_attre") return 'Teasing';
+	if (n == "prologue_village_herbalist" || n == "tomira") return 'Loving';
+	if (n == "q603_circus_artist_companion" || n == "eveline_gallo") return 'Loving';
+	if (n == "rosa" || n == "rosa_var_attre") return 'Loving';
 	if (n == "shani") return 'Loving';
+	if (n == "sq701_vivienne" || n == "vivienne") return 'Loving';
+	if (n == "syanna") return 'Dominant';
 	if (n == "triss") return 'Loving';
-	if (n == "ves") return 'Teasing';
+	if (n == "ves") return 'Dominant';
+	if (n == "vampire_diva" || n == "orianna" || n == "oriana") return 'Dominant';
 	if (n == "yennefer" || n == "yen") return 'Dominant';
 	return '';
 }
@@ -542,6 +572,8 @@ latent function MCM_AR_UcWait(t : CUnicornThread, npc : CNewNPC) : bool
 		MCM_AR_Log("[AR-UC] wait timeout 300s - t.Stop()");
 		t.Stop();
 		Sleep(2.0);
+		// Stop() moze nie odpalic OnSceneEnd - skroc marker do 5s samemu.
+		MCM_AR_UcMarkActor(npc, 5);
 	}
 	// Watchdog: IsInGameplayScene potrafi wisiec po scenie (tryb-2 z reconu,
 	// reload-only). Nie naprawiamy - tylko glosny log diagnostyczny.
@@ -849,6 +881,7 @@ exec function ar_uc_eval()
 	var comps  : array<CNewNPC>;
 	var actors : array<CActor>;
 	var scenes : array<name>;
+	var scenesIn : array<name>;
 	var i      : int;
 	var nm     : name;
 	var msg    : string;
@@ -868,11 +901,13 @@ exec function ar_uc_eval()
 		actors.Clear();
 		actors.PushBack(comps[i]);
 		actors.PushBack(thePlayer);
-		scenes = u.ScenesFor(actors, MCM_AR_UcTagsFinal(nm));
+		scenes = u.ScenesFor(actors, MCM_AR_UcTagsFinal(nm) + MCM_AR_UcContextSuffix(1));
+		scenesIn = u.ScenesFor(actors, MCM_AR_UcTagsFinal(nm) + MCM_AR_UcContextSuffix(2));
 		msg = "[AR-UC] eval " + NameToString(nm) +
 		      ": rig=" + MCM_AR_UcEligibleRig(comps[i]) +
 		      " valid=" + (int)u.ValidateActor(comps[i]) +
 		      " scenesFor=" + scenes.Size() +
+		      " scenesForIn=" + scenesIn.Size() +
 		      " pref=" + NameToString(MCM_AR_UcPrefTagFor(nm)) +
 		      " nude=" + NameToString(MCM_AR_UcNudeAppFor(nm)) +
 		      " ucMarked=" + MCM_AR_UcIsMarked(comps[i]);
@@ -885,7 +920,9 @@ exec function ar_uc_stop()
 {
 	var u       : CUnicorn;
 	var threads : array<CUnicornThread>;
-	var i       : int;
+	var actors  : array<CActor>;
+	var npc     : CNewNPC;
+	var i, j    : int;
 
 	u = UnicornGet();
 	if (!u) return;
@@ -894,7 +931,15 @@ exec function ar_uc_stop()
 	{
 		if (threads[i])
 		{
+			// Stop() moze nie odpalic OnSceneEnd - wyczysc per-actor
+			// busy-fakty, inaczej wisialyby do 300s expiry.
+			actors = threads[i].GetActors();
 			threads[i].Stop();
+			for (j = 0; j < actors.Size(); j += 1)
+			{
+				npc = (CNewNPC)actors[j];
+				if (npc) MCM_AR_UcClearActor(npc);
+			}
 		}
 	}
 	// Na wypadek never-live/zacietych watkow bez OnSceneEnd - inaczej

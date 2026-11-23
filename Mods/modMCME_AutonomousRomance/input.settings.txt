@@ -18,12 +18,14 @@
 ; podpiety, a fragment jedynie nadpisywal vanilla binding. Linie usuniete.
 ;
 ; Dedytkowany klawisz zgody (opcjonalnie, recznie) - README, sekcja
-; "Rebinding the consent key (optional)": akcja MCM_AR_Consent musi byc
+; "Input Bindings (Consent Key)": akcja MCM_AR_Consent musi byc
 ; zadeklarowana w bin\config\r4game\legacy\base\input_qwerty.ini, wpisana
 ; w Documents\The Witcher 3\input.settings (ten sam kontekst) i opcjonalnie
 ; dopisana do bin\config\r4game\user_config_matrix\pc\input.xml.
-; Nie wysylamy domyslnego klawisza w tym fragmencie - nie ma uniwersalnie
-; wolnego klawisza, a kazdy dedykowany binding wymaga recznej deklaracji.
+; Przykladowa linia do przeklejenia (klawisz Z - wolny w vanilla):
+;   IK_Z=(Action=MCM_AR_Consent)
+; Nie wysylamy domyslnego klawisza w tym fragmencie - kazdy dedykowany
+; binding wymaga recznej deklaracji, a Z moze byc juz zajety przez inne mody.
 ;
 ; Merge komentarzowego fragmentu jest bezpieczny: Settings Updater / W3MM
 ; dokladaja te linie do Documents\The Witcher 3\input.settings, a gra ignoruje
