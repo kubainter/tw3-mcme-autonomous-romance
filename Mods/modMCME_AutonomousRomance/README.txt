@@ -183,9 +183,10 @@ INSTALLATION & REMOVAL
 
        Option B - separate consent key (consent moves, sheathing stays):
        The mod has an optional MCM_AR_Consent action, but the game does
-       not know it until you declare it in two files. Ready-made example
-       for the Z key - copy the line as-is, or swap Z for any key that is
-       free in your Options -> Keybindings list:
+       not know it until you declare it in two files. Easiest path:
+       open consent-key.snippet.txt in this folder - it has the exact
+       lines to paste. Short version (example uses Z, free in vanilla;
+       swap for any key free in your Options -> Keybindings list):
          1. In bin/config/r4game/legacy/base/input_qwerty.ini, inside the
             [BASE_DRAW_SWORDS_KEYBOARD] section (keyboard) or
             [BASE_DRAW_SWORDS] (gamepad), add this line:
