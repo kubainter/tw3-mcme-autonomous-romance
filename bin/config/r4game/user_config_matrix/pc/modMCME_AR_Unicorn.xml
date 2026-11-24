@@ -6,10 +6,12 @@
             <Preset id="0" displayName="mcm_ar_uc_preset_default">
                 <Entry varId="MCM_AR_UcMode"       value="1"/>
                 <Entry varId="MCM_AR_UcAllowRough" value="1"/>
+                <Entry varId="MCM_AR_UcCinematicIntro" value="0"/>
             </Preset>
             <Preset id="1" displayName="mcm_ar_uc_preset_off">
                 <Entry varId="MCM_AR_UcMode"       value="0"/>
                 <Entry varId="MCM_AR_UcAllowRough" value="1"/>
+                <Entry varId="MCM_AR_UcCinematicIntro" value="0"/>
             </Preset>
         </PresetsArray>
 
@@ -23,6 +25,11 @@
                  displayName="mcm_ar_uc_opt_allowrough"
                  displayType="TOGGLE"
                  defaultValue="1"/>
+
+            <Var id="MCM_AR_UcCinematicIntro"
+                 displayName="mcm_ar_uc_opt_cinematic"
+                 displayType="TOGGLE"
+                 defaultValue="0"/>
         </VisibleVars>
 
     </Group>

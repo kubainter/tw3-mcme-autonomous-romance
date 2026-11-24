@@ -47,6 +47,20 @@ function MCM_AR_UcAllowRough() : bool
 	return (val == "1" || StrLower(val) == "true");
 }
 
+// 0=off (domyslnie). 1=preferuj scene z tagiem LeadIn na otwarcie sceny;
+// pusta pula lead-in -> normalna pula, bez zmiany zachowania.
+function MCM_AR_UcCinematicIntro() : bool
+{
+	var wrapper : CInGameConfigWrapper;
+	var val     : string;
+
+	wrapper = theGame.GetInGameConfigWrapper();
+	if (!wrapper) return false;
+	val = wrapper.GetVarValue('MCM_AR_Unicorn', 'MCM_AR_UcCinematicIntro');
+	if (StrLen(val) == 0) return false;
+	return (val == "1" || StrLower(val) == "true");
+}
+
 // ===== Fakty busy-gate =====
 
 // FactsSet = Remove+Add; validFor=0 oznaczaloby "bez wygasania", wiec
@@ -332,6 +346,12 @@ class CMCMEARUnicornListener extends CUnicornListener
 		// (mark 300s moze wygasnac w scenie dluzszej niz 5 min).
 		MCM_AR_UcSetActive();
 		MCM_AR_UcMarkThreadActors(thread, 300);
+		// Werdykt dla CinematicIntro: czy otwarcie sceny to etap foreplay.
+		if (MCM_AR_UcCinematicIntro())
+		{
+			MCM_AR_Log("[AR-UC] stage leadin=" + thread.IsLeadIn() +
+			           " stage=" + NameToString(thread.GetStage()));
+		}
 	}
 
 	event OnSceneEnd(thread : CUnicornThread, hasPlayer : bool)
@@ -593,6 +613,32 @@ latent function MCM_AR_UcWait(t : CUnicornThread, npc : CNewNPC) : bool
 	return sawLive;
 }
 
+// Wspolne uzbrojenie watku UC po udanym StartSceneEx: fakty/MCMEAR,
+// consent, kontekst, auto-advance, Relocate na kotwice (bedlift w
+// anchorPos), stempel anti-repeat + log startu. Scena 1 i chain.
+function MCM_AR_UcArmThread(t : CUnicornThread, npc : CNewNPC, nm : name,
+    picked : name, apEnt : CEntity, furn : int, anchorPos : Vector,
+    point : mod_scm_NaughtyPoint, tags : string, poolNow : int, poolAll : int)
+{
+	// Okno StartSceneEx -> OnSceneStart: fakt ustawiamy i tu.
+	MCM_AR_UcSetActive();
+	MCM_AR_UcMarkActor(npc, 300);
+	t.SetConsent(true);
+	t.AddContext('mcme_ar');
+	t.SetAuto(true);
+	if (point)
+	{
+		t.Relocate(anchorPos, point.rot);
+	}
+	thePlayer.MCM_AR_UcStampScene(nm, picked);
+	MCM_AR_Log("[AR-UC] StartSceneEx: " + NameToString(t.GetScene()) +
+	           " dla " + NameToString(nm) + " pick=" + NameToString(picked) +
+	           " tags=\"" + tags + "\" furn=" + furn +
+	           " ap=" + (apEnt ? "y" : "n") +
+	           " apz=" + (point ? FloatToStringPrec(anchorPos.Z - point.pos.Z, 2) : "-") +
+	           " pool=" + poolNow + "/" + poolAll);
+}
+
 // ===== Dispatch: wrap PlayIntimateScene z totalnym fallbackiem =====
 
 // latent dziedziczone z oryginalu; wrappedMethod wolno wywolac DOKLADNIE RAZ
@@ -608,6 +654,7 @@ function PlayIntimateScene(npc : CNewNPC) : bool
 	var point    : mod_scm_NaughtyPoint;
 	var actors   : array<CActor>;
 	var scenes   : array<name>;
+	var leadPool : array<name>;
 	var nm       : name;
 	var tags     : string;
 	var mode     : int;
@@ -618,6 +665,17 @@ function PlayIntimateScene(npc : CNewNPC) : bool
 	var ok       : bool;
 	var useUc    : bool;
 	var valNpc   : EUnicornValidation;
+	var apEnt    : CEntity;
+	var scmAp    : MCM_ActionPoint;
+	var bedLift  : float;
+	var anchorPos: Vector;
+	var wasLeadIn  : bool;
+	var okAny      : bool;
+	var t2         : CUnicornThread;
+	var chainPool  : array<name>;
+	var chainPoolSize : int;
+	var picked2    : name;
+	var pickedArr2 : array<name>;
 
 	// Listener musi zyc PRZED jakakolwiek scena UC (tez reczny uc_start):
 	// rejestracja przy pierwszym przejsciu dispatchu, niezaleznie od bramek
@@ -698,6 +756,19 @@ function PlayIntimateScene(npc : CNewNPC) : bool
 		actors.PushBack(npc);
 		actors.PushBack(thePlayer);
 		scenes = u.ScenesFor(actors, tags);
+		// CinematicIntro: otwarcie z puli lead-in (foreplay/kissing), zeby
+		// scena zaczynala sie jak natywna cutscena. Pusto -> zwykla pula.
+		if (MCM_AR_UcCinematicIntro())
+		{
+			leadPool = u.ScenesFor(actors, tags + ",LeadIn");
+			if (leadPool.Size() > 0)
+			{
+				scenes = leadPool;
+				wasLeadIn = true;
+				MCM_AR_Log("[AR-UC] CinematicIntro: lead-in pool " + leadPool.Size() +
+				           " dla " + NameToString(nm));
+			}
+		}
 		if (scenes.Size() <= 0)
 		{
 			MCM_AR_Log("[AR-UC] ScenesFor(\"" + tags + "\") puste dla " +
@@ -714,6 +785,7 @@ function PlayIntimateScene(npc : CNewNPC) : bool
 			{
 				thePlayer.MCM_AR_UcClearStamps(nm);
 				scenes = u.ScenesFor(actors, tags);
+				wasLeadIn = false;
 				MCM_AR_Log("[AR-UC] anti-repeat wyczerpal pule dla " +
 				           NameToString(nm) + " - reset stempli");
 			}
@@ -771,34 +843,91 @@ function PlayIntimateScene(npc : CNewNPC) : bool
 
 		// Preferencja (once/session) + nude appearance z klucza zywych
 		// danych aktora; potem deterministyczny pick przez StartSceneEx.
+		// Kotwica meblowa przy STARCIE, nie po: where=NULL kaze Unicornowi
+		// liczyc wlasny free-spot (wolna podloga) i stawiac pare tam, a
+		// pozniejszy Relocate doklada offset - stad para czesciowo na
+		// lozku, czesciowo obok. AP = encja mod_scm_sexap na pos/rot
+		// NaughtyPointu (identyczna kotwica co sciezka natywna).
+		apEnt = NULL;
+		if (point)
+		{
+			anchorPos = point.pos;
+		}
+		if (furn == 2 && point && scm && scm.APManager)
+		{
+			// Podbicie Z kotwicy dla scen meblowych UC: NaughtyPoint
+			// autoryzowany pod .w2scene (scena sama dosuwa aktorow na
+			// mebel), sceny UC licza poze baked wzgledem 'where' od
+			// razu - bez snapa do ziemi (core.lua place_of: where ma
+			// pierwszenstwo). Fakt mcm_ar_uc_bedlift_cm (cm) nadpisuje
+			// default - tunable live przez factsadd, bez rekompilacji.
+			bedLift = FactsQuerySum('mcm_ar_uc_bedlift_cm') / 100.0;
+			if (bedLift <= 0.0)
+			{
+				bedLift = 0.30;
+			}
+			anchorPos.Z = anchorPos.Z + bedLift;
+			scmAp = scm.APManager.CreateActionPoint('mod_scm_sexap',
+				anchorPos.X, anchorPos.Y, anchorPos.Z,
+				point.rot.Pitch, point.rot.Yaw, point.rot.Roll);
+			if (scmAp && scmAp.ent)
+			{
+				apEnt = scmAp.ent;
+			}
+		}
 		MCM_AR_UcApplySceneMods(u, npc, nm);
-		t = u.StartSceneEx(actors, pickedArr, 'MCME_AR', NULL, furn);
+		t = u.StartSceneEx(actors, pickedArr, 'MCME_AR', apEnt, furn);
 		if (t)
 		{
-			// Okno StartSceneEx -> OnSceneStart: fakt ustawiamy i tu.
-			MCM_AR_UcSetActive();
-			MCM_AR_UcMarkActor(npc, 300);
-
-			t.SetConsent(true);
-			t.AddContext('mcme_ar');
-			t.SetAuto(true);
-			if (point)
-			{
-				t.Relocate(point.pos, point.rot);
-			}
-			thePlayer.MCM_AR_UcStampScene(nm, picked);
-			MCM_AR_Log("[AR-UC] StartSceneEx: " + NameToString(t.GetScene()) +
-			           " dla " + NameToString(nm) + " pick=" + NameToString(picked) +
-			           " tags=\"" + tags + "\" furn=" + furn +
-			           " pool=" + scenes.Size() + "/" + poolSize);
+			MCM_AR_UcArmThread(t, npc, nm, picked, apEnt, furn,
+			                   anchorPos, point, tags, scenes.Size(), poolSize);
 
 			ok = MCM_AR_UcWait(t, npc);
+			okAny = ok;
+
+			// Chain: scena lead-in (CinematicIntro) konczy sie na samym
+			// foreplay - druga scena z normalnej puli (bez LeadIn) domyka
+			// akt. Arousal przenosi sam Unicorn (scene_chain), wiec
+			// explicit dziedziczy napiecie i orgazm jest osiagalny.
+			if (ok && wasLeadIn)
+			{
+				chainPool = u.ScenesFor(actors, tags + ",-LeadIn");
+				if (chainPool.Size() > 0)
+				{
+					chainPoolSize = chainPool.Size();
+					chainPool = thePlayer.MCM_AR_UcFilterScenes(nm, chainPool);
+				}
+				if (chainPool.Size() > 0)
+				{
+					picked2 = chainPool[RandRange(chainPool.Size())];
+					pickedArr2.PushBack(picked2);
+					MCM_AR_Log("[AR-UC] chain: lead-in -> " + NameToString(picked2) +
+					           " pool=" + chainPool.Size() + "/" + chainPoolSize);
+					t2 = u.StartSceneEx(actors, pickedArr2, 'MCME_AR', apEnt, furn);
+					if (t2)
+					{
+						MCM_AR_UcArmThread(t2, npc, nm, picked2, apEnt, furn,
+						                   anchorPos, point, tags + ",-LeadIn",
+						                   chainPool.Size(), chainPoolSize);
+						ok = MCM_AR_UcWait(t2, npc);
+						okAny = okAny || ok;
+					}
+					else
+					{
+						MCM_AR_Log("[AR-UC] chain: StartSceneEx NULL - koncz na lead-in");
+					}
+				}
+				else
+				{
+					MCM_AR_Log("[AR-UC] chain: pula explicit pusta - koncz na lead-in");
+				}
+			}
 
 			// Follow przywraca EndInteraction caller-side (snapshot
 			// npcWasFollowing) - bez unconditional StartFollowing.
 			UnhideActorWeapons(thePlayer);
 			UnhideActorWeapons(npc);
-			if (ok)
+			if (okAny)
 			{
 				u.ModAffection(npc, thePlayer, 5.0);
 			}
@@ -811,8 +940,9 @@ function PlayIntimateScene(npc : CNewNPC) : bool
 				MCM_AR_UcEndActiveGrace(3, t);
 				MCM_AR_UcMarkActor(npc, 5);
 			}
-			MCM_AR_Log("[AR-UC] scene end ok=" + ok + " dla " + NameToString(nm));
-			return ok;
+			MCM_AR_Log("[AR-UC] scene end ok=" + ok + " okAny=" + okAny +
+			           " dla " + NameToString(nm));
+			return okAny;
 		}
 
 		// StartScene NULL: odtworz lokalny stan, potem wspolny fallback.

@@ -20,7 +20,8 @@ REQUIREMENTS
 ================================================================================
 
   1. The Witcher 3: Wild Hunt - Remaster (v5.00+)
-  2. MCME Autonomous Romance (modMCME_AutonomousRomance) - required
+  2. MCME Autonomous Romance (modMCME_AutonomousRomance) v2.4.0+
+     - required (menu labels ship inside the base mod)
   3. Unicorn core (modUnicornCore) - required
   4. A Unicorn scene pack - required for anything to play.
      Tested against the Billyy pack (55 scenes).
@@ -45,6 +46,10 @@ HOW IT WORKS
       squatting scenes. The bridge does this filtering itself because
       the engine's own furniture preference does not apply on the
       StartSceneEx path it uses.
+    * Furniture scenes anchor where the native scenes anchor. At bed
+      points the scene sits on the same invisible action point the
+      built-in intimate path uses, lifted slightly so actors rest on
+      the furniture instead of clipping its edge.
 
   If scene selection or scene start fails for any reason, the
   invitation falls back to the native .w2scene. The bridge can add
@@ -64,12 +69,37 @@ IN-GAME SETTINGS
 
     Unicorn scene backend   0=Off / 1=Prefer+fallback / 2=Unicorn only / 3=Mix
     Allow rougher scene tags  On/Off - gates the aggressive tag group above
+    Open with a foreplay scene  On/Off - chains into a full scene, off by default
 
   Mode notes:
     0  Bridge installed but inactive; native scenes only.
     1  Default. Unicorn scene when one fits, native scene otherwise.
     2  Unicorn or nothing; if the gate fails, no scene plays.
     3  Random mix of Unicorn and native scenes.
+
+  "Open with a foreplay scene": when on, a Tier-4 invitation opens with a
+  scene tagged LeadIn (foreplay, kissing, hands) and then flows straight
+  into a regular explicit scene on the same spot - arousal carries over
+  between the two. If no LeadIn scene fits the companion, the normal pool
+  is used directly. Off by default: it roughly doubles the sequence length
+  and some players prefer a single scene.
+
+================================================================================
+HINTS AND VOICES
+================================================================================
+
+  Unicorn shows a Num-pad exit list above the player and turns on its HUD
+  hints at the start of every scene the player is in. Those keys are not
+  ours: in an Autonomous Romance scene the bridge picks the stages itself,
+  so the bridge mod ships a small Lua file (tw3se\init.lua) that skips that
+  hint for its own scenes only. Your own Unicorn scenes, started from the
+  Unicorn Player menu or from a quest, keep their hints and keys.
+
+  Voices come from the separate Unicorn Voices mod, if you installed it.
+  Yennefer, Triss and Ciri have their own packs; every other companion uses
+  the generic women pack, which has no breathing sounds. Nothing of that
+  audio ships with this bridge, and the bridge does not register packs of
+  its own.
 
 ================================================================================
 DIAGNOSTICS
@@ -90,7 +120,7 @@ DIAGNOSTICS
 KNOWN GAPS
 ================================================================================
 
-  - Voice lines and cinematic lead-in polish are planned, not built.
+  - Voice lines are planned, not built.
   - The custom pack scaffold (MCM_AR_UnicornPacks.ws) registers zero
     scenes today. It exists so our own .w2anims content can be added
     later without touching the bridge.

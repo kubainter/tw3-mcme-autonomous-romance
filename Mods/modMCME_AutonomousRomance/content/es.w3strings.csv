@@ -292,8 +292,8 @@
 2118800296|        |ar_line_generic_kiss|Ven aquí, brujo. Es el momento.
 2118800329|        |preset_value_mcm_ar_uc_preset_default|Predeterminado (preferir Unicorn, fallback nativo)
 2118800330|        |preset_value_mcm_ar_uc_preset_off|Unicorn desactivado (solo escenas nativas)
-2118800331|        |option_mcm_ar_uc_opt_mode|Backend de escenas Unicorn (0=Off / 1=Preferir+fallback / 2=Solo Unicorn / 3=Mixto)
-2118800332|        |option_MCM_AR_UcMode|Backend de escenas Unicorn (0=Off / 1=Preferir+fallback / 2=Solo Unicorn / 3=Mixto)
+2118800331|        |option_mcm_ar_uc_opt_mode|Backend escenas Unicorn (0=Off/1=Pref/2=Solo/3=Mix)
+2118800332|        |option_MCM_AR_UcMode|Backend escenas Unicorn (0=Off/1=Pref/2=Solo/3=Mix)
 2118800333|        |option_mcm_ar_uc_opt_allowrough|Unicorn: permitir tags de escenas mas duras
 2118800334|        |option_MCM_AR_UcAllowRough|Unicorn: permitir tags de escenas mas duras
 2118800335|        |Mods.AutonomousRomance.Unicorn|Autonomous Romance - Unicorn
@@ -305,3 +305,5 @@
 2118800341|        |preset_Mods.MCMEUnicorn|Preajustes
 2118800342|        |preset_MCMEUnicorn|Preajustes
 2118800343|        |preset_Mods_MCMEUnicorn|Romance autónomo - Unicorn
+2118800344|        |option_mcm_ar_uc_opt_cinematic|Unicorn: abrir con una escena de preliminares
+2118800345|        |option_MCM_AR_UcCinematicIntro|Unicorn: abrir con una escena de preliminares

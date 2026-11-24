@@ -292,8 +292,8 @@
 2118800296|        |ar_line_generic_kiss|Komm her, Hexer. Der Moment ist richtig.
 2118800329|        |preset_value_mcm_ar_uc_preset_default|Standard (Unicorn bevorzugt, nativer Fallback)
 2118800330|        |preset_value_mcm_ar_uc_preset_off|Unicorn deaktiviert (nur native Szenen)
-2118800331|        |option_mcm_ar_uc_opt_mode|Unicorn-Szenen-Backend (0=Aus / 1=Bevorzugt+Fallback / 2=Nur Unicorn / 3=Mix)
-2118800332|        |option_MCM_AR_UcMode|Unicorn-Szenen-Backend (0=Aus / 1=Bevorzugt+Fallback / 2=Nur Unicorn / 3=Mix)
+2118800331|        |option_mcm_ar_uc_opt_mode|Unicorn-Szenen-Backend (0=Aus/1=Pref/2=Nur/3=Mix)
+2118800332|        |option_MCM_AR_UcMode|Unicorn-Szenen-Backend (0=Aus/1=Pref/2=Nur/3=Mix)
 2118800333|        |option_mcm_ar_uc_opt_allowrough|Unicorn: hartere Szenen-Tags erlauben
 2118800334|        |option_MCM_AR_UcAllowRough|Unicorn: hartere Szenen-Tags erlauben
 2118800335|        |Mods.AutonomousRomance.Unicorn|Autonomous Romance - Unicorn
@@ -305,3 +305,5 @@
 2118800341|        |preset_Mods.MCMEUnicorn|Voreinstellungen
 2118800342|        |preset_MCMEUnicorn|Voreinstellungen
 2118800343|        |preset_Mods_MCMEUnicorn|Autonome Romanze - Unicorn
+2118800344|        |option_mcm_ar_uc_opt_cinematic|Unicorn: mit einer Vorspiel-Szene beginnen
+2118800345|        |option_MCM_AR_UcCinematicIntro|Unicorn: mit einer Vorspiel-Szene beginnen
