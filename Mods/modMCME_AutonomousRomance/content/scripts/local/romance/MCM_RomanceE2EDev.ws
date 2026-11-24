@@ -916,6 +916,35 @@ latent function MCM_AR_E2E_ConsentTimeout(t : MCM_AR_E2E)
 	t.Check("consent_staged_free", !core.IsStagedBusy(), "IsStagedBusy=true po timeoucie");
 	t.Check("consent_follow_restored", npc.scmcc.IsFollowing() == followBefore, "follow przed=" + followBefore);
 }
+// Diagnostyka encji-mebli w poblizu gracza (do strojenia kotwicy Unicorn
+// `where`): wypisuje encje w promieniu z nazwa, dystansem i tagami
+// meblowymi. Dev-only (MCM_RomanceE2EDev.ws jest stripowany z release).
+exec function ar_bedscan(optional radius : float)
+{
+	var ents  : array<CGameplayEntity>;
+	var ent   : CGameplayEntity;
+	var pos   : Vector;
+	var s     : string;
+	var i     : int;
+
+	if (radius <= 0) radius = 5.0;
+	pos = thePlayer.GetWorldPosition();
+	FindGameplayEntitiesInSphere(ents, pos, radius, 80);
+	MCM_AR_Log("[BEDSCAN] pos=" + VecToString(pos) + " ents=" + ents.Size());
+	for (i = 0; i < ents.Size(); i += 1)
+	{
+		ent = ents[i];
+		if (!ent || ent == (CGameplayEntity)thePlayer) continue;
+		s = "" + ent;
+		MCM_AR_Log("[BEDSCAN] #" + i + " d=" +
+		           (int)(VecDistance(pos, ent.GetWorldPosition()) * 100) + "cm " +
+		           s + " tags{bed=" + ent.HasTag('bed') +
+		           " furn=" + ent.HasTag('furniture') +
+		           " sleep=" + ent.HasTag('sleep') +
+		           " interact=" + ent.HasTag('interaction') +
+		           " sex=" + ent.HasTag('sex') + "}");
+	}
+}
 exec function ar_e2e_rebuild_registry()
 {
 	var core : MCM_AutonomousRomanceCore;

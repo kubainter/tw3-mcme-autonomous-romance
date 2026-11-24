@@ -1135,6 +1135,12 @@ class MCM_RomanceInteraction
 		var padIdx       : int;
 		var kbIdx        : int;
 		var keyIsPad     : bool;
+		var padGate      : bool;
+		var padSuppressed : bool;
+		var dpActT       : float;
+		var lastDpActT   : float;
+		var padGlyphTag  : string;
+		var padKeyList   : array<EInputKey>;
 
 		if (timeoutSec < 20.0) timeoutSec = 20.0;
 		step = 0.05;
@@ -1148,6 +1154,7 @@ class MCM_RomanceInteraction
 		ssTaps = 0;
 		falseSince = -99.0;
 		pressedFresh = false;
+		padSuppressed = false;
 		lastProbe = 0.0;
 		tStart = theGame.GetEngineTimeAsSeconds();
 		elapsed = 0.0;
@@ -1223,6 +1230,37 @@ class MCM_RomanceInteraction
 				kbIdx = keyIdx;
 			}
 		}
+		// Pad-side glyph reklamuje D-pad Down (gest DrinkPotion2) -
+		// jedyna sciezka zgody bez vanilla side-effectu po arendzie
+		// pad-consent-20261124. L/R SwordSheathe nadal dziala, ale
+		// dobywa/chowa miecze i nie jest juz pokazywany. Dedykowana
+		// MCM_AR_Consent zbindowana na pada ma pierwszenstwo (swiadomy
+		// bind gracza). padIdx z petli wyzej (klucz consentTag) jest
+		// nadpisywany indeksem klawisza pada akcji padGlyphTag.
+		padGlyphTag = "DrinkPotion2";
+		if (consentTag == "MCM_AR_Consent")
+		{
+			theInput.GetPadKeysForActionStr(consentTag, padKeyList);
+			if (padKeyList.Size() > 0)
+			{
+				padGlyphTag = consentTag;
+			}
+		}
+		theInput.GetCurrentKeysForActionStr(padGlyphTag, padKeyList);
+		theInput.GetPadKeysForActionStr(padGlyphTag, consentPadKeys);
+		padIdx = -1;
+		for (keyIdx = 0; keyIdx < padKeyList.Size(); keyIdx += 1)
+		{
+			for (j = 0; j < consentPadKeys.Size(); j += 1)
+			{
+				if (padKeyList[keyIdx] == consentPadKeys[j])
+				{
+					padIdx = keyIdx;
+					break;
+				}
+			}
+			if (padIdx >= 0) break;
+		}
 		consentGlyph = "";
 		if (kbIdx >= 0)
 		{
@@ -1231,7 +1269,7 @@ class MCM_RomanceInteraction
 		if (padIdx >= 0)
 		{
 			if (StrLen(consentGlyph) > 0) consentGlyph += " / ";
-			consentGlyph += "<<" + consentTag + "," + padIdx + ">>";
+			consentGlyph += "<<" + padGlyphTag + "," + padIdx + ">>";
 		}
 		if (StrLen(consentGlyph) == 0)
 		{
@@ -1254,6 +1292,8 @@ class MCM_RomanceInteraction
 		// aktywacje po pokazaniu promptu (pad: binding Duration odpala
 		// raz za press).
 		lastSsActT = theInput.GetLastActivationTime(consentAct);
+		// Baseline drugiego pada-gestu: D-pad Down (DrinkPotion2).
+		lastDpActT = theInput.GetLastActivationTime('DrinkPotion2');
 
 		while (elapsed < timeoutSec)
 		{
@@ -1270,6 +1310,7 @@ class MCM_RomanceInteraction
 			// w nieskonczonosc za uciekajacym Geraltem.
 			if (npc && VecDistance(thePlayer.GetWorldPosition(), npc.GetWorldPosition()) > 12.0)
 			{
+				if (padSuppressed) ReleaseConsentPadSuppression();
 				FactsRemove('mcme_ar_awaiting_consent');
 				FactsRemove('mcme_ar_consent_given');
 				MCM_AR_Log("[AR] Consent refused: player walked away");
@@ -1309,6 +1350,30 @@ class MCM_RomanceInteraction
 				prevEvHeld = evHeld;
 			}
 			prevAction = actHeld;
+			// Wspolny pad-gate dla supresji i obu edge'ow zgody: ostatnio
+			// uzywany gamepad albo SteamInput bez powrotu na PC input.
+			// IDT_Steam trzyma sie takze gdy gracz wrocil na klawiature/
+			// mysz (typ ostatnio widzianego pada, nie aktualnego
+			// urzadzenia) - LastUsedPCInput odcina szybka sciezke dla
+			// wejscia PC (audit-008).
+			padGate = theInput.LastUsedGamepad() ||
+			          (theInput.GetLastUsedGamepadType() == IDT_Steam && !theInput.LastUsedPCInput());
+			// Pad: supresja potion-patha na czas promptu - D-pad Down
+			// (DrinkPotion2) staje sie gestem zgody bez side-effectu.
+			// EIAB_QuickSlots gate'uje handlery DrinkPotion1-4 i
+			// ToggleItem (playerInput.ws:1409,1673,1719,1753,1782);
+			// potionModeHold=false zamyka sciezke hold->FlipSelectedPotion
+			// (nie jest EIAB-gatowana, playerInput.ws:1426-1471). Lock
+			// jest per-source 'MCME_AR_Consent' bez flag quest/place -
+			// DisallowedActionDontShowHack (r4Player.ws:11259) tłumi
+			// toast, wiec blokada jest niema na HUD. Armuje od
+			// pierwszego ticka z aktywnym padem (typowo od startu).
+			if (!padSuppressed && padGate)
+			{
+				thePlayer.BlockAction(EIAB_QuickSlots, 'MCME_AR_Consent');
+				thePlayer.GetInputHandler().SetPotionSelectionMode(false);
+				padSuppressed = true;
+			}
 			// Pad: binding akcji zgody ma State=Duration - akcja odpala raz
 			// za przytrzymanie D-pad (>=0.3s), value pulsuje i nie daje stanu
 			// "held" do pollownia. GetLastActivationTime wykrywa kazda taka
@@ -1333,11 +1398,31 @@ class MCM_RomanceInteraction
 				// mysz (typ ostatnio widzianego pada, nie aktualnego
 				// urzadzenia) - LastUsedPCInput odcina szybka sciezke dla
 				// wejscia PC: klawiatura nadal wymaga hold/2x tap (audit-008).
-				if (elapsed > 0.5 && (theInput.LastUsedGamepad() || (theInput.GetLastUsedGamepadType() == IDT_Steam && !theInput.LastUsedPCInput())))
+				if (elapsed > 0.5 && padGate)
 				{
+					if (padSuppressed) ReleaseConsentPadSuppression();
 					FactsRemove('mcme_ar_awaiting_consent');
 					FactsRemove('mcme_ar_consent_given');
 					MCM_AR_Log("[AR] Consent accepted (pad D-pad activation) after " + elapsed + "s");
+					return true;
+				}
+			}
+			// Pad: drugi edge zgody na D-pad Down (akcja DrinkPotion2).
+			// Edge dziala pod supresja EIAB_QuickSlots, bo czas aktywacji
+			// zapisuje sie PRZED gate'em handlera. Swiadomie NIE dokleja
+			// sie do licznika tapow - klawisz potion na klawiaturze nie
+			// moze dac consentu; gest liczy wylacznie przez padGate jako
+			// instant-consent jak edge consentAct powyzej.
+			dpActT = theInput.GetLastActivationTime('DrinkPotion2');
+			if (dpActT != lastDpActT)
+			{
+				lastDpActT = dpActT;
+				if (elapsed > 0.5 && padGate)
+				{
+					if (padSuppressed) ReleaseConsentPadSuppression();
+					FactsRemove('mcme_ar_awaiting_consent');
+					FactsRemove('mcme_ar_consent_given');
+					MCM_AR_Log("[AR] Consent accepted (pad D-pad Down) after " + elapsed + "s");
 					return true;
 				}
 			}
@@ -1358,6 +1443,7 @@ class MCM_RomanceInteraction
 				heldFor = elapsed - holdStartT;
 				if (heldFor >= 1.0)
 				{
+					if (padSuppressed) ReleaseConsentPadSuppression();
 					FactsRemove('mcme_ar_awaiting_consent');
 					FactsRemove('mcme_ar_consent_given');
 					MCM_AR_Log("[AR] Consent accepted (hold " + heldFor + "s) after " + elapsed + "s");
@@ -1395,6 +1481,7 @@ class MCM_RomanceInteraction
 			{
 				if (nowTaps - tapsSeen >= 2 || elapsed - lastTapAt <= 0.7)
 				{
+					if (padSuppressed) ReleaseConsentPadSuppression();
 					FactsRemove('mcme_ar_awaiting_consent');
 					FactsRemove('mcme_ar_consent_given');
 					MCM_AR_Log("[AR] Consent accepted (2x tap, presses=" + nowTaps + ") after " + elapsed + "s");
@@ -1406,11 +1493,26 @@ class MCM_RomanceInteraction
 		}
 
 		tapsSeen = FactsQuerySum('mcme_ar_consent_given');
+		if (padSuppressed) ReleaseConsentPadSuppression();
 		FactsRemove('mcme_ar_awaiting_consent');
 		FactsRemove('mcme_ar_consent_given');
 		MCM_AR_Log("[AR] Consent timeout (" + (int)timeoutSec + "s) - refused, presses=" +
 		           nowTaps + " evpresses=" + tapsSeen + " vktaps=" + vkTaps);
 		return false;
+	}
+
+	// Zdejmuje supresje potion-patha nalozona na czas promptu zgody
+	// (arena pad-consent-20261124): D-pad Down dzieki niej jest gestem
+	// zgody bez picia eliksiru i bez flipu quickslotu na holdzie.
+	// UnblockAction zdejmuje wylacznie NASZ lock per-source, cudzych
+	// holderow nie rusza. potionModeHold przywracamy do defaultu true
+	// - flaga nie ma gettera; user z recznym `potmode` exec traci
+	// ustawienie na czas promptu (akceptowalny edge case, domyslnie
+	// true).
+	private function ReleaseConsentPadSuppression()
+	{
+		thePlayer.UnblockAction(EIAB_QuickSlots, 'MCME_AR_Consent');
+		thePlayer.GetInputHandler().SetPotionSelectionMode(true);
 	}
 
 	// Zwalnia kolejke DialogueManager przed scena (zawsze true): czeka max

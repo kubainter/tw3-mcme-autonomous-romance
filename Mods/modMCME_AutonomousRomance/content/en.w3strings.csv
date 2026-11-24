@@ -292,8 +292,8 @@
 2118800296|        |ar_line_generic_kiss|Come here, witcher. The moment is right.
 2118800329|        |preset_value_mcm_ar_uc_preset_default|Default (Prefer Unicorn, native fallback)
 2118800330|        |preset_value_mcm_ar_uc_preset_off|Unicorn disabled (native scenes only)
-2118800331|        |option_mcm_ar_uc_opt_mode|Unicorn scene backend (0=Off / 1=Prefer+fallback / 2=Unicorn only / 3=Mix)
-2118800332|        |option_MCM_AR_UcMode|Unicorn scene backend (0=Off / 1=Prefer+fallback / 2=Unicorn only / 3=Mix)
+2118800331|        |option_mcm_ar_uc_opt_mode|Unicorn scene backend (0=Off/1=Pref/2=Only/3=Mix)
+2118800332|        |option_MCM_AR_UcMode|Unicorn scene backend (0=Off/1=Pref/2=Only/3=Mix)
 2118800333|        |option_mcm_ar_uc_opt_allowrough|Unicorn: allow rougher scene tags
 2118800334|        |option_MCM_AR_UcAllowRough|Unicorn: allow rougher scene tags
 2118800335|        |Mods.AutonomousRomance.Unicorn|Autonomous Romance - Unicorn
@@ -305,3 +305,5 @@
 2118800341|        |preset_Mods.MCMEUnicorn|Presets
 2118800342|        |preset_MCMEUnicorn|Presets
 2118800343|        |preset_Mods_MCMEUnicorn|Autonomous Romance - Unicorn
+2118800344|        |option_mcm_ar_uc_opt_cinematic|Unicorn: open with a foreplay scene
+2118800345|        |option_MCM_AR_UcCinematicIntro|Unicorn: open with a foreplay scene

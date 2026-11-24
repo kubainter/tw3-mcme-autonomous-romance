@@ -1,7 +1,7 @@
 ================================================================================
 MCME AUTONOMOUS ROMANCE
 The Witcher 3: Wild Hunt - Remaster (v5.00+)
-Version: 2.3.3
+Version: 2.4.0
 Author: Botan
 ================================================================================
 
@@ -167,22 +167,48 @@ INSTALLATION & REMOVAL
        will not install correctly in Vortex.
 
     2. Input Bindings (Consent Key):
-       Consent works out of the box: the mod detects [C] on keyboard and
-       [D-pad Left / Right] on gamepad by passively polling the standard
-       sword-sheathe binding. It never intercepts or rebinds the vanilla
-       action, so sword sheathing keeps working.
+       Consent works out of the box - no setup needed. On keyboard [C]
+       confirms through the standard sword-sheathe binding (hold ~1
+       second or double-tap). On gamepad [D-pad Down] confirms - while
+       the prompt is open the mod briefly suppresses the potion normally
+       on that button, so one press accepts without drinking it.
+       [D-pad Left/Right] also confirms via the sheathe binding (with
+       the sheathe side effect). The mod only watches these bindings and
+       never replaces a vanilla handler, so sheathing keeps working.
+       The on-screen prompt always shows the key you actually use.
 
-       A dedicated consent key is optional:
-       - input.settings.txt ships no key bindings; it documents the design.
-       - To rebind consent to its own key, add
-         IK_<key>=(Action=MCM_AR_Consent) to the matching context in
-         bin/config/r4game/legacy/base/input_qwerty.ini AND in
-         Documents/The Witcher 3/input.settings. The first step is required:
-         without it the game treats the action as unknown and strips the
-         binding on its next write.
-       - Optionally add the <Var ...> line from input.xml.optional to
-         bin/config/r4game/user_config_matrix/pc/input.xml to get a row in
-         Options -> Keybindings.
+       CHANGING THE CONSENT KEY - two ways:
+
+       Option A - easiest, everything inside the game (also moves sword
+       sheathing to the same key):
+         1. Launch the game, open Options -> Keybindings.
+         2. Find the "Sheathe sword" action.
+         3. Bind any key or button you like.
+         4. Done - the consent prompt picks up the new key automatically.
+
+       Option B - separate consent key (consent moves, sheathing stays):
+       The mod has an optional MCM_AR_Consent action, but the game does
+       not know it until you declare it in two files. Easiest path:
+       open consent-key.snippet.txt in this folder - it has the exact
+       lines to paste. Short version (example uses Z, free in vanilla;
+       swap for any key free in your Options -> Keybindings list):
+         1. In bin/config/r4game/legacy/base/input_qwerty.ini, inside the
+            [BASE_DRAW_SWORDS_KEYBOARD] section (keyboard) or
+            [BASE_DRAW_SWORDS] (gamepad), add this line:
+              IK_Z=(Action=MCM_AR_Consent)
+            (Z is unused by the vanilla game; if another mod already
+            bound Z for you, pick a different key name - IK_B, IK_V,
+            IK_F9, ... - the format stays the same.)
+         2. In Documents/The Witcher 3/input.settings, add the same line
+            under the matching context. This step is required - without
+            it the game treats the action as unknown and strips the
+            binding the next time it writes the file.
+         3. Optional: copy the <Var ...> line from input.xml.optional
+            into bin/config/r4game/user_config_matrix/pc/input.xml to get
+            a "Consent (MCME AR)" row in Options -> Keybindings.
+
+       input.settings.txt in this mod folder ships no bindings - it only
+       documents the design for mod managers.
 
     3. Launch the game. Scripts compile automatically on first startup.
     4. No Script Merger run needed.

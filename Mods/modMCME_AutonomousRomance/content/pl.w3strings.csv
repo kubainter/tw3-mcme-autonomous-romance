@@ -292,8 +292,8 @@
 2118800296|        |ar_line_generic_kiss|Podejdź tu, wiedźminie. Nadszedł odpowiedni moment.
 2118800329|        |preset_value_mcm_ar_uc_preset_default|Domyślnie (preferuj Unicorn, fallback natywny)
 2118800330|        |preset_value_mcm_ar_uc_preset_off|Unicorn wyłączony (tylko sceny natywne)
-2118800331|        |option_mcm_ar_uc_opt_mode|Backend scen Unicorn (0=Wył. / 1=Preferuj+fallback / 2=Tylko Unicorn / 3=Mieszany)
-2118800332|        |option_MCM_AR_UcMode|Backend scen Unicorn (0=Wył. / 1=Preferuj+fallback / 2=Tylko Unicorn / 3=Mieszany)
+2118800331|        |option_mcm_ar_uc_opt_mode|Backend scen Unicorn (0=Wył./1=Pref./2=Tylko/3=Mix)
+2118800332|        |option_MCM_AR_UcMode|Backend scen Unicorn (0=Wył./1=Pref./2=Tylko/3=Mix)
 2118800333|        |option_mcm_ar_uc_opt_allowrough|Unicorn: ostrzejsze tagi scen
 2118800334|        |option_MCM_AR_UcAllowRough|Unicorn: ostrzejsze tagi scen
 2118800335|        |Mods.AutonomousRomance.Unicorn|Autonomous Romance - Unicorn
@@ -305,3 +305,5 @@
 2118800341|        |preset_Mods.MCMEUnicorn|Profile ustawień
 2118800342|        |preset_MCMEUnicorn|Profile ustawień
 2118800343|        |preset_Mods_MCMEUnicorn|Autonomiczny romans - Unicorn
+2118800344|        |option_mcm_ar_uc_opt_cinematic|Unicorn: otwieraj scene gra wstepna
+2118800345|        |option_MCM_AR_UcCinematicIntro|Unicorn: otwieraj scene gra wstepna

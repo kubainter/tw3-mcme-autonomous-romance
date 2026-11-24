@@ -1,0 +1,9 @@
+v1.0.0 - Initial release
+* New optional add-on for MCME Autonomous Romance: hands Tier-4 intimate scenes to the Unicorn engine when installed - the native scenes stay as a full fallback. Backend modes: off / prefer+fallback / unicorn-only / mix.
+* Per-companion scene picks: every companion gets her own tag profile (Cerys leans Dominant, Triss/Shani/Priscilla Loving, Keira/Ves Teasing...) with conservative defaults for the rest; rough-mood tags are stripped when Allow Rough is off.
+* Context-aware: bed scenes anchor onto real furniture (the same point the native path uses), outdoor picks skip furniture-bound scenes, and an optional foreplay scene can open before flowing into the main one.
+* Anti-repeat: the last 3 scenes per companion are excluded, so invites stop feeling recycled.
+* Polished edges: Unicorn's Num-pad exit hints are hidden in our scenes (manual Unicorn scenes keep theirs), ambient reaction/stat effects off, per-companion undress via appearance mapping.
+* Ciri follows the same Adult Mode gate as the native path - and her invite gains a campfire context when the bridge is enabled.
+* Requires: MCME Autonomous Romance v2.4.0+, the Unicorn core mod, and a scene pack (tested with the Billyy pack).
+* Console diagnostics: ar_uc_status, ar_uc_mode, ar_uc_eval.

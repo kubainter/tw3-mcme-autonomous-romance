@@ -50,6 +50,17 @@ if (-not $SkipPrecheck -and (Test-Path $precheckScript)) {
     }
 }
 
+# Fast-fail: w3strings musi byc UTF-8 - binarka UTF-16 (meta version=162 / flaga
+# --nextgen) nie parsuje sie w grze i renderuje hashe zamiast tekstu.
+$w3verify = Join-Path $scriptDir 'verify_w3strings.ps1'
+if (Test-Path $w3verify) {
+    & $w3verify
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "[FAIL] w3strings verification failed! Aborting release packaging." -ForegroundColor Red
+        exit 1
+    }
+}
+
 # Prepare temp staging folder (obok katalogu wyjsciowego - poza repo)
 $stagingDir = Join-Path $OutDir "_staging_$Version"
 if (Test-Path $stagingDir) {
