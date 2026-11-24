@@ -33,7 +33,7 @@ modMCME_AutonomousRomance/
 │    + akcje DANCE (priscilla/cerys/triss/keira/shani/tomira/ciri_dance, philippa/yen/ves/ciri_dance_refuse) + *_tavern_drink/ves_tavern_drink
 ├── MCM_RomanceQoL.ws          - Flash UI menu ubioru w MCME, pamięć strojów, ar_gift, MCM_AR_FindCompanion
 ├── MCM_RomanceTw3seDev.ws     - Warstwa TW3SE (importy natywne, pipe IPC, odczyt VK, hot-reload)
-└── MCM_RomanceE2EDev.ws       - DEV-ONLY: suita ar_test_e2e + ar_tour_scenes + ar_e2e_rebuild_registry
+└── MCM_RomanceE2EDev.ws       - DEV-ONLY: suita ar_test_e2e + ar_tour_scenes + ar_e2e_rebuild_registry + ar_bedscan
      (usuwana z paczki przez package_release.ps1)
 ```
 
@@ -76,7 +76,7 @@ w `repo\scripts\tw3se\` — do paczki trafia przez `package_release.ps1`. Źród
   * `MCM_AutonomousRomanceCore` (L216): stan `Idle` (L2242) oraz `ProcessingTick` (L2246, `ProcessTick` L2259; interwał `MCM_AR_TickInterval`, domyślnie 30s; pętla STAGED z lockiem `interactionBusy`, watchdogiem 300s i post-staged cooldownem 90s).
   * `MCM_AmbientRomanceChannel` (L2465): stan `Idle` (L2500) oraz `AmbientTick` (L2504, co 10s; pętla AMBIENT dla powitań po rozłące >60s oraz jednolinijkowców T1 + notifier NaughtyPoint + `UpdateIdleAmbient`).
   * Akcje z flagą `isTimeCritical` (`ar_afterglow`, `ar_jealousy_aftermath`) mają pierwszeństwo w kanale ambient: `ProcessAmbient` pomija los presetu gadatliwości, gdy którakolwiek jest eligible (`HasTimeCriticalEligible`), a `TryExecuteTimeCritical` wybiera eligible o najwyższym `weight` i strzela przed ważonym losem (`[AR] ambient(prio) -> ...`). Globalny cooldown barku ~90s i bramki per-NPC nadal obowiązują.
-* **Komendy Diagnostyczne Konsoli (29×Core + 4×QoL + 2×Tw3seDev = 35 w paczce; +3 dev-only E2E = 38 łącznie):**
+* **Komendy Diagnostyczne Konsoli (29×Core + 4×QoL + 2×Tw3seDev = 35 w paczce; +4 dev-only E2E = 39 łącznie):**
   * Pełna tabela w sekcji 3. `ar_test` (L78) siedzi tuż po boot-sekcji, reszta Core L2711-3694.
 
 ### 2. `MCM_RomanceInteraction.ws`
@@ -210,7 +210,7 @@ Sceny intymne Tier 4 (`RTT_Scene`) korzystają z NaughtyPoints zarejestrowanych 
 
 ---
 
-## 3. Kompletny Indeks Konsoli Debugującej (38 komend `exec` w źródłach; 35 trafiają do paczki, 3 dev-only z `MCM_RomanceE2EDev.ws` są usuwane ze stagingu)
+## 3. Kompletny Indeks Konsoli Debugującej (39 komend `exec` w źródłach; 35 trafiają do paczki, 4 dev-only z `MCM_RomanceE2EDev.ws` są usuwane ze stagingu)
 
 | Komenda konsoli | Plik źródłowy | Działanie |
 | --- | --- | --- |
@@ -249,6 +249,7 @@ Sceny intymne Tier 4 (`RTT_Scene`) korzystają z NaughtyPoints zarejestrowanych 
 | `ar_gift(optional npc)` | `QoL.ws:L229` | Wręcza butelkę alkoholu z ekwipunku (+3 affinity) |
 | `ar_devinfo()` | `Tw3seDev.ws:L151` | **DEV** self-test mostka TW3SE (wersja, zapis pliku, pipe) |
 | `ar_reload()` | `Tw3seDev.ws:L174` | **DEV** `ReloadScripts` przez TW3SE (po powrocie uruchom `ar_devreset`) |
+| `ar_bedscan(optional radius)` | `E2EDev.ws:L922` | **DEV-ONLY** skaner encji-mebli w promieniu gracza (tagi bed/furniture/sleep) — strojenie kotwicy Unicorn `where` |
 | `ar_e2e_rebuild_registry()` | `E2EDev.ws:L919` | **DEV-ONLY** przebudowa rejestru akcji na żywo (`registry.Init()`) |
 | `ar_test_e2e()` | `E2EDev.ws:L933` | **DEV-ONLY** pełny suite E2E: asercje silnikowe (stan rdzenia, rejestr, Affinity, dry-run bramek) |
 | `ar_tour_scenes(optional npc)` | `E2EDev.ws:L1119` | **DEV-ONLY** (wycięty z paczki): tour po scenach danej postaci (gift→kiss/hug→T4) |
