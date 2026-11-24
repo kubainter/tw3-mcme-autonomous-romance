@@ -8,10 +8,6 @@ v1.0.0 - 2026-11-24 - Initial release
 Requires: MCME Autonomous Romance v2.4.0+, Unicorn core, a scene pack
 (tested with the Billyy pack, 55 scenes).
 
-WARNING: XeSS/DLSS frame generation must be OFF - Unicorn's D3D12 deform
-hooks crash with generated frames (author-documented; reproduced 2/2 CTDs
-under FG, 3/3 clean without).
-
 * Tier-4 routing: hands intimate scenes to the Unicorn engine when
   installed; the native .w2scene path stays as full fallback. Scene
   backend mode 0=off / 1=prefer+fallback / 2=unicorn-only / 3=mix.

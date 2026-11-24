@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [2.4.0] - 2026-11-24 - Optional Unicorn Bridge
 
-- **Optional Unicorn bridge (`modMCME_AR_Unicorn`):** new separate mod package routing Tier-4 intimate scenes through the Unicorn framework when installed, keeping the native `.w2scene` path as full fallback — the base detects the bridge through its MCM group and works unchanged without it. **Prerequisite: disable XeSS/DLSS frame generation — Unicorn's D3D12 deform hooks crash with generated frames (author-documented; reproduced 2/2 CTDs under FG, 3/3 clean without).**
+- **Optional Unicorn bridge (`modMCME_AR_Unicorn`):** new separate mod package routing Tier-4 intimate scenes through the Unicorn framework when installed, keeping the native `.w2scene` path as full fallback — the base detects the bridge through its MCM group and works unchanged without it.
 - **Unicorn bridge internals:** per-companion scene tags, context picks (bed/outdoor/furniture), anti-repeat pool, own MCM page, furniture anchoring, foreplay chaining and hint suppression ship with the bridge package — details live in `Mods/modMCME_AR_Unicorn/CHANGELOG.txt`.
 - **Ciri intimate invite now supports campfire context (Unicorn bridge):** her dedicated Tier-4 action previously required a NaughtyPoint (bed) — it now also accepts the outdoor campfire context **when the optional Unicorn bridge is installed and enabled** (MCM `MCM_AR_UcMode > 0`), which routes the scene through the bridge's outdoor dispatch. On a base-only install her native `naughty\ciri` scene requires a real NaughtyPoint, so the campfire exception stays gated off without the bridge (fail-closed instead of a post-consent scene failure). Her Adult Mode gate is unchanged (verified live end-to-end: Adult OFF → blocked on both paths, Adult ON at a campfire → consent → Unicorn dispatch with outdoor furniture exclusions → complete scene + afterglow cleanup).
 - **Consent key hardening:** the consent prompt now polls only the active consent action — a dedicated `MCM_AR_Consent` binding fully separates consent from sword sheathing (sheathe presses no longer confirm prompts), while the default path still rides passive `SwordSheathe` polling. The gamepad fast-accept no longer misfires when the last active device is keyboard/mouse with a Steam Input controller attached (`IDT_Steam` stale-state guard).
@@ -285,7 +285,7 @@ v2.4.0 - Optional Unicorn Bridge
 * Fix: gamepad consent no longer swings your swords - the prompt advertises D-pad Down and blocks potion use while it is up (D-pad L/R still confirms).
 * Fix: ar_kiss resolves the full companion roster including aliases and fails loudly on unknown names instead of silently retargeting.
 * QoL: console commands accept the same companion aliases everywhere (cerys, pryscilla, salma...).
-* Note: the bridge requires the Unicorn core mod plus a scene pack (tested with the Billyy pack), and XeSS/DLSS frame generation must be OFF (Unicorn engine limitation, author-documented).
+* Note: the bridge requires the Unicorn core mod plus a scene pack (tested with the Billyy pack).
 
 v2.3.3 - Localization Hotfix
 * Fix: all translated text rendered as garbage characters in 2.3.2 - the language string tables shipped in the wrong binary format. Re-encoded correctly; menu, prompts and companion lines display properly again.
