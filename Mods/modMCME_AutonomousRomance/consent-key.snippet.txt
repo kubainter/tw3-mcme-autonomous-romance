@@ -2,7 +2,9 @@
 MCME Autonomous Romance - optional dedicated consent key (MCM_AR_Consent)
 ================================================================================
 
-Consent already works out of the box on the sword-sheathe key (C / D-pad).
+Consent already works out of the box - [C] on keyboard and [D-pad Down]
+on gamepad (the potion on that button is suppressed while the prompt is
+open; [D-pad Left/Right] also confirms via the sword-sheathe binding).
 This snippet is ONLY for players who want consent on its own key while
 sword sheathing stays where it is.
 

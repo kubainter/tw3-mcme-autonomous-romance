@@ -1,7 +1,7 @@
 ================================================================================
 MCME AUTONOMOUS ROMANCE
 The Witcher 3: Wild Hunt - Remaster (v5.00+)
-Version: 2.3.3
+Version: 2.4.0
 Author: Botan
 ================================================================================
 
@@ -167,9 +167,14 @@ INSTALLATION & REMOVAL
        will not install correctly in Vortex.
 
     2. Input Bindings (Consent Key):
-       Consent works out of the box - no setup needed. The mod watches the
-       standard sword-sheathe binding ([C] on keyboard, [D-pad Left/Right]
-       on gamepad) and never intercepts it, so sheathing keeps working.
+       Consent works out of the box - no setup needed. On keyboard [C]
+       confirms through the standard sword-sheathe binding (hold ~1
+       second or double-tap). On gamepad [D-pad Down] confirms - while
+       the prompt is open the mod briefly suppresses the potion normally
+       on that button, so one press accepts without drinking it.
+       [D-pad Left/Right] also confirms via the sheathe binding (with
+       the sheathe side effect). The mod only watches these bindings and
+       never replaces a vanilla handler, so sheathing keeps working.
        The on-screen prompt always shows the key you actually use.
 
        CHANGING THE CONSENT KEY - two ways:
